@@ -1,0 +1,151 @@
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import logo from "../../../assets/jostap logo.png3.png";
+import authMockup from "../../../assets/JOSTAP Design (5).png";
+import AuthShell from "../../../components/auth/AuthShell";
+import PasswordRequirements from "../../../components/auth/PasswordRequirements";
+import {
+  isValidPassword,
+  PASSWORD_PATTERN,
+  PASSWORD_RULES,
+} from "../../../utils/passwordPolicy";
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06L5.84 9.9C6.71 7.3 9.14 5.38 12 5.38z"
+      />
+    </svg>
+  );
+}
+
+export default function SignInPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!isValidPassword(password)) {
+      setError(`Password must include: ${PASSWORD_RULES}`);
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/signin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Invalid email or password.");
+      }
+
+      window.location.href = "/dashboard";
+    } catch (error) {
+      setError(error.message || "Invalid email or password. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AuthShell
+      mockup={authMockup}
+      mockupAlt="JOSTAP NFC card and mobile profile mockup"
+    >
+      <div className="auth-form">
+        <img className="auth-form__logo" src={logo} alt="JOSTAP" />
+        <h1>Welcome to JOSTAP.</h1>
+        <p className="auth-form__switch">
+          Need an account? <a href="/auth/signup">Create one free</a>
+        </p>
+
+        {error && <div className="auth-error">{error}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="auth-fields">
+            <label className="auth-field">
+              <span>Email</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@company.com"
+                required
+              />
+            </label>
+          </div>
+
+          <div className="auth-password-row">
+            <div className="auth-password-label">
+              <span>Password</span>
+              <a href="/auth/forgot-password">Forgot password?</a>
+            </div>
+            <label className="auth-field auth-password-input">
+              <input
+                type={showPass ? "text" : "password"}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Password"
+                required
+                minLength={8}
+                pattern={PASSWORD_PATTERN}
+                title={PASSWORD_RULES}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass((current) => !current)}
+                aria-label={showPass ? "Hide password" : "Show password"}
+              >
+                {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </label>
+            <PasswordRequirements password={password} />
+          </div>
+
+          <button className="auth-submit" disabled={loading} type="submit">
+            {loading ? "Signing in..." : "Log In"}
+          </button>
+        </form>
+
+        <div className="auth-social-divider">
+          <div />
+          <span>or continue with</span>
+          <div />
+        </div>
+
+        <div className="auth-social-grid">
+          <button type="button">
+            <GoogleIcon />
+            Continue with Google
+          </button>
+        </div>
+      </div>
+    </AuthShell>
+  );
+}

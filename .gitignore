@@ -1,0 +1,27 @@
+.DS_Store
+
+# Dependencies
+node_modules/
+apps/*/node_modules/
+
+# Unused scaffold for this web deployment
+apps/mobile/
+
+# Build output
+build/
+apps/*/build/
+apps/*/.react-router/
+apps/*/.vitest/
+
+# Local environment secrets
+.env
+*.env
+!.env.example
+apps/*/.env
+!apps/*/.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

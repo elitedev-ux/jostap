@@ -1,0 +1,75 @@
+import { CheckCircle2, Clock, Package, Printer, Search, Truck } from "lucide-react";
+
+const orders = [];
+
+export default function AdminOrdersPage() {
+  return (
+    <>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", marginBottom: 4 }}>NFC Orders</h1>
+          <p style={{ fontSize: 14, color: "#6B7280" }}>Track card production, shipping, artwork approval, and fulfillment status.</p>
+        </div>
+        <button style={{ display: "inline-flex", alignItems: "center", gap: 7, alignSelf: "flex-start", background: "#2563EB", color: "#fff", border: "none", borderRadius: 9, padding: "10px 15px", fontSize: 13, fontWeight: 700 }}>
+          <Printer size={14} /> Print Batch
+        </button>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 20 }}>
+        {[
+          ["Open Orders", "0", Package, "#2563EB", "#EFF6FF"],
+          ["In Production", "0", Clock, "#D97706", "#FFFBEB"],
+          ["Shipped Today", "0", Truck, "#7C3AED", "#F5F3FF"],
+          ["Delivered", "0", CheckCircle2, "#059669", "#ECFDF5"],
+        ].map(([label, value, Icon, color, bg]) => (
+          <div key={label} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <p style={{ fontSize: 23, fontWeight: 800, color: "#111827" }}>{value}</p>
+                <p style={{ fontSize: 12, color: "#6B7280" }}>{label}</p>
+              </div>
+              <div style={{ width: 36, height: 36, borderRadius: 9, background: bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon size={17} color={color} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ padding: 16, borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", gap: 10 }}>
+          <Search size={15} color="#9CA3AF" />
+          <input placeholder="Search orders..." style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 13 }} />
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead style={{ background: "#F9FAFB" }}>
+              <tr>{["Order", "Customer", "Product", "Payment", "Status", "Date"].map((heading) => <th key={heading} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, color: "#6B7280", textTransform: "uppercase" }}>{heading}</th>)}</tr>
+            </thead>
+            <tbody>
+              {orders.length === 0 && (
+                <tr>
+                  <td colSpan={6}>
+                    <div className="ui-empty-state" style={{ border: "none" }}>
+                      <p className="ui-empty-state__title">No orders yet</p>
+                      <p className="ui-empty-state__copy">NFC card orders will appear here when the backend is connected.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {orders.map((order, index) => (
+                <tr key={order[0]} style={{ borderTop: index ? "1px solid #F3F4F6" : "none" }}>
+                  {order.map((cell, cellIndex) => (
+                    <td key={cellIndex} style={{ padding: "15px 16px", fontSize: 13, color: cellIndex === 0 ? "#2563EB" : "#374151", fontWeight: cellIndex === 0 || cellIndex === 1 ? 700 : 500 }}>
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
+  );
+}
