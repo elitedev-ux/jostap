@@ -12,6 +12,8 @@ build/
 apps/*/build/
 apps/*/.react-router/
 apps/*/.vitest/
+.vercel/
+apps/*/.vercel/
 
 # Local environment secrets
 .env
