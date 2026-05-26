@@ -34,11 +34,15 @@ function GoogleIcon() {
 }
 
 export default function SignInPage() {
+  const initialError =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("error") || ""
+      : "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initialError);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -140,7 +144,12 @@ export default function SignInPage() {
         </div>
 
         <div className="auth-social-grid">
-          <button type="button">
+          <button
+            type="button"
+            onClick={() => {
+              window.location.href = "/api/auth/google";
+            }}
+          >
             <GoogleIcon />
             Continue with Google
           </button>
