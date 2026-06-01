@@ -1,19 +1,19 @@
-import { neon } from '@neondatabase/serverless';
+import { hasSupabase } from "./supabase.js";
 
 const NullishQueryFunction = () => {
   throw new Error(
-    'No database connection string was provided to `neon()`. Perhaps process.env.DATABASE_URL has not been set'
+    "Direct SQL queries have been removed. Use the Supabase client helpers instead.",
   );
 };
 NullishQueryFunction.transaction = () => {
   throw new Error(
-    'No database connection string was provided to `neon()`. Perhaps process.env.DATABASE_URL has not been set'
+    "Direct SQL transactions have been removed. Use the Supabase client helpers instead.",
   );
 };
-const sql = process.env.DATABASE_URL ? neon(process.env.DATABASE_URL) : NullishQueryFunction;
+const sql = NullishQueryFunction;
 
 export function hasDatabase() {
-  return Boolean(process.env.DATABASE_URL);
+  return hasSupabase();
 }
 
 export default sql;

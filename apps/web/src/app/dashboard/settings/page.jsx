@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   User,
   Bell,
@@ -10,6 +10,11 @@ import {
   EyeOff,
   Camera,
 } from "lucide-react";
+import {
+  PROFILE_IMAGE_ACCEPT,
+  PROFILE_IMAGE_RULES,
+  isAllowedProfileImage,
+} from "../../../utils/uploadRules";
 
 const TABS = ["Profile", "Notifications", "Security", "Integrations"];
 
@@ -60,9 +65,24 @@ const inputStyle = {
   boxSizing: "border-box",
 };
 
+function initialsFor(name) {
+  return (
+    (name || "Me")
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "ME"
+  );
+}
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("Profile");
   const [saved, setSaved] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const avatarInputRef = useRef(null);
   const [profile, setProfile] = useState({
     name: "",
     email: "",
@@ -71,7 +91,12 @@ export default function SettingsPage() {
     bio: "",
     phone: "",
     website: "",
+    country: "",
+    city: "",
+    businessType: "Small business",
+    primaryGoal: "Share my digital business card",
     slug: "",
+    avatarUrl: "",
   });
   const [notifs, setNotifs] = useState({
     views: true,
@@ -82,12 +107,270 @@ export default function SettingsPage() {
     marketing: false,
   });
   const [showPass, setShowPass] = useState(false);
+  const [twoFactor, setTwoFactor] = useState({
+    enabled: false,
+    loading: true,
+    setup: null,
+    code: "",
+    disableCode: "",
+    message: "",
+  });
 
   const update = (k, v) => setProfile((p) => ({ ...p, [k]: v }));
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  useEffect(() => {
+    let active = true;
+
+    async function loadProfile() {
+      try {
+        const response = await fetch("/api/auth/me", {
+          credentials: "same-origin",
+        });
+
+        if (response.status === 401) {
+          window.location.href = "/auth/signin?callbackUrl=/dashboard/settings";
+          return;
+        }
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.error || "Unable to load account details.");
+        }
+
+        const user = data.user || {};
+        const kyc = user.kyc || {};
+
+        if (active) {
+          setProfile((current) => ({
+            ...current,
+            name: user.name || current.name,
+            email: user.email || current.email,
+            title: kyc.jobTitle || current.title,
+            company: kyc.businessName || user.company || current.company,
+            phone: kyc.phone || current.phone,
+            website: kyc.website || current.website,
+            country: kyc.country || current.country,
+            city: kyc.city || current.city,
+            businessType: kyc.businessType || current.businessType,
+            primaryGoal: kyc.primaryGoal || current.primaryGoal,
+            bio: kyc.bio || current.bio,
+            slug: kyc.profileSlug || current.slug,
+            avatarUrl: kyc.avatarUrl || current.avatarUrl,
+          }));
+        }
+      } catch (error) {
+        if (active) {
+          setSaveError(error.message || "Unable to load account details.");
+        }
+      } finally {
+        if (active) {
+          setLoadingProfile(false);
+        }
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadTwoFactor() {
+      try {
+        const response = await fetch("/api/auth/2fa/status", {
+          credentials: "same-origin",
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (active && response.ok) {
+          setTwoFactor((current) => ({
+            ...current,
+            enabled: Boolean(data.enabled),
+            loading: false,
+          }));
+        }
+      } catch {
+        if (active) {
+          setTwoFactor((current) => ({ ...current, loading: false }));
+        }
+      }
+    }
+
+    loadTwoFactor();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleSave = async () => {
+    setSaveError("");
+    setSaved(false);
+
+    try {
+      const response = await fetch("/api/account", {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profile),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to save changes.");
+      }
+
+      const user = data.user || {};
+      const kyc = user.kyc || {};
+
+      setProfile((current) => ({
+        ...current,
+        name: user.name || current.name,
+        email: user.email || current.email,
+        title: kyc.jobTitle || current.title,
+        company: kyc.businessName || user.company || current.company,
+        phone: kyc.phone || current.phone,
+        website: kyc.website || current.website,
+        country: kyc.country || current.country,
+        city: kyc.city || current.city,
+        businessType: kyc.businessType || current.businessType,
+        primaryGoal: kyc.primaryGoal || current.primaryGoal,
+        bio: kyc.bio || current.bio,
+        slug: kyc.profileSlug || current.slug,
+        avatarUrl: kyc.avatarUrl || current.avatarUrl,
+      }));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (error) {
+      setSaveError(error.message || "Unable to save changes.");
+    }
+  };
+
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!isAllowedProfileImage(file)) {
+      setSaveError(`Profile photo must be ${PROFILE_IMAGE_RULES}.`);
+      event.target.value = "";
+      return;
+    }
+
+    setSaveError("");
+    setUploadingAvatar(true);
+
+    try {
+      const form = new FormData();
+      form.append("file", file);
+
+      const response = await fetch("/api/account/avatar", {
+        method: "POST",
+        credentials: "same-origin",
+        body: form,
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to upload profile photo.");
+      }
+
+      setProfile((current) => ({
+        ...current,
+        avatarUrl: data.avatarUrl || data.user?.kyc?.avatarUrl || current.avatarUrl,
+      }));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (error) {
+      setSaveError(error.message || "Unable to upload profile photo.");
+    } finally {
+      setUploadingAvatar(false);
+      event.target.value = "";
+    }
+  };
+
+  const startTwoFactorSetup = async () => {
+    setSaveError("");
+    setTwoFactor((current) => ({ ...current, message: "" }));
+
+    try {
+      const response = await fetch("/api/auth/2fa/setup", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to start two-factor setup.");
+      }
+
+      setTwoFactor((current) => ({ ...current, setup: data, code: "" }));
+    } catch (error) {
+      setSaveError(error.message || "Unable to start two-factor setup.");
+    }
+  };
+
+  const verifyTwoFactorSetup = async () => {
+    setSaveError("");
+
+    try {
+      const response = await fetch("/api/auth/2fa/verify", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: twoFactor.code }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to verify two-factor code.");
+      }
+
+      setTwoFactor((current) => ({
+        ...current,
+        enabled: Boolean(data.enabled),
+        setup: null,
+        code: "",
+        message: "Two-factor authentication is enabled.",
+      }));
+    } catch (error) {
+      setSaveError(error.message || "Unable to verify two-factor code.");
+    }
+  };
+
+  const disableTwoFactor = async () => {
+    setSaveError("");
+
+    try {
+      const response = await fetch("/api/auth/2fa/disable", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: twoFactor.disableCode }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to disable two-factor authentication.");
+      }
+
+      setTwoFactor((current) => ({
+        ...current,
+        enabled: Boolean(data.enabled),
+        setup: null,
+        disableCode: "",
+        message: "Two-factor authentication is disabled.",
+      }));
+    } catch (error) {
+      setSaveError(error.message || "Unable to disable two-factor authentication.");
+    }
   };
 
   return (
@@ -144,6 +427,22 @@ export default function SettingsPage() {
 
       {activeTab === "Profile" && (
         <>
+          {saveError && (
+            <div
+              style={{
+                background: "#FEF2F2",
+                border: "1px solid #FECACA",
+                color: "#B91C1C",
+                borderRadius: 10,
+                padding: "11px 14px",
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 16,
+              }}
+            >
+              {saveError}
+            </div>
+          )}
           <Section
             title="Profile Photo"
             desc="This appears on your NFC card and public profile."
@@ -162,11 +461,33 @@ export default function SettingsPage() {
                     fontSize: 22,
                     fontWeight: 700,
                     color: "#fff",
+                    overflow: "hidden",
                   }}
                 >
-                  ME
+                  {profile.avatarUrl ? (
+                    <img
+                      src={profile.avatarUrl}
+                      alt={profile.name || "Profile photo"}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    initialsFor(profile.name)
+                  )}
                 </div>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept={PROFILE_IMAGE_ACCEPT}
+                  onChange={handleAvatarUpload}
+                  style={{ display: "none" }}
+                />
                 <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
                   style={{
                     position: "absolute",
                     bottom: 0,
@@ -187,6 +508,9 @@ export default function SettingsPage() {
               </div>
               <div>
                 <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
                   style={{
                     fontSize: 13,
                     fontWeight: 500,
@@ -195,13 +519,14 @@ export default function SettingsPage() {
                     border: "1px solid #BFDBFE",
                     borderRadius: 8,
                     padding: "7px 14px",
-                    cursor: "pointer",
+                    cursor: uploadingAvatar ? "wait" : "pointer",
+                    opacity: uploadingAvatar ? 0.75 : 1,
                   }}
                 >
-                  Upload photo
+                  {uploadingAvatar ? "Uploading..." : "Upload photo"}
                 </button>
                 <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 5 }}>
-                  JPG or PNG, max 2MB
+                  {PROFILE_IMAGE_RULES}
                 </p>
               </div>
             </div>
@@ -211,6 +536,11 @@ export default function SettingsPage() {
             title="Personal Information"
             desc="This appears on your public-facing digital cards."
           >
+            {loadingProfile && (
+              <p style={{ color: "#6B7280", fontSize: 13, marginBottom: 16 }}>
+                Loading your saved account details...
+              </p>
+            )}
             <div
               style={{
                 display: "grid",
@@ -297,6 +627,127 @@ export default function SettingsPage() {
                   style={inputStyle}
                   onFocus={(e) => (e.target.style.borderColor = "#2563EB")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+                />
+              </div>
+              <div>
+                <label
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "#374151",
+                    display: "block",
+                    marginBottom: 6,
+                  }}
+                >
+                  Phone number
+                </label>
+                <input
+                  value={profile.phone}
+                  onChange={(e) => update("phone", e.target.value)}
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = "#2563EB")}
+                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+                />
+              </div>
+              <div>
+                <label
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "#374151",
+                    display: "block",
+                    marginBottom: 6,
+                  }}
+                >
+                  Website
+                </label>
+                <input
+                  value={profile.website}
+                  onChange={(e) => update("website", e.target.value)}
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = "#2563EB")}
+                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+                />
+              </div>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 16,
+                marginBottom: 16,
+              }}
+            >
+              <div>
+                <label
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "#374151",
+                    display: "block",
+                    marginBottom: 6,
+                  }}
+                >
+                  Country
+                </label>
+                <input
+                  value={profile.country}
+                  onChange={(e) => update("country", e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "#374151",
+                    display: "block",
+                    marginBottom: 6,
+                  }}
+                >
+                  City
+                </label>
+                <input
+                  value={profile.city}
+                  onChange={(e) => update("city", e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "#374151",
+                    display: "block",
+                    marginBottom: 6,
+                  }}
+                >
+                  Business type
+                </label>
+                <input
+                  value={profile.businessType}
+                  onChange={(e) => update("businessType", e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "#374151",
+                    display: "block",
+                    marginBottom: 6,
+                  }}
+                >
+                  Primary goal
+                </label>
+                <input
+                  value={profile.primaryGoal}
+                  onChange={(e) => update("primaryGoal", e.target.value)}
+                  style={inputStyle}
                 />
               </div>
             </div>
@@ -488,6 +939,122 @@ export default function SettingsPage() {
       )}
 
       {activeTab === "Security" && (
+        <>
+        <Section
+          title="Two-Factor Authentication"
+          desc="Use an authenticator app to add a second verification step at sign-in."
+        >
+          {saveError && (
+            <div
+              style={{
+                background: "#FEF2F2",
+                border: "1px solid #FECACA",
+                color: "#B91C1C",
+                borderRadius: 10,
+                padding: "11px 14px",
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 16,
+              }}
+            >
+              {saveError}
+            </div>
+          )}
+          {twoFactor.message && (
+            <div
+              style={{
+                background: "#ECFDF5",
+                border: "1px solid #A7F3D0",
+                color: "#047857",
+                borderRadius: 10,
+                padding: "11px 14px",
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 16,
+              }}
+            >
+              {twoFactor.message}
+            </div>
+          )}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
+                Status: {twoFactor.enabled ? "Enabled" : "Disabled"}
+              </p>
+              <p style={{ fontSize: 13, color: "#6B7280", marginTop: 4 }}>
+                Scan the setup URL with an authenticator app, or enter the secret manually.
+              </p>
+            </div>
+            {!twoFactor.enabled && (
+              <button
+                type="button"
+                onClick={startTwoFactorSetup}
+                disabled={twoFactor.loading}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#fff",
+                  background: "#2563EB",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "9px 16px",
+                  cursor: "pointer",
+                }}
+              >
+                <Shield size={14} /> Set Up 2FA
+              </button>
+            )}
+          </div>
+
+          {twoFactor.setup && (
+            <div style={{ marginTop: 18, display: "grid", gap: 12, maxWidth: 560 }}>
+              <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 10, padding: 14 }}>
+                <p style={{ fontSize: 12, color: "#6B7280", marginBottom: 6 }}>Authenticator setup URL</p>
+                <p style={{ fontSize: 12, color: "#111827", wordBreak: "break-all" }}>{twoFactor.setup.otpauthUrl}</p>
+                <p style={{ fontSize: 12, color: "#6B7280", marginTop: 10 }}>Manual secret: <strong>{twoFactor.setup.secret}</strong></p>
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <input
+                  inputMode="numeric"
+                  value={twoFactor.code}
+                  onChange={(event) => setTwoFactor((current) => ({ ...current, code: event.target.value }))}
+                  placeholder="6-digit code"
+                  style={{ ...inputStyle, maxWidth: 180 }}
+                />
+                <button
+                  type="button"
+                  onClick={verifyTwoFactorSetup}
+                  style={{ border: "none", background: "#059669", color: "#fff", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                >
+                  Verify and Enable
+                </button>
+              </div>
+            </div>
+          )}
+
+          {twoFactor.enabled && (
+            <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <input
+                inputMode="numeric"
+                value={twoFactor.disableCode}
+                onChange={(event) => setTwoFactor((current) => ({ ...current, disableCode: event.target.value }))}
+                placeholder="Current 2FA code"
+                style={{ ...inputStyle, maxWidth: 190 }}
+              />
+              <button
+                type="button"
+                onClick={disableTwoFactor}
+                style={{ border: "1px solid #FECACA", background: "#FEF2F2", color: "#DC2626", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+              >
+                Disable 2FA
+              </button>
+            </div>
+          )}
+        </Section>
+
         <Section
           title="Change Password"
           desc="We recommend using a strong, unique password."
@@ -564,6 +1131,7 @@ export default function SettingsPage() {
             </button>
           </div>
         </Section>
+        </>
       )}
 
       {activeTab === "Integrations" && (

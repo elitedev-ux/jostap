@@ -7,7 +7,6 @@ import {
   ArrowRight,
   Activity,
   CreditCard,
-  Shield,
 } from "lucide-react";
 import {
   AreaChart,
@@ -19,16 +18,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { getCards } from "../../utils/cardsStore";
-
-const chartData = [
-  { day: "Mon", views: 0, taps: 0 },
-  { day: "Tue", views: 0, taps: 0 },
-  { day: "Wed", views: 0, taps: 0 },
-  { day: "Thu", views: 0, taps: 0 },
-  { day: "Fri", views: 0, taps: 0 },
-  { day: "Sat", views: 0, taps: 0 },
-  { day: "Sun", views: 0, taps: 0 },
-];
 
 function StatCard({ stat }) {
   const Icon = stat.icon;
@@ -96,6 +85,8 @@ function initialsFor(name) {
 export default function DashboardPage() {
   const [period, setPeriod] = useState("7d");
   const [cards, setCards] = useState([]);
+  const [account, setAccount] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
 
   const refreshCards = async () => {
     try {
@@ -109,6 +100,60 @@ export default function DashboardPage() {
     refreshCards();
     window.addEventListener("jostap-cards-change", refreshCards);
     return () => window.removeEventListener("jostap-cards-change", refreshCards);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAnalytics() {
+      try {
+        const response = await fetch(`/api/analytics?period=${period}`, {
+          credentials: "same-origin",
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (active && response.ok) {
+          setAnalytics(data);
+        }
+      } catch {
+        if (active) {
+          setAnalytics(null);
+        }
+      }
+    }
+
+    loadAnalytics();
+
+    return () => {
+      active = false;
+    };
+  }, [period]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAccount() {
+      try {
+        const response = await fetch("/api/auth/me", {
+          credentials: "same-origin",
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (active && response.ok) {
+          setAccount(data.user || null);
+        }
+      } catch {
+        if (active) {
+          setAccount(null);
+        }
+      }
+    }
+
+    loadAccount();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const totals = useMemo(
@@ -160,10 +205,10 @@ export default function DashboardPage() {
     },
   ];
 
-  const dashboardChartData = chartData.map((item) => ({
-    ...item,
-    views: totals.views ? Math.round(totals.views / chartData.length) : 0,
-    taps: totals.taps ? Math.round(totals.taps / chartData.length) : 0,
+  const dashboardChartData = (analytics?.trend || []).map((item) => ({
+    day: item.date,
+    views: item.views || 0,
+    taps: item.taps || 0,
   }));
 
   const visibleCards = cards.slice(0, 3);
@@ -189,33 +234,16 @@ export default function DashboardPage() {
               marginBottom: 3,
             }}
           >
-            Good morning
+            Welcome back{account?.firstName ? `, ${account.firstName}` : ""} 👋
           </h1>
           <p style={{ fontSize: 14, color: "#6B7280" }}>
-            Create your first card to start seeing engagement here.
+            {account?.kyc?.primaryGoal ||
+              "Create your first card to start seeing engagement here."}
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <a
-            href="/admin"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 7,
-              fontSize: 14,
-              fontWeight: 700,
-              color: "#2563EB",
-              textDecoration: "none",
-              padding: "9px 16px",
-              borderRadius: 9,
-              background: "#EFF6FF",
-              border: "1px solid #BFDBFE",
-            }}
-          >
-            <Shield size={15} /> Admin Preview
-          </a>
-          <a
-            href="/dashboard/cards/new"
+            href="/create-card"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -487,7 +515,7 @@ export default function DashboardPage() {
               Your dashboard starts empty. Create a card and it will show here.
             </p>
             <a
-              href="/dashboard/cards/new"
+              href="/create-card"
               style={{
                 display: "inline-flex",
                 alignItems: "center",

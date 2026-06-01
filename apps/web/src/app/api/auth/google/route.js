@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { json } from "../../utils/http.js";
 
 const STATE_COOKIE = "jostap_google_state";
+const RETURN_COOKIE = "jostap_google_return_to";
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 
 function cookieFlags(request) {
@@ -17,20 +18,71 @@ function cookieFlags(request) {
   ].filter(Boolean);
 }
 
+function safeReturnTo(value) {
+  if (!value || typeof value !== "string") {
+    return "/dashboard";
+  }
+
+  if (!value.startsWith("/") || value.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  return value;
+}
+
+function authPageFromRequest(request) {
+  const referer = request.headers.get("Referer");
+
+  if (!referer) {
+    return "/auth/signin";
+  }
+
+  const refererUrl = new URL(referer);
+
+  if (refererUrl.pathname === "/auth/signup") {
+    return "/auth/signup";
+  }
+
+  return "/auth/signin";
+}
+
+function redirectWithError(request, message) {
+  const url = new URL(authPageFromRequest(request), request.url);
+  url.searchParams.set("error", message);
+
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: url.toString(),
+    },
+  });
+}
+
+function appOrigin(request) {
+  return (
+    process.env.GOOGLE_REDIRECT_ORIGIN ||
+    process.env.APP_ORIGIN ||
+    new URL(request.url).origin
+  ).replace(/\/$/, "");
+}
+
 export async function GET(request) {
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-    return json(
-      {
-        error:
-          "Google sign in is not configured. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
-      },
-      { status: 503 },
-    );
+    const acceptsHtml = request.headers.get("Accept")?.includes("text/html");
+    const message =
+      "Google sign in is not configured. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.";
+
+    if (acceptsHtml) {
+      return redirectWithError(request, message);
+    }
+
+    return json({ error: message }, { status: 503 });
   }
 
   const url = new URL(request.url);
   const state = randomUUID();
-  const callbackUrl = new URL("/api/auth/google/callback", url.origin);
+  const returnTo = safeReturnTo(url.searchParams.get("callbackUrl"));
+  const callbackUrl = new URL("/api/auth/google/callback", appOrigin(request));
   const authUrl = new URL(GOOGLE_AUTH_URL);
 
   authUrl.searchParams.set("client_id", process.env.GOOGLE_CLIENT_ID);
@@ -42,9 +94,16 @@ export async function GET(request) {
 
   return new Response(null, {
     status: 302,
-    headers: {
-      Location: authUrl.toString(),
-      "Set-Cookie": `${STATE_COOKIE}=${encodeURIComponent(state)}; ${cookieFlags(request).join("; ")}`,
-    },
+    headers: [
+      ["Location", authUrl.toString()],
+      [
+        "Set-Cookie",
+        `${STATE_COOKIE}=${encodeURIComponent(state)}; ${cookieFlags(request).join("; ")}`,
+      ],
+      [
+        "Set-Cookie",
+        `${RETURN_COOKIE}=${encodeURIComponent(returnTo)}; ${cookieFlags(request).join("; ")}`,
+      ],
+    ],
   });
 }

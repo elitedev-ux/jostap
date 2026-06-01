@@ -33,7 +33,29 @@ function GoogleIcon() {
   );
 }
 
+function safeCallbackUrl(value) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "";
+  }
+
+  return value;
+}
+
+function destinationForUser(user, callbackUrl) {
+  const safeCallback = safeCallbackUrl(callbackUrl);
+
+  if (safeCallback && safeCallback !== "/dashboard") {
+    return safeCallback;
+  }
+
+  return user?.role === "admin" ? "/admin" : "/dashboard";
+}
+
 export default function SignInPage() {
+  const callbackUrl =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("callbackUrl") || "/dashboard"
+      : "/dashboard";
   const initialError =
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("error") || ""
@@ -43,6 +65,10 @@ export default function SignInPage() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(initialError);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [twoFactorChallengeId, setTwoFactorChallengeId] = useState("");
+  const [twoFactorCode, setTwoFactorCode] = useState("");
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -69,9 +95,74 @@ export default function SignInPage() {
         throw new Error(data.error || "Invalid email or password.");
       }
 
-      window.location.href = "/dashboard";
+      if (data.requiresVerification) {
+        setVerificationEmail(data.email || email);
+        return;
+      }
+
+      if (data.requiresTwoFactor) {
+        setTwoFactorChallengeId(data.challengeId || "");
+        return;
+      }
+
+      window.location.href = destinationForUser(data.user, callbackUrl);
     } catch (error) {
       setError(error.message || "Invalid email or password. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyEmail = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/verify-registration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ email: verificationEmail || email, code: verificationCode }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to verify your account.");
+      }
+
+      window.location.href = destinationForUser(data.user, callbackUrl);
+    } catch (error) {
+      setError(error.message || "Unable to verify your account.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTwoFactor = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/2fa/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          challengeId: twoFactorChallengeId,
+          code: twoFactorCode,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to verify two-factor code.");
+      }
+
+      window.location.href = destinationForUser(data.user, callbackUrl);
+    } catch (error) {
+      setError(error.message || "Unable to verify two-factor code.");
     } finally {
       setLoading(false);
     }
@@ -91,6 +182,43 @@ export default function SignInPage() {
 
         {error && <div className="auth-error">{error}</div>}
 
+        {verificationEmail ? (
+          <form onSubmit={handleVerifyEmail}>
+            <div className="auth-fields">
+              <label className="auth-field">
+                <span>Email verification code</span>
+                <input
+                  inputMode="numeric"
+                  value={verificationCode}
+                  onChange={(event) => setVerificationCode(event.target.value)}
+                  placeholder="6-digit code"
+                  required
+                />
+              </label>
+            </div>
+            <button className="auth-submit" disabled={loading} type="submit">
+              {loading ? "Verifying..." : "Verify Email"}
+            </button>
+          </form>
+        ) : twoFactorChallengeId ? (
+          <form onSubmit={handleTwoFactor}>
+            <div className="auth-fields">
+              <label className="auth-field">
+                <span>Authenticator code</span>
+                <input
+                  inputMode="numeric"
+                  value={twoFactorCode}
+                  onChange={(event) => setTwoFactorCode(event.target.value)}
+                  placeholder="6-digit code"
+                  required
+                />
+              </label>
+            </div>
+            <button className="auth-submit" disabled={loading} type="submit">
+              {loading ? "Verifying..." : "Verify Code"}
+            </button>
+          </form>
+        ) : (
         <form onSubmit={handleSubmit}>
           <div className="auth-fields">
             <label className="auth-field">
@@ -136,24 +264,25 @@ export default function SignInPage() {
             {loading ? "Signing in..." : "Log In"}
           </button>
         </form>
+        )}
 
-        <div className="auth-social-divider">
+        {!verificationEmail && !twoFactorChallengeId && <div className="auth-social-divider">
           <div />
           <span>or continue with</span>
           <div />
-        </div>
+        </div>}
 
-        <div className="auth-social-grid">
+        {!verificationEmail && !twoFactorChallengeId && <div className="auth-social-grid">
           <button
             type="button"
             onClick={() => {
-              window.location.href = "/api/auth/google";
+              window.location.href = `/api/auth/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
             }}
           >
             <GoogleIcon />
             Continue with Google
           </button>
-        </div>
+        </div>}
       </div>
     </AuthShell>
   );

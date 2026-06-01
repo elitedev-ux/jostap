@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import { signIn, signOut } from "@auth/create/react";
 
 function isDevIframe() {
   try {
@@ -19,39 +18,50 @@ function useAuth() {
     : null;
 
   const signInWithCredentials = useCallback((options) => {
-    return signIn("credentials-signin", {
-      ...options,
-      callbackUrl: callbackUrl ?? options.callbackUrl
+    return fetch("/api/auth/signin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(options),
+    }).then((response) => {
+      if (!response.ok) throw response;
+      window.location.href = callbackUrl ?? options.callbackUrl ?? "/dashboard";
     });
   }, [callbackUrl])
 
   const signUpWithCredentials = useCallback((options) => {
-    return signIn("credentials-signup", {
-      ...options,
-      callbackUrl: callbackUrl ?? options.callbackUrl
+    return fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(options),
+    }).then((response) => {
+      if (!response.ok) throw response;
+      window.location.href = callbackUrl ?? options.callbackUrl ?? "/dashboard";
     });
   }, [callbackUrl])
 
   const signInWithGoogle = useCallback((options) => {
     const cb = callbackUrl ?? options?.callbackUrl;
     if (isDevIframe()) return devSocialShim("google", cb);
-    return signIn("google", { ...options, callbackUrl: cb });
+    window.location.href = `/api/auth/google?callbackUrl=${encodeURIComponent(cb || "/dashboard")}`;
   }, [callbackUrl]);
   const signInWithFacebook = useCallback((options) => {
     const cb = options?.callbackUrl;
-    if (isDevIframe()) return devSocialShim("facebook", cb);
-    return signIn("facebook", options);
+    return devSocialShim("facebook", cb);
   }, []);
   const signInWithTwitter = useCallback((options) => {
     const cb = options?.callbackUrl;
-    if (isDevIframe()) return devSocialShim("twitter", cb);
-    return signIn("twitter", options);
+    return devSocialShim("twitter", cb);
   }, []);
   const signInWithApple = useCallback((options) => {
     const cb = callbackUrl ?? options?.callbackUrl;
-    if (isDevIframe()) return devSocialShim("apple", cb);
-    return signIn("apple", { ...options, callbackUrl: cb });
+    return devSocialShim("apple", cb);
   }, [callbackUrl]);
+
+  const signOut = useCallback(() => {
+    return fetch("/api/auth/logout", { method: "POST" }).finally(() => {
+      window.location.href = "/auth/signin";
+    });
+  }, []);
 
   return {
     signInWithCredentials,

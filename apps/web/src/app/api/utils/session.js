@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import sql from "./sql.js";
+import { getSupabaseAdmin, hasSupabase } from "./supabase.js";
 
 export const SESSION_COOKIE = "jostap_session";
 const SESSION_DAYS = 30;
@@ -36,15 +36,20 @@ function cookieFlags(request) {
 }
 
 export async function createSession(userId, request) {
+  const supabase = getSupabaseAdmin();
   const token = randomBytes(32).toString("base64url");
   const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
 
-  await sql(
-    `INSERT INTO sessions (user_id, token_hash, expires_at)
-     VALUES ($1, $2, $3)`,
-    [userId, tokenHash, expiresAt.toISOString()],
-  );
+  const { error } = await supabase.from("sessions").insert({
+    user_id: userId,
+    token_hash: tokenHash,
+    expires_at: expiresAt.toISOString(),
+  });
+
+  if (error) {
+    throw error;
+  }
 
   return {
     token,
@@ -65,36 +70,65 @@ export function clearSessionCookie(request) {
 }
 
 export async function destroySession(request) {
+  if (!hasSupabase()) {
+    return;
+  }
+
+  const supabase = getSupabaseAdmin();
   const token = parseCookie(request.headers.get("Cookie"))[SESSION_COOKIE];
 
   if (token) {
-    await sql("DELETE FROM sessions WHERE token_hash = $1", [hashToken(token)]);
+    const { error } = await supabase
+      .from("sessions")
+      .delete()
+      .eq("token_hash", hashToken(token));
+
+    if (error) {
+      throw error;
+    }
   }
 }
 
 export async function getSessionUser(request) {
+  if (!hasSupabase()) {
+    return null;
+  }
+
+  const supabase = getSupabaseAdmin();
   const token = parseCookie(request.headers.get("Cookie"))[SESSION_COOKIE];
 
   if (!token) {
     return null;
   }
 
-  const [user] = await sql(
-    `SELECT
-       users.id,
-       users.first_name,
-       users.last_name,
-       users.company,
-       users.email,
-       users.role,
-       users.created_at
-     FROM sessions
-     JOIN users ON users.id = sessions.user_id
-     WHERE sessions.token_hash = $1
-       AND sessions.expires_at > now()
-     LIMIT 1`,
-    [hashToken(token)],
-  );
+  const { data: session, error: sessionError } = await supabase
+    .from("sessions")
+    .select("user_id, expires_at")
+    .eq("token_hash", hashToken(token))
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+
+  if (sessionError) {
+    throw sessionError;
+  }
+
+  if (!session) {
+    return null;
+  }
+
+  const { data: user, error: userError } = await supabase
+    .from("users")
+    .select("id, first_name, last_name, company, email, role, status, email_verified_at, two_factor_enabled, created_at")
+    .eq("id", session.user_id)
+    .maybeSingle();
+
+  if (userError) {
+    throw userError;
+  }
+
+  if (user?.status === "suspended") {
+    return null;
+  }
 
   return user || null;
 }

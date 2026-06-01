@@ -1,26 +1,26 @@
 import {
   AlertTriangle,
   ArrowUpRight,
+  BarChart3,
+  CheckCircle2,
   CreditCard,
   DollarSign,
+  FileText,
   Package,
+  ShieldCheck,
+  TrendingUp,
+  UserCheck,
   Users,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
-const stats = [
-  ["Total Users", "0", "Awaiting backend", Users, "#2563EB", "#EFF6FF"],
-  ["Active Cards", "0", "Awaiting backend", CreditCard, "#059669", "#ECFDF5"],
-  ["Monthly Revenue", "$0", "Awaiting backend", DollarSign, "#7C3AED", "#F5F3FF"],
-  ["Open Orders", "0", "Awaiting backend", Package, "#D97706", "#FFFBEB"],
-];
-
-const activity = [];
-
-const tasks = [
-  ["Review flagged public profiles", "0 pending", "#FEF3C7", "#B45309"],
-  ["Approve card artwork", "0 orders", "#EFF6FF", "#2563EB"],
-  ["Reply to priority tickets", "0 open", "#FEF2F2", "#DC2626"],
-];
+function money(cents) {
+  return new Intl.NumberFormat("en", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(Number(cents || 0) / 100);
+}
 
 function StatCard({ item }) {
   const [label, value, change, Icon, color, bg] = item;
@@ -33,12 +33,93 @@ function StatCard({ item }) {
         </div>
       </div>
       <p style={{ fontSize: 28, fontWeight: 800, color: "#111827", marginBottom: 5 }}>{value}</p>
-      <span style={{ fontSize: 12, color, fontWeight: 700 }}>{change} this month</span>
+      <span style={{ fontSize: 12, color, fontWeight: 700 }}>{change}</span>
+    </div>
+  );
+}
+
+function ProgressRow({ label, value, total, color }) {
+  const pct = total ? Math.round((value / total) * 100) : 0;
+
+  return (
+    <div style={{ padding: "12px 0", borderBottom: "1px solid #F3F4F6" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 7 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{label}</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "#6B7280" }}>
+          {value} / {total}
+        </span>
+      </div>
+      <div style={{ height: 7, background: "#F3F4F6", borderRadius: 999, overflow: "hidden" }}>
+        <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 999 }} />
+      </div>
     </div>
   );
 }
 
 export default function AdminOverviewPage() {
+  const [admin, setAdmin] = useState(null);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAdmin() {
+      try {
+        const response = await fetch("/api/admin/overview", { credentials: "same-origin" });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.error || "Unable to load admin data.");
+        }
+
+        if (active) setAdmin(data);
+      } catch (error) {
+        if (active) setLoadError(error.message || "Unable to load admin data.");
+      }
+    }
+
+    loadAdmin();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const statsData = admin?.stats || {};
+  const totalUsers = statsData.users || 0;
+  const stats = [
+    ["Total Users", totalUsers, `${statsData.admins || 0} admins`, Users, "#2563EB", "#EFF6FF"],
+    ["Premium Users", statsData.premiumUsers || 0, "Custom + Premium renewal", UserCheck, "#059669", "#ECFDF5"],
+    ["Free Users", statsData.freeUsers || 0, "No active plan", ShieldCheck, "#D97706", "#FFFBEB"],
+    ["Active Cards", statsData.activeCards || 0, `${statsData.cards || 0} total cards`, CreditCard, "#7C3AED", "#F5F3FF"],
+    ["NFC Taps", statsData.taps || 0, "physical card taps", Package, "#0F766E", "#CCFBF1"],
+    ["QR Scans", statsData.qrScans || 0, "public profile scans", BarChart3, "#DB2777", "#FCE7F3"],
+    ["Contact Downloads", statsData.contactDownloads || 0, "saved contacts", CheckCircle2, "#047857", "#ECFDF5"],
+    ["Estimated MRR", money(statsData.estimatedMrrCents), "from active plans", TrendingUp, "#0F766E", "#CCFBF1"],
+    ["Revenue Collected", money(statsData.revenueCents), "successful payments", DollarSign, "#4F46E5", "#EEF2FF"],
+    ["Leads Captured", statsData.leads || 0, "all user cards", BarChart3, "#DB2777", "#FCE7F3"],
+    ["Open Invoices", statsData.openInvoices || 0, `${statsData.paidInvoices || 0} paid`, FileText, "#B45309", "#FEF3C7"],
+  ];
+  const tasks = [
+    ["Review public profiles", `${statsData.cards || 0} total`, "#FEF3C7", "#B45309"],
+    ["Monitor premium accounts", `${statsData.premiumUsers || 0} premium`, "#EFF6FF", "#2563EB"],
+    ["Complete KYC follow-up", `${statsData.kycPending || 0} pending`, "#FEF2F2", "#DC2626"],
+  ];
+  const activity = [
+    ...(admin?.users || []).slice(0, 4).map((user) => [
+      `user-${user.id}`,
+      "New account",
+      `${user.name} joined ${user.joined || "recently"}`,
+      user.joined || "",
+    ]),
+    ...(admin?.cards || []).slice(0, 4).map((card) => [
+      `card-${card.id}`,
+      "Card created",
+      `${card.name} by ${card.owner}`,
+      card.created || "",
+    ]),
+  ].slice(0, 7);
+
   return (
     <>
       <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
@@ -70,20 +151,35 @@ export default function AdminOverviewPage() {
         </a>
       </div>
 
+      {loadError && (
+        <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", color: "#B91C1C", borderRadius: 10, padding: "11px 14px", fontSize: 13, fontWeight: 700, marginBottom: 16 }}>
+          {loadError}
+        </div>
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 14, marginBottom: 20 }}>
         {stats.map((item) => <StatCard key={item[0]} item={item} />)}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr .8fr", gap: 20, marginBottom: 20 }}>
         <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 22 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 16 }}>Revenue Snapshot</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(12,1fr)", gap: 8, height: 210, alignItems: "end" }}>
-            {[38, 44, 41, 52, 58, 62, 56, 69, 74, 71, 82, 88].map((height, index) => (
-              <div key={index} style={{ height: `${height}%`, background: index > 8 ? "#2563EB" : "#DBEAFE", borderRadius: "7px 7px 0 0" }} />
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 8 }}>User & Plan Breakdown</h2>
+          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 12 }}>Live platform segmentation from Supabase.</p>
+          <ProgressRow label="Premium users" value={statsData.premiumUsers || 0} total={totalUsers} color="#059669" />
+          <ProgressRow label="Free users" value={statsData.freeUsers || 0} total={totalUsers} color="#D97706" />
+          <ProgressRow label="KYC completed" value={statsData.kycComplete || 0} total={totalUsers} color="#2563EB" />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 10, marginTop: 16 }}>
+            {[
+              ["Free", statsData.freePlanUsers || 0],
+              ["JOSTAP NFC", statsData.jostapNfcUsers || 0],
+              ["Custom NFC", statsData.customNfcUsers || 0],
+              ["Premium Features Renewal", statsData.premiumRenewalUsers || 0],
+            ].map(([label, value]) => (
+              <div key={label} style={{ border: "1px solid #E5E7EB", borderRadius: 10, padding: 13 }}>
+                <p style={{ fontSize: 12, color: "#6B7280", marginBottom: 4 }}>{label}</p>
+                <p style={{ fontSize: 22, color: "#111827", fontWeight: 800 }}>{value}</p>
+              </div>
             ))}
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontSize: 12, color: "#9CA3AF" }}>
-            <span>Jan</span><span>Mar</span><span>May</span><span>Jul</span><span>Sep</span><span>Dec</span>
           </div>
         </section>
 
@@ -111,11 +207,11 @@ export default function AdminOverviewPage() {
         {activity.length === 0 && (
           <div className="ui-empty-state" style={{ border: "none", padding: "30px 18px" }}>
             <p className="ui-empty-state__title">No activity yet</p>
-            <p className="ui-empty-state__copy">Backend events will appear here once connected.</p>
+            <p className="ui-empty-state__copy">New accounts and cards will appear here.</p>
           </div>
         )}
-        {activity.map(([title, detail, time], index) => (
-          <div key={title} style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 0", borderBottom: index < activity.length - 1 ? "1px solid #F3F4F6" : "none" }}>
+        {activity.map(([id, title, detail, time], index) => (
+          <div key={id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 0", borderBottom: index < activity.length - 1 ? "1px solid #F3F4F6" : "none" }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#2563EB", flexShrink: 0 }} />
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>{title}</p>

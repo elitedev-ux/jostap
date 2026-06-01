@@ -1,52 +1,308 @@
-import { Clock, Headphones, MessageSquare, Search, ShieldAlert } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Filter, MessageSquare, Search, Send } from "lucide-react";
 
-const tickets = [];
+const panelStyle = {
+  background: "#fff",
+  border: "1px solid #E5E7EB",
+  borderRadius: 12,
+};
+
+function statusColor(status) {
+  if (status === "resolved") return { fg: "#047857", bg: "#ECFDF5" };
+  if (status === "closed") return { fg: "#374151", bg: "#F3F4F6" };
+  if (status === "pending") return { fg: "#1D4ED8", bg: "#EFF6FF" };
+  return { fg: "#B45309", bg: "#FFFBEB" };
+}
 
 export default function AdminSupportPage() {
+  const [tickets, setTickets] = useState([]);
+  const [selectedId, setSelectedId] = useState("");
+  const [thread, setThread] = useState([]);
+  const [threadTicket, setThreadTicket] = useState(null);
+  const [filters, setFilters] = useState({ q: "", status: "", priority: "" });
+  const [reply, setReply] = useState("");
+  const [nextStatus, setNextStatus] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const selectedTicket = useMemo(
+    () => tickets.find((ticket) => ticket.id === selectedId) || null,
+    [tickets, selectedId],
+  );
+
+  const loadTickets = async () => {
+    setError("");
+    const params = new URLSearchParams();
+    if (filters.q) params.set("q", filters.q);
+    if (filters.status) params.set("status", filters.status);
+    if (filters.priority) params.set("priority", filters.priority);
+
+    const response = await fetch(`/api/admin/support?${params.toString()}`, {
+      credentials: "same-origin",
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to load support tickets.");
+    }
+
+    setTickets(data.tickets || []);
+    if (!selectedId && data.tickets?.[0]?.id) {
+      setSelectedId(data.tickets[0].id);
+    }
+  };
+
+  const loadThread = async (id) => {
+    if (!id) return;
+    const response = await fetch(`/api/admin/support/${id}`, {
+      credentials: "same-origin",
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Unable to load ticket conversation.");
+    setThread(data.messages || []);
+    setThreadTicket(data.ticket || null);
+  };
+
+  useEffect(() => {
+    loadTickets().catch((err) => setError(err.message));
+  }, [filters.q, filters.status, filters.priority]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    loadThread(selectedId).catch((err) => setError(err.message));
+  }, [selectedId]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      loadTickets().catch((err) => setError(err.message));
+      if (selectedId) {
+        loadThread(selectedId).catch((err) => setError(err.message));
+      }
+    }, 15000);
+
+    return () => window.clearInterval(timer);
+  }, [selectedId, filters.q, filters.status, filters.priority]);
+
+  const patchStatus = async (id, status) => {
+    const response = await fetch(`/api/admin/support/${id}`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Unable to update ticket status.");
+  };
+
+  const sendReply = async () => {
+    if (!selectedId || !reply.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/admin/support/${selectedId}/reply`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: reply.trim(),
+          status: nextStatus || undefined,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to send reply.");
+
+      setReply("");
+      setNextStatus("");
+      await loadTickets();
+      await loadThread(selectedId);
+    } catch (err) {
+      setError(err.message || "Unable to send reply.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", marginBottom: 4 }}>Support</h1>
-        <p style={{ fontSize: 14, color: "#6B7280" }}>Manage tickets, escalations, account issues, and production support requests.</p>
+      <div style={{ marginBottom: 20 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", marginBottom: 4 }}>Support Tickets</h1>
+        <p style={{ fontSize: 14, color: "#6B7280" }}>
+          View, search, reply, and update ticket statuses across all users.
+        </p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 20 }}>
-        {[
-          ["Open Tickets", "0", Headphones, "#2563EB", "#EFF6FF"],
-          ["High Priority", "0", ShieldAlert, "#DC2626", "#FEF2F2"],
-          ["Avg Response", "0m", Clock, "#D97706", "#FFFBEB"],
-          ["Resolved Today", "0", MessageSquare, "#059669", "#ECFDF5"],
-        ].map(([label, value, Icon, color, bg]) => (
-          <div key={label} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 18 }}>
-            <Icon size={18} color={color} style={{ marginBottom: 10 }} />
-            <p style={{ fontSize: 24, fontWeight: 800, color: "#111827" }}>{value}</p>
-            <p style={{ fontSize: 12, color: "#6B7280" }}>{label}</p>
-          </div>
-        ))}
-      </div>
-
-      <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ padding: 16, borderBottom: "1px solid #E5E7EB", display: "flex", gap: 10 }}>
-          <Search size={15} color="#9CA3AF" />
-          <input placeholder="Search tickets..." style={{ border: "none", outline: "none", flex: 1, background: "transparent", fontSize: 13 }} />
+      {error && (
+        <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", color: "#B91C1C", borderRadius: 10, padding: "11px 14px", fontSize: 13, fontWeight: 700, marginBottom: 16 }}>
+          {error}
         </div>
-        {tickets.length === 0 && (
-          <div className="ui-empty-state" style={{ border: "none" }}>
-            <p className="ui-empty-state__title">No support tickets yet</p>
-            <p className="ui-empty-state__copy">Support requests will appear here when the backend is connected.</p>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "340px minmax(0,1fr)", gap: 18 }}>
+        <section style={{ ...panelStyle, overflow: "hidden" }}>
+          <div style={{ padding: 14, borderBottom: "1px solid #E5E7EB", display: "grid", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid #E5E7EB", borderRadius: 8, padding: "8px 10px" }}>
+              <Search size={14} color="#9CA3AF" />
+              <input
+                value={filters.q}
+                onChange={(event) => setFilters((current) => ({ ...current, q: event.target.value }))}
+                placeholder="Search tickets"
+                style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 13 }}
+              />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <select
+                value={filters.status}
+                onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}
+                style={{ border: "1px solid #E5E7EB", borderRadius: 8, padding: "8px 10px", fontSize: 13 }}
+              >
+                <option value="">All Statuses</option>
+                <option value="open">Open</option>
+                <option value="pending">Pending</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+              </select>
+              <select
+                value={filters.priority}
+                onChange={(event) => setFilters((current) => ({ ...current, priority: event.target.value }))}
+                style={{ border: "1px solid #E5E7EB", borderRadius: 8, padding: "8px 10px", fontSize: 13 }}
+              >
+                <option value="">All Priority</option>
+                <option value="low">Low</option>
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
           </div>
-        )}
-        {tickets.map(([id, subject, account, priority, status, time], index) => (
-          <div key={id} style={{ display: "grid", gridTemplateColumns: ".7fr 1.5fr 1fr .7fr .7fr .7fr", gap: 14, alignItems: "center", padding: "15px 18px", borderTop: index ? "1px solid #F3F4F6" : "none" }}>
-            <span style={{ fontSize: 13, color: "#2563EB", fontWeight: 800 }}>{id}</span>
-            <span style={{ fontSize: 14, color: "#111827", fontWeight: 800 }}>{subject}</span>
-            <span style={{ fontSize: 13, color: "#6B7280" }}>{account}</span>
-            <span style={{ fontSize: 12, color: priority === "High" ? "#DC2626" : "#B45309", fontWeight: 800 }}>{priority}</span>
-            <span style={{ fontSize: 12, color: status === "Resolved" ? "#047857" : "#2563EB", fontWeight: 800 }}>{status}</span>
-            <span style={{ fontSize: 12, color: "#9CA3AF" }}>{time}</span>
+
+          <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
+            {tickets.length === 0 && (
+              <div className="ui-empty-state" style={{ border: "none", padding: "32px 12px" }}>
+                <p className="ui-empty-state__title">No tickets found</p>
+                <p className="ui-empty-state__copy">Try a broader search or reset filters.</p>
+              </div>
+            )}
+            {tickets.map((ticket) => {
+              const colors = statusColor(ticket.status);
+              const selected = ticket.id === selectedId;
+              return (
+                <button
+                  key={ticket.id}
+                  type="button"
+                  onClick={() => setSelectedId(ticket.id)}
+                  style={{
+                    width: "100%",
+                    border: "none",
+                    borderTop: "1px solid #F3F4F6",
+                    background: selected ? "#F8FAFC" : "#fff",
+                    textAlign: "left",
+                    padding: "12px 14px",
+                    cursor: "pointer",
+                  }}
+                >
+                  <p style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>{ticket.subject}</p>
+                  <p style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>{ticket.account}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: colors.fg, background: colors.bg, borderRadius: 999, padding: "3px 7px" }}>
+                      {ticket.status}
+                    </span>
+                    <span style={{ fontSize: 11, color: "#9CA3AF" }}>{ticket.priority}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
-        ))}
-      </section>
+        </section>
+
+        <section style={{ ...panelStyle, display: "grid", gridTemplateRows: "auto 1fr auto", minHeight: "72vh" }}>
+          <div style={{ padding: 16, borderBottom: "1px solid #E5E7EB" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
+                  {threadTicket?.subject || selectedTicket?.subject || "Select a ticket"}
+                </h2>
+                <p style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
+                  {threadTicket?.account || selectedTicket?.account || ""}
+                </p>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Filter size={14} color="#6B7280" />
+                <select
+                  value={nextStatus || threadTicket?.status || ""}
+                  onChange={(event) => setNextStatus(event.target.value)}
+                  style={{ border: "1px solid #E5E7EB", borderRadius: 8, padding: "7px 9px", fontSize: 12 }}
+                >
+                  <option value="">Keep current status</option>
+                  <option value="open">Open</option>
+                  <option value="pending">Pending</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+                {threadTicket?.id && (
+                  <button
+                    type="button"
+                    onClick={() => patchStatus(threadTicket.id, nextStatus || "pending").then(() => loadTickets()).then(() => loadThread(threadTicket.id)).catch((err) => setError(err.message))}
+                    style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "7px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                  >
+                    Update
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ padding: 14, overflowY: "auto", background: "#F9FAFB" }}>
+            {thread.length === 0 ? (
+              <div className="ui-empty-state" style={{ border: "none", padding: "32px 12px" }}>
+                <p className="ui-empty-state__title">No conversation yet</p>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: 10 }}>
+                {thread.map((message) => {
+                  const isAdmin = message.sender_role === "admin" || message.sender_role === "system";
+                  return (
+                    <div
+                      key={message.id}
+                      style={{
+                        marginLeft: isAdmin ? "auto" : 0,
+                        maxWidth: "82%",
+                        background: isAdmin ? "#EFF6FF" : "#fff",
+                        border: "1px solid #E5E7EB",
+                        borderRadius: 10,
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <p style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>
+                        {message.sender || message.sender_role}
+                      </p>
+                      <p style={{ fontSize: 13, color: "#111827", lineHeight: 1.45 }}>{message.message}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div style={{ padding: 14, borderTop: "1px solid #E5E7EB", display: "grid", gap: 10 }}>
+            <textarea
+              value={reply}
+              onChange={(event) => setReply(event.target.value)}
+              placeholder={selectedId ? "Type your reply to user..." : "Select a ticket to reply"}
+              rows={3}
+              disabled={!selectedId}
+              style={{ border: "1px solid #E5E7EB", borderRadius: 10, padding: "10px 12px", fontSize: 13, resize: "vertical", outline: "none" }}
+            />
+            <button
+              type="button"
+              disabled={!selectedId || !reply.trim() || loading}
+              onClick={sendReply}
+              style={{ width: "fit-content", display: "inline-flex", alignItems: "center", gap: 7, border: "none", borderRadius: 8, background: "#2563EB", color: "#fff", padding: "9px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: !selectedId || !reply.trim() ? 0.55 : 1 }}
+            >
+              <Send size={13} /> {loading ? "Sending..." : "Send Reply"}
+            </button>
+          </div>
+        </section>
+      </div>
     </>
   );
 }

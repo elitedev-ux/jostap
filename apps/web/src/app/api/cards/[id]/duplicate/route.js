@@ -1,7 +1,7 @@
-import sql from "../../../utils/sql.js";
 import { json, unauthorized } from "../../../utils/http.js";
 import { cardFromRow } from "../../../utils/cards.js";
 import { getSessionUser } from "../../../utils/session.js";
+import { getSupabaseAdmin } from "../../../utils/supabase.js";
 
 export async function POST(request, { params }) {
   const user = await getSessionUser(request);
@@ -10,40 +10,44 @@ export async function POST(request, { params }) {
     return unauthorized();
   }
 
-  const [source] = await sql(
-    `SELECT *
-     FROM cards
-     WHERE id = $1 AND user_id = $2
-     LIMIT 1`,
-    [params.id, user.id],
-  );
+  const supabase = getSupabaseAdmin();
+  const { data: source, error: sourceError } = await supabase
+    .from("cards")
+    .select("*")
+    .eq("id", params.id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (sourceError) {
+    throw sourceError;
+  }
 
   if (!source) {
     return json({ error: "Card not found." }, { status: 404 });
   }
 
-  const [row] = await sql(
-    `INSERT INTO cards (
-       user_id, name, title, company, slug, bio, email, phone, website,
-       theme, social_links, active
-     )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11::jsonb, $12)
-     RETURNING *`,
-    [
-      user.id,
-      `${source.name} Copy`,
-      source.title,
-      source.company,
-      `${source.slug}-copy-${Date.now().toString().slice(-4)}`,
-      source.bio,
-      source.email,
-      source.phone,
-      source.website,
-      JSON.stringify(source.theme || {}),
-      JSON.stringify(source.social_links || {}),
-      source.active,
-    ],
-  );
+  const { data: row, error } = await supabase
+    .from("cards")
+    .insert({
+      user_id: user.id,
+      name: `${source.name} Copy`,
+      title: source.title,
+      company: source.company,
+      slug: `${source.slug}-copy-${Date.now().toString().slice(-4)}`,
+      bio: source.bio,
+      email: source.email,
+      phone: source.phone,
+      website: source.website,
+      theme: source.theme || {},
+      social_links: source.social_links || {},
+      active: source.active,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
 
   return json({ card: cardFromRow(row) }, { status: 201 });
 }

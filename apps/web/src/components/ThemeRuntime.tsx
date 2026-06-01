@@ -138,6 +138,11 @@ function applyTheme() {
   });
 }
 
+function forceThemeReapply() {
+  // Run in next frame to ensure dataset/theme has been updated.
+  requestAnimationFrame(() => applyTheme());
+}
+
 export default function ThemeRuntime() {
   useEffect(() => {
     let frame = 0;
@@ -148,7 +153,18 @@ export default function ThemeRuntime() {
 
     schedule();
 
-    const observer = new MutationObserver(schedule);
+    const observer = new MutationObserver((mutations) => {
+      // Ensure we react both to theme changes and to inline style mutations
+      // (e.g. hover handlers mutating `el.style.color`).
+      for (const m of mutations) {
+        if (m.type === "attributes" && m.attributeName === "style") {
+          applyTheme();
+          return;
+        }
+      }
+      schedule();
+    });
+
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["data-theme"],
@@ -163,7 +179,7 @@ export default function ThemeRuntime() {
       });
     }
 
-    window.addEventListener("jostap-theme-change", schedule);
+    window.addEventListener("jostap-theme-change", forceThemeReapply);
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();

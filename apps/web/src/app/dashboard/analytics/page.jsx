@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart3,
   Download,
+  LockKeyhole,
   TrendingUp,
   Globe,
-  Monitor,
   Smartphone,
   ChevronDown,
 } from "lucide-react";
@@ -21,28 +21,7 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
 } from "recharts";
-
-const areaData = [
-  { date: "May 1", views: 0, taps: 0, qr: 0 },
-  { date: "May 5", views: 0, taps: 0, qr: 0 },
-  { date: "May 10", views: 0, taps: 0, qr: 0 },
-  { date: "May 15", views: 0, taps: 0, qr: 0 },
-  { date: "May 20", views: 0, taps: 0, qr: 0 },
-  { date: "May 25", views: 0, taps: 0, qr: 0 },
-  { date: "May 26", views: 0, taps: 0, qr: 0 },
-];
-
-const barData = [
-  { day: "Mon", clicks: 0 },
-  { day: "Tue", clicks: 0 },
-  { day: "Wed", clicks: 0 },
-  { day: "Thu", clicks: 0 },
-  { day: "Fri", clicks: 0 },
-  { day: "Sat", clicks: 0 },
-  { day: "Sun", clicks: 0 },
-];
 
 const deviceData = [];
 
@@ -51,10 +30,76 @@ const COLORS = ["#2563EB", "#7C3AED", "#059669"];
 const LOCATIONS = [];
 
 const REFERRERS = [];
+const PREMIUM_FEATURE_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
+
+function hasPremiumFeatures(plan) {
+  return PREMIUM_FEATURE_PLANS.has(String(plan || "").toLowerCase());
+}
+
+function AdvancedAnalyticsGate() {
+  return (
+    <div className="ui-empty-state" style={{ marginBottom: 20 }}>
+      <div className="ui-empty-state__icon">
+        <LockKeyhole size={18} />
+      </div>
+      <p className="ui-empty-state__title">Advanced analytics unlock with premium access</p>
+      <p className="ui-empty-state__copy">Free cards include basic analytics. Upgrade for lead metrics, visitor insights, referrers, location data, and exports.</p>
+      <a href="/pricing" style={{ display: "inline-flex", marginTop: 16, background: "#2563EB", color: "#fff", borderRadius: 9, padding: "10px 16px", textDecoration: "none", fontSize: 13, fontWeight: 800 }}>
+        Upgrade plan
+      </a>
+    </div>
+  );
+}
 
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState("30d");
   const [card, setCard] = useState("All Cards");
+  const [analytics, setAnalytics] = useState(null);
+  const [loadError, setLoadError] = useState("");
+  const [advancedLocked, setAdvancedLocked] = useState(true);
+  const totals = analytics?.totals || {};
+  const chartData = analytics?.trend || [];
+  const barData = chartData.map((item) => ({
+    day: item.date,
+    clicks: Number(item.taps || 0) + Number(item.qr || 0),
+  }));
+  const referrers = analytics?.sources || REFERRERS;
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAnalytics() {
+      try {
+        const billingResponse = await fetch("/api/billing", { credentials: "same-origin" });
+        const billingData = await billingResponse.json().catch(() => ({}));
+        if (active && billingResponse.ok) {
+          setAdvancedLocked(!hasPremiumFeatures(billingData.subscription?.plan));
+        }
+
+        const response = await fetch(`/api/analytics?period=${period}`, { credentials: "same-origin" });
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401) {
+          window.location.href = "/auth/signin?callbackUrl=/dashboard/analytics";
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error || "Unable to load analytics.");
+        }
+
+        if (active) setAnalytics(data);
+      } catch (error) {
+        if (active) setLoadError(error.message || "Unable to load analytics.");
+      }
+    }
+
+    loadAnalytics();
+
+    return () => {
+      active = false;
+    };
+  }, [period]);
 
   return (
     <>
@@ -133,6 +178,9 @@ export default function AnalyticsPage() {
             ))}
           </div>
           <button
+            onClick={() => {
+              if (advancedLocked) window.location.href = "/pricing";
+            }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -147,10 +195,27 @@ export default function AnalyticsPage() {
               cursor: "pointer",
             }}
           >
-            <Download size={13} /> Export CSV
+            {advancedLocked ? <LockKeyhole size={13} /> : <Download size={13} />} {advancedLocked ? "Upgrade" : "Export CSV"}
           </button>
         </div>
       </div>
+
+      {loadError && (
+        <div
+          style={{
+            background: "#FEF2F2",
+            border: "1px solid #FECACA",
+            color: "#B91C1C",
+            borderRadius: 10,
+            padding: "11px 14px",
+            fontSize: 13,
+            fontWeight: 600,
+            marginBottom: 16,
+          }}
+        >
+          {loadError}
+        </div>
+      )}
 
       {/* KPI row */}
       <div
@@ -162,10 +227,10 @@ export default function AnalyticsPage() {
         }}
       >
         {[
-          ["Total Views", "0", "0%", "#2563EB", "#EFF6FF"],
-          ["NFC Taps", "0", "0%", "#059669", "#ECFDF5"],
-          ["QR Scans", "0", "0%", "#7C3AED", "#F5F3FF"],
-          ["Avg. Time on Profile", "0m", "0%", "#D97706", "#FFFBEB"],
+          ["Total Views", totals.views || 0, "live", "#2563EB", "#EFF6FF"],
+          ["NFC Taps", totals.taps || 0, "live", "#059669", "#ECFDF5"],
+          ["QR Scans", totals.qrScans || 0, "live", "#7C3AED", "#F5F3FF"],
+          ...(!advancedLocked ? [["Leads", totals.leads || 0, "live", "#D97706", "#FFFBEB"]] : []),
         ].map(([label, val, change, color, bg]) => (
           <div
             key={label}
@@ -234,7 +299,7 @@ export default function AnalyticsPage() {
         </p>
         <ResponsiveContainer width="100%" height={220}>
           <AreaChart
-            data={areaData}
+            data={chartData}
             margin={{ top: 4, right: 4, bottom: 0, left: -20 }}
           >
             <defs>
@@ -301,7 +366,7 @@ export default function AnalyticsPage() {
         </ResponsiveContainer>
       </div>
 
-      <div
+      {advancedLocked ? <AdvancedAnalyticsGate /> : <div
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr",
@@ -470,13 +535,13 @@ export default function AnalyticsPage() {
             Top Referrers
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {REFERRERS.length === 0 && (
+            {referrers.length === 0 && (
               <div className="ui-empty-state" style={{ border: "none", padding: "24px 12px" }}>
                 <p className="ui-empty-state__title">No referrers yet</p>
                 <p className="ui-empty-state__copy">Traffic sources will appear here after backend tracking is connected.</p>
               </div>
             )}
-            {REFERRERS.map((r, i) => (
+            {referrers.map((r) => (
               <div key={r.source}>
                 <div
                   style={{
@@ -504,7 +569,7 @@ export default function AnalyticsPage() {
                 >
                   <div
                     style={{
-                      width: `${(r.visits / 1180) * 100}%`,
+                      width: `${Math.min((r.visits / Math.max(...referrers.map((item) => item.visits), 1)) * 100, 100)}%`,
                       height: "100%",
                       background: "#2563EB",
                       borderRadius: 999,
@@ -515,10 +580,10 @@ export default function AnalyticsPage() {
             ))}
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Geo table */}
-      <div
+      {!advancedLocked && <div
         style={{
           background: "#fff",
           border: "1px solid #E5E7EB",
@@ -600,7 +665,7 @@ export default function AnalyticsPage() {
             </div>
           ))}
         </div>
-      </div>
+      </div>}
     </>
   );
 }

@@ -1,42 +1,41 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 
 const PLANS = [
   {
-    name: "Starter",
-    price: { monthly: 9, yearly: 7 },
+    name: "Free",
+    slug: "free",
+    price: "\u20A60",
+    billing: "free",
     features: [
-      "1 digital card",
+      "1 digital business card",
+      "Public profile page",
+      "JOSTAP branded QR code",
+      "Contact sharing",
+      "Save contact (vCard)",
+      "Social media links",
       "Basic analytics",
-      "QR code & vCard",
-      "Public profile URL",
-      "Email support",
     ],
   },
   {
-    name: "Professional",
-    price: { monthly: 29, yearly: 23 },
+    name: "JOSTAP Card",
+    slug: "jostap_nfc",
+    price: "\u20A630,000",
+    billing: "one_time",
     features: [
-      "5 digital cards",
-      "Advanced analytics",
-      "Appointment booking",
+      "Physical NFC card",
+      "Digital business profile",
+      "JOSTAP branded QR code",
+      "Downloadable QR code",
+      "Contact sharing",
+      "Save contact (vCard)",
+      "Social media links",
       "Lead capture",
-      "Custom branding",
-      "Premium templates",
-      "Priority support",
-    ],
-  },
-  {
-    name: "Business Suite",
-    price: { monthly: 79, yearly: 63 },
-    features: [
-      "Unlimited cards",
-      "Team management",
-      "White-label",
-      "API access",
-      "SSO support",
-      "Dedicated support",
-      "Custom integrations",
+      "Appointment booking",
+      "Visitor insights",
+      "Advanced analytics",
+      "Premium features",
+      "1 year premium access included",
     ],
   },
 ];
@@ -51,14 +50,72 @@ const USAGE = [
 ];
 
 const PLAN_SLUGS = {
-  Starter: "starter",
-  Professional: "professional",
-  "Business Suite": "business",
+  Free: "free",
+  "JOSTAP Card": "jostap_nfc",
 };
+
+function formatMoney(cents, currency = "usd") {
+  return new Intl.NumberFormat("en", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+    maximumFractionDigits: 0,
+  }).format(Number(cents || 0) / 100);
+}
+
+function planLabel(plan) {
+  if (plan === "free") return "Free";
+  if (plan === "jostap_nfc") return "JOSTAP Card";
+  if (plan === "custom_nfc") return "Custom NFC Business Card";
+  if (plan === "basic_renewal") return "Basic Renewal";
+  if (plan === "premium_renewal") return "Premium Features Renewal";
+  return null;
+}
 
 export default function BillingPage() {
   const [billing, setBilling] = useState("monthly");
-  const currentPlan = null;
+  const [billingData, setBillingData] = useState(null);
+  const [loadError, setLoadError] = useState("");
+  const currentPlan = planLabel(billingData?.subscription?.plan);
+  const subscription = billingData?.subscription;
+  const usage = billingData?.usage || {};
+  const invoices = billingData?.invoices || INVOICES;
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadBilling() {
+      try {
+        const response = await fetch("/api/billing", { credentials: "same-origin" });
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401) {
+          window.location.href = "/auth/signin?callbackUrl=/dashboard/billing";
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error || "Unable to load billing details.");
+        }
+
+        if (active) {
+          setBillingData(data);
+          if (data.subscription?.billingCycle) {
+            setBilling(data.subscription.billingCycle);
+          }
+        }
+      } catch (error) {
+        if (active) {
+          setLoadError(error.message || "Unable to load billing details.");
+        }
+      }
+    }
+
+    loadBilling();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <>
@@ -75,9 +132,26 @@ export default function BillingPage() {
           Subscription & Billing
         </h1>
         <p style={{ fontSize: 14, color: "#6B7280" }}>
-          Manage your plan, payment method, and billing history.
+          Manage your JOSTAP plan, NFC card order, renewals, and billing history.
         </p>
       </div>
+
+      {loadError && (
+        <div
+          style={{
+            background: "#FEF2F2",
+            border: "1px solid #FECACA",
+            color: "#B91C1C",
+            borderRadius: 10,
+            padding: "11px 14px",
+            fontSize: 13,
+            fontWeight: 600,
+            marginBottom: 16,
+          }}
+        >
+          {loadError}
+        </div>
+      )}
 
       <section
         style={{
@@ -98,13 +172,41 @@ export default function BillingPage() {
         >
           Current Plan
         </h2>
-        <div className="ui-empty-state" style={{ border: "none" }}>
-          <p className="ui-empty-state__title">No active plan yet</p>
-          <p className="ui-empty-state__copy">
-            Subscription details, renewal dates, and included features will
-            appear here once billing is connected.
-          </p>
-        </div>
+        {subscription ? (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+              gap: 14,
+            }}
+          >
+            {[
+              ["Plan", currentPlan],
+              ["Status", subscription.status],
+              ["Billing", subscription.billingCycle],
+              [
+                "Renews",
+                subscription.currentPeriodEnd
+                  ? new Date(subscription.currentPeriodEnd).toLocaleDateString()
+                  : "Not set",
+              ],
+            ].map(([label, value]) => (
+              <div key={label} style={{ border: "1px solid #E5E7EB", borderRadius: 10, padding: 14 }}>
+                <p style={{ fontSize: 12, color: "#6B7280", marginBottom: 4 }}>{label}</p>
+                <p style={{ fontSize: 15, fontWeight: 800, color: "#111827", textTransform: label === "Status" || label === "Billing" ? "capitalize" : "none" }}>
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="ui-empty-state" style={{ border: "none" }}>
+            <p className="ui-empty-state__title">No active plan yet</p>
+            <p className="ui-empty-state__copy">
+              Choose a product below to activate your dashboard while billing is bypassed.
+            </p>
+          </div>
+        )}
       </section>
 
       <section
@@ -133,7 +235,12 @@ export default function BillingPage() {
             gap: 16,
           }}
         >
-          {USAGE.map(([label, used, total, color]) => (
+        {[
+          ["Cards", usage.cards || 0, subscription?.cardLimit || 0, "#2563EB"],
+          ["Profile Views", usage.views || 0, 0, "#7C3AED"],
+          ["Lead Captures", usage.leads || 0, 0, "#059669"],
+          ["Appointments", usage.appointments || 0, 0, "#D97706"],
+        ].map(([label, used, total, color]) => (
             <div key={label}>
               <div
                 style={{
@@ -203,39 +310,7 @@ export default function BillingPage() {
               gap: 2,
             }}
           >
-            {["monthly", "yearly"].map((cycle) => (
-              <button
-                key={cycle}
-                onClick={() => setBilling(cycle)}
-                style={{
-                  fontSize: 12,
-                  fontWeight: 500,
-                  padding: "5px 10px",
-                  borderRadius: 6,
-                  cursor: "pointer",
-                  background: billing === cycle ? "#fff" : "transparent",
-                  color: billing === cycle ? "#111827" : "#6B7280",
-                  border:
-                    billing === cycle
-                      ? "1px solid #E5E7EB"
-                      : "1px solid transparent",
-                }}
-              >
-                {cycle.charAt(0).toUpperCase() + cycle.slice(1)}
-                {cycle === "yearly" && (
-                  <span
-                    style={{
-                      marginLeft: 5,
-                      fontSize: 11,
-                      color: "#2563EB",
-                      fontWeight: 600,
-                    }}
-                  >
-                    -20%
-                  </span>
-                )}
-              </button>
-            ))}
+            <span style={{ fontSize: 12, color: "#6B7280", padding: "5px 10px" }}>One-time cards and yearly renewals</span>
           </div>
         </div>
         <div
@@ -297,17 +372,12 @@ export default function BillingPage() {
                     marginBottom: 16,
                   }}
                 >
-                  ${plan.price[billing]}
-                  <span
-                    style={{ fontSize: 14, fontWeight: 400, color: "#9CA3AF" }}
-                  >
-                    /mo
-                  </span>
+                  {plan.price}
                 </p>
                 <button
                   onClick={() => {
                     if (!isCurrent) {
-                      window.location.href = `/checkout?plan=${PLAN_SLUGS[plan.name]}&billing=${billing}`;
+                      window.location.href = `/checkout?plan=${PLAN_SLUGS[plan.name]}&billing=${plan.billing}`;
                     }
                   }}
                   style={{
@@ -399,7 +469,7 @@ export default function BillingPage() {
         >
           Billing History
         </h2>
-        {INVOICES.length === 0 && (
+        {invoices.length === 0 && (
           <div className="ui-empty-state" style={{ border: "none" }}>
             <p className="ui-empty-state__title">No invoices yet</p>
             <p className="ui-empty-state__copy">
@@ -408,6 +478,41 @@ export default function BillingPage() {
             </p>
           </div>
         )}
+        {invoices.map((invoice) => (
+          <div
+            key={invoice.id}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 120px 110px 120px",
+              gap: 14,
+              padding: "13px 0",
+              borderTop: "1px solid #F3F4F6",
+              alignItems: "center",
+            }}
+          >
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>
+                {invoice.invoiceNumber}
+              </p>
+              <p style={{ fontSize: 12, color: "#6B7280" }}>
+                {invoice.issuedAt ? new Date(invoice.issuedAt).toLocaleDateString() : "No date"}
+              </p>
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>
+              {formatMoney(invoice.amountCents, invoice.currency)}
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: "#2563EB", textTransform: "capitalize" }}>
+              {invoice.status}
+            </span>
+            {invoice.hostedInvoiceUrl ? (
+              <a href={invoice.hostedInvoiceUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#2563EB", fontWeight: 700 }}>
+                View invoice
+              </a>
+            ) : (
+              <span style={{ fontSize: 12, color: "#9CA3AF" }}>No file</span>
+            )}
+          </div>
+        ))}
       </section>
     </>
   );

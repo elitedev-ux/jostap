@@ -1,19 +1,80 @@
 import { ArrowUpRight, DollarSign, RefreshCcw, Search, TrendingUp } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
-const plans = [
-  ["Starter", "0", "$0", "0%"],
-  ["Professional", "0", "$0", "0%"],
-  ["Business Suite", "0", "$0", "0%"],
-];
+function planName(plan) {
+  if (plan === "free") return "Free";
+  if (plan === "jostap_nfc") return "JOSTAP NFC";
+  if (plan === "custom_nfc") return "Custom NFC";
+  if (plan === "basic_renewal") return "Basic Renewal";
+  if (plan === "premium_renewal") return "Premium Features Renewal";
+  return plan || "Unknown";
+}
 
-const billingCycles = [
-  ["Monthly", "0", "$0", "0%", "#2563EB", "#EFF6FF"],
-  ["Yearly", "0", "$0", "0%", "#059669", "#ECFDF5"],
-];
-
-const invoices = [];
+function money(cents) {
+  return `$${Math.round(Number(cents || 0) / 100).toLocaleString()}`;
+}
 
 export default function AdminSubscriptionsPage() {
+  const [data, setData] = useState(null);
+  const [loadError, setLoadError] = useState("");
+  const [busyId, setBusyId] = useState("");
+
+  async function loadSubscriptions(active = true) {
+    setLoadError("");
+    try {
+      const response = await fetch("/api/admin/overview", { credentials: "same-origin" });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(json.error || "Unable to load subscriptions.");
+      if (active) setData(json);
+    } catch (error) {
+      if (active) setLoadError(error.message || "Unable to load subscriptions.");
+    }
+  }
+
+  async function updateSubscription(subscription) {
+    setBusyId(subscription.id);
+    setLoadError("");
+    try {
+      const nextStatus = subscription.status === "active" ? "cancelled" : "active";
+      const response = await fetch(`/api/admin/subscriptions/${subscription.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(json.error || "Unable to update subscription.");
+      await loadSubscriptions();
+    } catch (error) {
+      setLoadError(error.message || "Unable to update subscription.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  useEffect(() => {
+    let active = true;
+    loadSubscriptions(active);
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const subscriptions = data?.subscriptions || [];
+  const invoices = data?.invoices || [];
+  const plans = useMemo(
+    () =>
+      ["free", "jostap_nfc", "custom_nfc", "premium_renewal"].map((plan) => {
+        const count = subscriptions.filter((item) => item.plan === plan).length;
+        return [planName(plan), count, "Live", "0%"];
+      }),
+    [subscriptions],
+  );
+  const billingCycles = ["monthly", "yearly"].map((cycle, index) => {
+    const count = subscriptions.filter((item) => item.billingCycle === cycle).length;
+    const share = subscriptions.length ? `${Math.round((count / subscriptions.length) * 100)}%` : "0%";
+    return [cycle === "yearly" ? "Yearly" : "Monthly", count, "Live", share, index ? "#059669" : "#2563EB", index ? "#ECFDF5" : "#EFF6FF"];
+  });
+
   return (
     <>
       <div style={{ marginBottom: 24 }}>
@@ -21,12 +82,14 @@ export default function AdminSubscriptionsPage() {
         <p style={{ fontSize: 14, color: "#6B7280" }}>Track MRR, plan distribution, trials, renewals, and invoice state.</p>
       </div>
 
+      {loadError && <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", color: "#B91C1C", borderRadius: 10, padding: "11px 14px", fontSize: 13, fontWeight: 700, marginBottom: 16 }}>{loadError}</div>}
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 14, marginBottom: 20 }}>
         {[
-          ["MRR", "$0", DollarSign, "#2563EB", "#EFF6FF"],
-          ["Net Revenue Retention", "0%", TrendingUp, "#059669", "#ECFDF5"],
-          ["Active Trials", "0", RefreshCcw, "#7C3AED", "#F5F3FF"],
-          ["Expansion MRR", "$0", ArrowUpRight, "#D97706", "#FFFBEB"],
+          ["Revenue", money(data?.stats?.revenueCents), DollarSign, "#2563EB", "#EFF6FF"],
+          ["Active Plans", data?.stats?.subscriptions || 0, TrendingUp, "#059669", "#ECFDF5"],
+          ["Invoices", invoices.length, RefreshCcw, "#7C3AED", "#F5F3FF"],
+          ["Open Invoices", data?.stats?.openInvoices || 0, ArrowUpRight, "#D97706", "#FFFBEB"],
         ].map(([label, value, Icon, color, bg]) => (
           <div key={label} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 20 }}>
             <div style={{ width: 36, height: 36, borderRadius: 9, background: bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
@@ -42,7 +105,7 @@ export default function AdminSubscriptionsPage() {
         <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 22 }}>
           <h2 style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 16 }}>Plan Mix</h2>
           {plans.map(([plan, accounts, revenue, churn]) => (
-            <div key={plan} style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 14, alignItems: "center", padding: "13px 0", borderBottom: plan !== "Business Suite" ? "1px solid #F3F4F6" : "none" }}>
+            <div key={plan} style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 14, alignItems: "center", padding: "13px 0", borderBottom: "1px solid #F3F4F6" }}>
               <p style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>{plan}</p>
               <span style={{ fontSize: 13, color: "#6B7280" }}>{accounts}</span>
               <span style={{ fontSize: 13, color: "#111827", fontWeight: 700 }}>{revenue}</span>
@@ -81,6 +144,34 @@ export default function AdminSubscriptionsPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20, marginTop: 20 }}>
         <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 22 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 16 }}>Manage Subscriptions</h2>
+          {subscriptions.length === 0 && (
+            <div className="ui-empty-state" style={{ border: "none" }}>
+              <p className="ui-empty-state__title">No subscriptions yet</p>
+              <p className="ui-empty-state__copy">Customer subscriptions will appear here.</p>
+            </div>
+          )}
+          {subscriptions.map((subscription, index) => (
+            <div key={subscription.id} style={{ display: "grid", gridTemplateColumns: "1.2fr .7fr .7fr .8fr auto", gap: 12, alignItems: "center", padding: "12px 0", borderBottom: index < subscriptions.length - 1 ? "1px solid #F3F4F6" : "none" }}>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>{subscription.account}</p>
+                <p style={{ fontSize: 12, color: "#6B7280" }}>{subscription.renews ? `Renews ${subscription.renews}` : "No renewal date"}</p>
+              </div>
+              <span style={{ fontSize: 13, color: "#374151", fontWeight: 700, textTransform: "capitalize" }}>{subscription.plan}</span>
+              <span style={{ fontSize: 13, color: "#6B7280", textTransform: "capitalize" }}>{subscription.billingCycle}</span>
+              <span style={{ justifySelf: "start", fontSize: 11, fontWeight: 800, color: subscription.status === "active" ? "#047857" : "#B45309", background: subscription.status === "active" ? "#ECFDF5" : "#FFFBEB", borderRadius: 999, padding: "3px 8px", textTransform: "capitalize" }}>{subscription.status}</span>
+              <button
+                onClick={() => updateSubscription(subscription)}
+                disabled={busyId === subscription.id}
+                style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "7px 10px", fontSize: 12, fontWeight: 800, color: subscription.status === "active" ? "#DC2626" : "#047857", cursor: busyId === subscription.id ? "wait" : "pointer" }}
+              >
+                {busyId === subscription.id ? "Saving..." : subscription.status === "active" ? "Cancel" : "Reactivate"}
+              </button>
+            </div>
+          ))}
+        </section>
+
+        <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 22 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
             <Search size={15} color="#9CA3AF" />
             <h2 style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>Recent Invoices</h2>
@@ -88,19 +179,19 @@ export default function AdminSubscriptionsPage() {
           {invoices.length === 0 && (
             <div className="ui-empty-state" style={{ border: "none" }}>
               <p className="ui-empty-state__title">No invoices yet</p>
-              <p className="ui-empty-state__copy">Subscription invoices will appear here when billing is connected.</p>
+              <p className="ui-empty-state__copy">Subscription invoices will appear here when billing records are created.</p>
             </div>
           )}
-          {invoices.map(([id, account, amount, cycle, status, date], index) => (
-            <div key={id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: index < invoices.length - 1 ? "1px solid #F3F4F6" : "none" }}>
+          {invoices.map((invoice, index) => (
+            <div key={invoice.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: index < invoices.length - 1 ? "1px solid #F3F4F6" : "none" }}>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>{id}</p>
-                <p style={{ fontSize: 12, color: "#6B7280" }}>{account}</p>
+                <p style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>{invoice.invoiceNumber}</p>
+                <p style={{ fontSize: 12, color: "#6B7280" }}>{invoice.account}</p>
               </div>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>{amount}</span>
-              <span style={{ fontSize: 11, fontWeight: 800, color: cycle === "Yearly" ? "#047857" : "#2563EB", background: cycle === "Yearly" ? "#ECFDF5" : "#EFF6FF", borderRadius: 999, padding: "3px 8px" }}>{cycle}</span>
-              <span style={{ fontSize: 11, fontWeight: 800, color: status === "Past due" ? "#DC2626" : "#047857", background: status === "Past due" ? "#FEF2F2" : "#ECFDF5", borderRadius: 999, padding: "3px 8px" }}>{status}</span>
-              <span style={{ fontSize: 12, color: "#9CA3AF" }}>{date}</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>{invoice.amount}</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "#2563EB", background: "#EFF6FF", borderRadius: 999, padding: "3px 8px" }}>Invoice</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: invoice.status === "open" ? "#B45309" : "#047857", background: invoice.status === "open" ? "#FFFBEB" : "#ECFDF5", borderRadius: 999, padding: "3px 8px" }}>{invoice.status}</span>
+              <span style={{ fontSize: 12, color: "#9CA3AF" }}>{invoice.issued}</span>
             </div>
           ))}
         </section>

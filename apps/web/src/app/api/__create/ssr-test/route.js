@@ -1,4 +1,3 @@
-import { getToken } from '@auth/core/jwt';
 import React from 'react';
 import path from 'node:path';
 import { renderToString } from 'react-dom/server';

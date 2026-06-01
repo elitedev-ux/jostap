@@ -1,8 +1,45 @@
 import { CheckCircle2, Clock, Package, Printer, Search, Truck } from "lucide-react";
-
-const orders = [];
+import { useEffect, useState } from "react";
 
 export default function AdminOrdersPage() {
+  const [orders, setOrders] = useState([]);
+  const [stats, setStats] = useState({});
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadOrders() {
+      try {
+        const response = await fetch("/api/admin/overview", { credentials: "same-origin" });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Unable to load orders.");
+
+        const rows = (data.invoices || []).map((invoice) => [
+          invoice.invoiceNumber,
+          invoice.account,
+          "Digital/NFC plan",
+          invoice.amount,
+          invoice.status,
+          invoice.issued,
+        ]);
+
+        if (active) {
+          setOrders(rows);
+          setStats(data.stats || {});
+        }
+      } catch (error) {
+        if (active) setLoadError(error.message || "Unable to load orders.");
+      }
+    }
+
+    loadOrders();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
@@ -17,8 +54,8 @@ export default function AdminOrdersPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 20 }}>
         {[
-          ["Open Orders", "0", Package, "#2563EB", "#EFF6FF"],
-          ["In Production", "0", Clock, "#D97706", "#FFFBEB"],
+          ["Open Orders", stats.openInvoices || 0, Package, "#2563EB", "#EFF6FF"],
+          ["In Production", 0, Clock, "#D97706", "#FFFBEB"],
           ["Shipped Today", "0", Truck, "#7C3AED", "#F5F3FF"],
           ["Delivered", "0", CheckCircle2, "#059669", "#ECFDF5"],
         ].map(([label, value, Icon, color, bg]) => (
@@ -50,10 +87,14 @@ export default function AdminOrdersPage() {
               {orders.length === 0 && (
                 <tr>
                   <td colSpan={6}>
+                    {loadError ? (
+                      <div style={{ background: "#FEF2F2", color: "#B91C1C", padding: 16, fontSize: 13, fontWeight: 700 }}>{loadError}</div>
+                    ) : (
                     <div className="ui-empty-state" style={{ border: "none" }}>
                       <p className="ui-empty-state__title">No orders yet</p>
-                      <p className="ui-empty-state__copy">NFC card orders will appear here when the backend is connected.</p>
+                      <p className="ui-empty-state__copy">Invoices and NFC fulfillment orders will appear here when created.</p>
                     </div>
+                    )}
                   </td>
                 </tr>
               )}

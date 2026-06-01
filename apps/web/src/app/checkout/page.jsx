@@ -11,45 +11,35 @@ import logo from "../../assets/jostap logo.png3.png";
 import ThemeToggle from "../../components/ThemeToggle";
 
 const PLANS = {
-  starter: {
-    name: "Starter",
-    monthly: 9,
-    yearly: 7,
-    cards: "1 digital card",
-    trial: "14-day free trial",
-    features: ["Basic analytics", "QR code", "Public profile URL"],
+  free: {
+    name: "Free",
+    price: 0,
+    displayPrice: "\u20A60",
+    billingLabel: "Free forever",
+    cards: "1 digital business card",
+    trial: "No payment required",
+    features: ["1 digital business card", "Public profile page", "JOSTAP branded QR code", "Contact sharing", "Save contact (vCard)", "Social media links", "Basic analytics"],
   },
-  professional: {
-    name: "Professional",
-    monthly: 29,
-    yearly: 23,
-    cards: "5 digital cards",
-    trial: "14-day free trial",
-    features: [
-      "Advanced analytics",
-      "Appointment booking",
-      "Lead capture",
-      "Custom branding",
-    ],
-  },
-  business: {
-    name: "Business Suite",
-    monthly: 79,
-    yearly: 63,
-    cards: "Unlimited cards",
-    trial: "Sales-assisted onboarding",
-    features: ["Team management", "White-label branding", "API access"],
+  jostap_nfc: {
+    name: "JOSTAP Card",
+    price: 30000,
+    displayPrice: "\u20A630,000",
+    previousPrice: "\u20A640,000",
+    billingLabel: "One-time payment",
+    cards: "Physical NFC card",
+    trial: "Includes 1 year premium feature access",
+    features: ["Physical NFC card", "Digital business profile", "JOSTAP branded QR code", "Downloadable QR code", "Contact sharing", "Save contact (vCard)", "Social media links", "Lead capture", "Appointment booking", "Visitor insights", "Advanced analytics", "Premium features", "1 year premium access included"],
   },
 };
 
 const getCheckoutFromUrl = () => {
   const params = new URLSearchParams(window.location.search);
-  const plan = params.get("plan") || "professional";
+  const plan = params.get("plan") || "jostap_nfc";
   const billing = params.get("billing") || "monthly";
 
   return {
-    plan: PLANS[plan] ? plan : "professional",
-    billing: billing === "yearly" ? "yearly" : "monthly",
+    plan: PLANS[plan] ? plan : "jostap_nfc",
+    billing: ["one_time", "yearly", "free"].includes(billing) ? billing : "one_time",
   };
 };
 
@@ -84,8 +74,8 @@ function Field({ label, children }) {
 }
 
 export default function CheckoutPage() {
-  const [planKey, setPlanKey] = useState("professional");
-  const [billing, setBilling] = useState("monthly");
+  const [planKey, setPlanKey] = useState("jostap_nfc");
+  const [billing, setBilling] = useState("one_time");
   const [sameAsBilling, setSameAsBilling] = useState(true);
   const [saveCard, setSaveCard] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -103,11 +93,9 @@ export default function CheckoutPage() {
   }, []);
 
   const plan = PLANS[planKey];
-  const monthlyPrice = plan[billing];
   const billedToday = 0;
-  const nextCharge = billing === "yearly" ? monthlyPrice * 12 : monthlyPrice;
   const nextChargeLabel =
-    billing === "yearly" ? `$${nextCharge}/year` : `$${nextCharge}/month`;
+    billing === "yearly" ? `${plan.displayPrice || `\u20A6${plan.price}`}/year` : billing === "free" ? "\u20A60" : "No recurring charge";
 
   const updateAccount = (key, value) => {
     setAccount((current) => ({ ...current, [key]: value }));
@@ -118,12 +106,24 @@ export default function CheckoutPage() {
     setLoading(true);
     setNotice("");
 
-    await new Promise((resolve) => setTimeout(resolve, 900));
+    try {
+      const response = await fetch("/api/billing/activate", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planKey, billingCycle: billing }),
+      });
+      const data = await response.json().catch(() => ({}));
 
-    setLoading(false);
-    setNotice(
-      "Payment UI is ready. Backend checkout/session creation can be connected here."
-    );
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to activate this plan.");
+      }
+
+      window.location.href = "/dashboard";
+    } catch (error) {
+      setNotice(error.message || "Unable to activate this plan.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -221,7 +221,7 @@ export default function CheckoutPage() {
                     marginBottom: 14,
                   }}
                 >
-                  <Sparkles size={13} /> Checkout preview
+                  <Sparkles size={13} /> Billing bypass enabled
                 </span>
                 <h1
                   style={{
@@ -235,8 +235,7 @@ export default function CheckoutPage() {
                   Start your JOSTAP plan
                 </h1>
                 <p style={{ color: "#6B7280", fontSize: 14, lineHeight: 1.6 }}>
-                  Choose a plan and enter payment details. Secure checkout
-                  wiring will connect here next.
+                  Billing is bypassed for now. This records your selected JOSTAP product and opens your dashboard.
                 </p>
               </div>
 
@@ -277,50 +276,13 @@ export default function CheckoutPage() {
                       {item.name}
                     </span>
                     <span style={{ color: "#6B7280", fontSize: 12 }}>
-                      ${item[billing]}/mo · {item.cards}
+                      {(item.displayPrice || `\u20A6${item.price}`)} - {item.billingLabel}
                     </span>
                   </button>
                 ))}
               </div>
 
-              <div
-                style={{
-                  display: "inline-flex",
-                  gap: 4,
-                  border: "1px solid #E5E7EB",
-                  borderRadius: 10,
-                  background: "#F9FAFB",
-                  padding: 4,
-                }}
-              >
-                {["monthly", "yearly"].map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => setBilling(option)}
-                    type="button"
-                    style={{
-                      border:
-                        billing === option
-                          ? "1px solid #E5E7EB"
-                          : "1px solid transparent",
-                      borderRadius: 7,
-                      background: billing === option ? "#fff" : "transparent",
-                      color: billing === option ? "#111827" : "#6B7280",
-                      cursor: "pointer",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      padding: "7px 16px",
-                    }}
-                  >
-                    {option === "monthly" ? "Monthly" : "Annual"}
-                    {option === "yearly" && (
-                      <span style={{ color: "#059669", marginLeft: 6 }}>
-                        Save 20%
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
+              <p style={{ fontSize: 13, color: "#6B7280" }}>{plan.billingLabel}</p>
             </div>
 
             <div
@@ -546,7 +508,7 @@ export default function CheckoutPage() {
                   padding: "13px 18px",
                 }}
               >
-                {loading ? "Preparing checkout..." : `Start trial - ${nextChargeLabel} after trial`}
+                {loading ? "Opening dashboard..." : "Continue to dashboard"}
               </button>
             </div>
           </form>
@@ -601,14 +563,15 @@ export default function CheckoutPage() {
                   letterSpacing: "-0.03em",
                 }}
               >
-                ${monthlyPrice}
-                <span style={{ color: "#6B7280", fontSize: 13, fontWeight: 500 }}>
-                  /mo
-                </span>
+                {plan.displayPrice || `\u20A6${plan.price}`}
               </p>
+              {plan.previousPrice && (
+                <p style={{ color: "#6B7280", fontSize: 12, fontWeight: 700, marginTop: 4 }}>
+                  Regular: {plan.previousPrice}
+                </p>
+              )}
               <p style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>
-                {billing === "yearly" ? "Billed annually" : "Billed monthly"} ·{" "}
-                {plan.cards}
+                {plan.billingLabel} - {plan.cards}
               </p>
             </div>
 
@@ -644,7 +607,7 @@ export default function CheckoutPage() {
                   {plan.trial}
                 </span>
                 <span style={{ color: "#111827", fontSize: 13, fontWeight: 600 }}>
-                  $0
+                  {"\u20A60"}
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -652,7 +615,7 @@ export default function CheckoutPage() {
                   Due today
                 </span>
                 <span style={{ color: "#111827", fontSize: 13, fontWeight: 700 }}>
-                  ${billedToday}
+                  {`\u20A6${billedToday}`}
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -682,8 +645,8 @@ export default function CheckoutPage() {
             >
               <ShieldCheck size={16} style={{ flexShrink: 0, marginTop: 1 }} />
               <span>
-                Card collection is UI-only for now. Connect Stripe, Paystack, or
-                your preferred provider when the backend is ready.
+                Payment is bypassed for now. Connect Stripe, Paystack, or your
+                preferred provider when billing is ready.
               </span>
             </div>
           </aside>

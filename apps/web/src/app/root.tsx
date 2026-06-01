@@ -24,8 +24,6 @@ import './global.css';
 
 import { LoadFonts } from 'virtual:load-fonts.jsx';
 import fetch from '@/__create/fetch';
-// @ts-ignore -- generated auth module is provided at runtime by the template.
-import { SessionProvider } from '@auth/create/react';
 import { toPng } from 'html-to-image';
 import { useNavigate } from 'react-router';
 import { serializeError } from 'serialize-error';
@@ -440,6 +438,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style dangerouslySetInnerHTML={{ __html: `html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; scroll-behavior: smooth; } body { transition: background-color 0.2s ease, color 0.2s ease; } html[data-theme='dark'] { color-scheme: dark; }` }} />
         <script
           dangerouslySetInnerHTML={{
             __html:
@@ -468,9 +467,5 @@ export function Layout({ children }: { children: ReactNode }) {
 export const ErrorBoundary = InternalErrorBoundary;
 
 export default function App() {
-  return (
-    <SessionProvider>
-      <Outlet />
-    </SessionProvider>
-  );
+  return <Outlet />;
 }

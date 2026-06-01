@@ -1,6 +1,5 @@
 'use client';
 
-import { signIn } from '@auth/create/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -56,7 +55,7 @@ export default function SocialDevShimPage() {
 		setLoading(true);
 		setError(null);
 		try {
-			await signIn('dev-social', { email, name, provider, callbackUrl });
+			window.location.href = callbackUrl || '/dashboard';
 		} catch (err) {
 			setError(
 				err instanceof Error

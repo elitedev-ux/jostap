@@ -21,6 +21,12 @@ import {
   getCards,
 } from "../../../utils/cardsStore";
 
+const DOWNLOADABLE_QR_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
+
+function hasDownloadableQr(plan) {
+  return DOWNLOADABLE_QR_PLANS.has(String(plan || "").toLowerCase());
+}
+
 function cardUrl(slug) {
   const path = `/${slug || ""}`;
   if (typeof window === "undefined") return `https://jostap.com${path}`;
@@ -158,17 +164,32 @@ function CardPreview({ card }) {
           </p>
         </div>
       </div>
-
     </div>
   );
 }
 
-function CardRow({ card, onChange }) {
+function CardRow({ card, onChange, qrLocked }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [copied, setCopied] = useState(false);
   const role = card.role || card.title || "No title";
   const company = card.company || "No company";
   const publicUrl = cardUrl(card.slug);
+
+  const copyPublicUrl = async () => {
+    await navigator.clipboard?.writeText(publicUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1300);
+  };
+
+  const handleDownloadQr = () => {
+    if (qrLocked) {
+      window.location.href = "/pricing";
+      return;
+    }
+
+    downloadQrSvg(publicUrl, `${card.slug || "card"}-qr-code`);
+  };
 
   const runAction = async (action) => {
     setMenuOpen(false);
@@ -315,29 +336,35 @@ function CardRow({ card, onChange }) {
             borderRadius: 8,
             background: "#fff",
             border: "1px solid #E5E7EB",
+            filter: qrLocked ? "blur(3px)" : "none",
+            opacity: qrLocked ? 0.52 : 1,
+            transition: "filter 0.2s, opacity 0.2s",
           }}
         >
           <QRCode value={publicUrl} size={58} />
         </div>
-        <span
+        <button
+          type="button"
+          onClick={copyPublicUrl}
           title={`jostap.com/${card.slug}`}
           style={{
             maxWidth: "100%",
             fontSize: 11,
-            color: "#9CA3AF",
+            color: copied ? "#047857" : "#2563EB",
             background: "#fff",
-            border: "1px solid #E5E7EB",
+            border: copied ? "1px solid #A7F3D0" : "1px solid #BFDBFE",
             borderRadius: 999,
             padding: "3px 8px",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            cursor: "pointer",
           }}
         >
-          jostap.com/{card.slug}
-        </span>
+          {copied ? "Copied" : `jostap.com/${card.slug}`}
+        </button>
         <button
-          onClick={() => downloadQrSvg(publicUrl, `${card.slug || "card"}-qr-code`)}
+          onClick={handleDownloadQr}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -354,7 +381,7 @@ function CardRow({ card, onChange }) {
             cursor: "pointer",
           }}
         >
-          <Download size={12} /> QR
+          <Download size={12} /> {qrLocked ? "Upgrade" : "QR"}
         </button>
       </div>
 
@@ -441,7 +468,7 @@ function CardRow({ card, onChange }) {
                   "Download QR",
                   Download,
                   "#374151",
-                  () => downloadQrSvg(publicUrl, `${card.slug || "card"}-qr-code`),
+                  handleDownloadQr,
                 ],
                 ["Delete", Trash2, "#DC2626", () => deleteCard(card.id)],
               ].map(([label, Icon, color, action]) => (
@@ -479,6 +506,7 @@ export default function CardsPage() {
   const [cards, setCards] = useState([]);
   const [search, setSearch] = useState("");
   const [loadError, setLoadError] = useState("");
+  const [qrLocked, setQrLocked] = useState(true);
 
   const refreshCards = async () => {
     try {
@@ -491,7 +519,18 @@ export default function CardsPage() {
   };
 
   useEffect(() => {
+    async function loadBillingPlan() {
+      try {
+        const response = await fetch("/api/billing", { credentials: "same-origin" });
+        const data = await response.json().catch(() => ({}));
+        if (response.ok) setQrLocked(!hasDownloadableQr(data.subscription?.plan));
+      } catch {
+        setQrLocked(true);
+      }
+    }
+
     refreshCards();
+    loadBillingPlan();
     window.addEventListener("jostap-cards-change", refreshCards);
     return () => window.removeEventListener("jostap-cards-change", refreshCards);
   }, []);
@@ -537,7 +576,7 @@ export default function CardsPage() {
           </p>
         </div>
         <a
-          href="/dashboard/cards/new"
+          href="/create-card"
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -624,7 +663,12 @@ export default function CardsPage() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {filtered.map((card) => (
-          <CardRow key={card.id} card={card} onChange={refreshCards} />
+          <CardRow
+            key={card.id}
+            card={card}
+            onChange={refreshCards}
+            qrLocked={qrLocked}
+          />
         ))}
       </div>
 
@@ -643,7 +687,7 @@ export default function CardsPage() {
           </p>
           {!hasCards && (
             <a
-              href="/dashboard/cards/new"
+              href="/create-card"
               style={{
                 display: "inline-flex",
                 alignItems: "center",

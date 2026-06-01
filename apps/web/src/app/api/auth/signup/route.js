@@ -1,16 +1,12 @@
-import sql, { hasDatabase } from "../../utils/sql.js";
 import { badRequest, json, readJson } from "../../utils/http.js";
-import { createSession } from "../../utils/session.js";
 import { hashPassword, validatePassword } from "../../utils/password.js";
-
-function normalizeEmail(email) {
-  return String(email || "").trim().toLowerCase();
-}
+import { getSupabaseAdmin, hasSupabase, isUniqueViolation } from "../../utils/supabase.js";
+import { createEmailVerificationChallenge, normalizeEmail } from "../../utils/authSecurity.js";
 
 export async function POST(request) {
-  if (!hasDatabase()) {
+  if (!hasSupabase()) {
     return json(
-      { error: "Database is not configured. Add DATABASE_URL to .env." },
+      { error: "Supabase is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to .env." },
       { status: 503 },
     );
   }
@@ -42,28 +38,37 @@ export async function POST(request) {
   }
 
   const passwordHash = await hashPassword(password);
+  const supabase = getSupabaseAdmin();
 
   try {
-    const [user] = await sql(
-      `INSERT INTO users (first_name, last_name, company, email, password_hash)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, first_name, last_name, company, email, role, created_at`,
-      [firstName, lastName, company, email, passwordHash],
-    );
+    const { data: user, error } = await supabase
+      .from("users")
+      .insert({
+        first_name: firstName,
+        last_name: lastName,
+        company,
+        email,
+        password_hash: passwordHash,
+      })
+      .select("id, first_name, last_name, company, email, role, email_verified_at, created_at")
+      .single();
 
-    const session = await createSession(user.id, request);
+    if (error) {
+      throw error;
+    }
+
+    await createEmailVerificationChallenge(supabase, user);
 
     return json(
-      { user },
       {
-        status: 201,
-        headers: {
-          "Set-Cookie": session.cookie,
-        },
+        user,
+        requiresVerification: true,
+        message: "Account created. Enter the verification code sent to your email.",
       },
+      { status: 201 },
     );
   } catch (error) {
-    if (error.code === "23505") {
+    if (isUniqueViolation(error)) {
       return badRequest("An account with this email already exists.");
     }
 

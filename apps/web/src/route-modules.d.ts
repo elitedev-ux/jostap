@@ -11,7 +11,3 @@ declare module '*.js' {
 declare module 'virtual:load-fonts.jsx' {
   export function LoadFonts(): null;
 }
-
-declare module '@auth/create/react' {
-  export function SessionProvider(props: any): any;
-}

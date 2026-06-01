@@ -4,7 +4,7 @@ import {
   CreditCard,
   BarChart3,
   Calendar,
-  Users,
+  Headphones,
   Settings,
   LogOut,
   ChevronLeft,
@@ -14,19 +14,21 @@ import {
   Menu,
   X,
   Wallet,
-  Shield,
+  ShoppingBag,
 } from "lucide-react";
 import logo from "../../assets/jostap logo.png3.png";
 import faviconMark from "../../assets/jostap favicon bg.png";
 import ThemeToggle from "../../components/ThemeToggle";
 import { getCards } from "../../utils/cardsStore";
+import cn from "classnames";
 
 const NAV = [
   { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
   { icon: CreditCard, label: "My Cards", href: "/dashboard/cards" },
   { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics" },
   { icon: Calendar, label: "Appointments", href: "/dashboard/appointments" },
-  { icon: Users, label: "Leads", href: "/dashboard/leads" },
+  { icon: Headphones, label: "Support", href: "/dashboard/support" },
+  { icon: ShoppingBag, label: "Shop", href: "/dashboard/shop" },
   { icon: Wallet, label: "Billing", href: "/dashboard/billing" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ];
@@ -35,9 +37,11 @@ export default function DashboardLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cards, setCards] = useState([]);
+  const [account, setAccount] = useState(null);
+  const [billing, setBilling] = useState(null);
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementOpen, setAnnouncementOpen] = useState(false);
   const path = typeof window !== "undefined" ? window.location.pathname : "";
-  const cardLimit = 5;
-  const cardsUsed = Math.min(cards.length, cardLimit);
 
   const handleSignOut = async () => {
     await fetch("/api/auth/logout", {
@@ -62,45 +66,144 @@ export default function DashboardLayout({ children }) {
     return () => window.removeEventListener("jostap-cards-change", refreshCards);
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadAnnouncements() {
+      try {
+        const response = await fetch("/api/announcements", { credentials: "same-origin" });
+        const data = await response.json().catch(() => ({}));
+
+        if (active && response.ok) {
+          setAnnouncements(data.announcements || []);
+        }
+      } catch {
+        if (active) {
+          setAnnouncements([]);
+        }
+      }
+    }
+
+    loadAnnouncements();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const markAnnouncementRead = async (id) => {
+    setAnnouncements((items) =>
+      items.map((item) => (item.id === id ? { ...item, isRead: true } : item)),
+    );
+
+    await fetch(`/api/announcements/${id}/read`, {
+      method: "POST",
+      credentials: "same-origin",
+    }).catch(() => {});
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadBilling() {
+      try {
+        const response = await fetch("/api/billing", { credentials: "same-origin" });
+        const data = await response.json().catch(() => ({}));
+
+        if (active && response.ok) {
+          setBilling(data);
+        }
+      } catch {
+        if (active) {
+          setBilling(null);
+        }
+      }
+    }
+
+    loadBilling();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function requireKyc() {
+      try {
+        const response = await fetch("/api/auth/me", {
+          credentials: "same-origin",
+        });
+
+        if (response.status === 401) {
+          window.location.href = "/auth/signin";
+          return;
+        }
+
+        const data = await response.json().catch(() => ({}));
+
+        if (active && response.ok && data.user) {
+          setAccount(data.user);
+        }
+
+        if (active && response.ok && data.user && !data.user.kycComplete) {
+          window.location.href = "/kyc";
+        }
+      } catch {
+        if (active) {
+          window.location.href = "/auth/signin";
+        }
+      }
+    }
+
+    requireKyc();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const accountName = account?.name || "Account";
+  const accountAvatar = account?.kyc?.avatarUrl || "";
+  const planName =
+    billing?.subscription?.plan === "custom_nfc"
+      ? "Custom NFC"
+      : billing?.subscription?.plan === "jostap_nfc"
+        ? "JOSTAP NFC"
+        : billing?.subscription?.plan === "premium_renewal"
+          ? "Premium Renewal"
+          : "Free";
+  const cardLimit = billing?.subscription?.cardLimit ?? 5;
+  const cardsUsed = cards.length;
+  const cardLimitLabel = cardLimit ? `${cardsUsed} / ${cardLimit}` : `${cardsUsed}`;
+  const accountInitials =
+    accountName
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "ME";
+  const unreadAnnouncements = announcements.filter((item) => !item.isRead).length;
+
   const SidebarContent = () => (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        overflow: "hidden",
-      }}
-    >
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Logo */}
       <div
-        style={{
-          padding: collapsed ? "20px 16px" : "20px 20px",
-          borderBottom: "1px solid #E5E7EB",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: collapsed ? "center" : "space-between",
-        }}
+        className={cn(
+          "flex items-center border-b border-slate-200",
+          collapsed ? "px-4 py-5 justify-center" : "px-5 py-5 justify-between"
+        )}
       >
         {!collapsed && (
           <a
             href="/"
-            style={{
-              textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}
+            className="flex items-center gap-2 no-underline"
           >
             <img
               src={logo}
               alt="JOSTAP"
-              style={{
-                display: "block",
-                width: 104,
-                height: 42,
-                objectFit: "contain",
-                objectPosition: "left center",
-              }}
+              className="block w-24 h-10 object-contain"
             />
           </a>
         )}
@@ -108,33 +211,20 @@ export default function DashboardLayout({ children }) {
           <img
             src={faviconMark}
             alt="JOSTAP"
-            style={{
-              width: 28,
-              height: 28,
-              objectFit: "contain",
-              display: "block",
-            }}
+            className="block w-7 h-7 object-contain"
           />
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: "#9CA3AF",
-            padding: 4,
-            display: "flex",
-            alignItems: "center",
-          }}
+          className="p-1 bg-transparent border-none cursor-pointer text-slate-400 hover:text-slate-600 transition-colors"
         >
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <nav className="flex-1 px-3 py-3 overflow-y-auto">
+        <div className="flex flex-col gap-0.5">
           {NAV.map(({ icon: Icon, label, href }) => {
             const active =
               path === href || (href !== "/dashboard" && path.startsWith(href));
@@ -142,32 +232,13 @@ export default function DashboardLayout({ children }) {
               <a
                 key={href}
                 href={href}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: collapsed ? "10px" : "9px 12px",
-                  borderRadius: 8,
-                  textDecoration: "none",
-                  justifyContent: collapsed ? "center" : "flex-start",
-                  background: active ? "#EFF6FF" : "transparent",
-                  color: active ? "#2563EB" : "#6B7280",
-                  fontWeight: active ? 600 : 400,
-                  fontSize: 14,
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  if (!active) {
-                    e.currentTarget.style.background = "#F9FAFB";
-                    e.currentTarget.style.color = "#374151";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!active) {
-                    e.currentTarget.style.background = "transparent";
-                    e.currentTarget.style.color = "#6B7280";
-                  }
-                }}
+                className={cn(
+                  "flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 no-underline text-sm font-normal",
+                  active
+                    ? "bg-blue-50 text-blue-600 font-semibold"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-700",
+                  collapsed ? "justify-center px-3" : "justify-start"
+                )}
                 title={collapsed ? label : ""}
               >
                 <Icon size={17} />
@@ -179,114 +250,46 @@ export default function DashboardLayout({ children }) {
       </nav>
 
       {/* User section */}
-      <div style={{ padding: "12px 10px", borderTop: "1px solid #E5E7EB" }}>
+      <div className="p-3 border-t border-slate-200">
         {/* Plan badge */}
         {!collapsed && (
-          <div
-            style={{
-              background: "#F9FAFB",
-              border: "1px solid #E5E7EB",
-              borderRadius: 8,
-              padding: "10px 12px",
-              marginBottom: 10,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-2.5">
+            <div className="flex justify-between items-center">
               <div>
-                <p style={{ fontSize: 11, fontWeight: 600, color: "#111827" }}>
-                  Professional
+                <p className="text-[11px] font-semibold text-slate-900 leading-tight">
+                  {planName}
                 </p>
-                <p style={{ fontSize: 11, color: "#6B7280" }}>
-                  {cardsUsed} / {cardLimit} cards used
+                <p className="text-[11px] text-slate-500 leading-tight">
+                  {cardLimitLabel} cards used
                 </p>
               </div>
               <a
                 href="/dashboard/billing"
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "#2563EB",
-                  textDecoration: "none",
-                  background: "#EFF6FF",
-                  borderRadius: 999,
-                  padding: "3px 8px",
-                }}
+                className="text-[11px] font-semibold text-blue-600 no-underline bg-blue-50 rounded-full px-2 py-1 hover:bg-blue-100 transition-colors"
               >
                 Upgrade
               </a>
             </div>
-            <div
-              style={{
-                marginTop: 8,
-                height: 4,
-                background: "#E5E7EB",
-                borderRadius: 999,
-                overflow: "hidden",
-              }}
-            >
+            <div className="mt-2 h-1 bg-slate-200 rounded-full overflow-hidden">
               <div
+                className="h-full bg-blue-600 rounded-full transition-all duration-500"
                 style={{
-                  width: `${(cardsUsed / cardLimit) * 100}%`,
-                  height: "100%",
-                  background: "#2563EB",
-                  borderRadius: 999,
+                  width: cardLimit
+                    ? `${Math.min((cardsUsed / cardLimit) * 100, 100)}%`
+                    : "100%",
                 }}
               />
             </div>
           </div>
         )}
-        <a
-          href="/admin"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: collapsed ? "10px" : "9px 12px",
-            borderRadius: 8,
-            textDecoration: "none",
-            color: "#2563EB",
-            background: "#EFF6FF",
-            border: "1px solid #BFDBFE",
-            fontSize: 14,
-            fontWeight: 700,
-            justifyContent: collapsed ? "center" : "flex-start",
-            marginBottom: 8,
-          }}
-          title={collapsed ? "Admin Preview" : ""}
-        >
-          <Shield size={16} />
-          {!collapsed && <span>Admin Preview</span>}
-        </a>
         <button
           type="button"
           onClick={handleSignOut}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: collapsed ? "10px" : "9px 12px",
-            borderRadius: 8,
-            border: "none",
-            background: "transparent",
-            color: "#6B7280",
-            fontSize: 14,
-            justifyContent: collapsed ? "center" : "flex-start",
-            cursor: "pointer",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#FEF2F2";
-            e.currentTarget.style.color = "#B91C1C";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = "#6B7280";
-          }}
+          className={cn(
+            "flex items-center gap-2.5 px-3 py-2 rounded-lg border-none bg-transparent text-sm font-normal text-slate-500 transition-colors cursor-pointer",
+            collapsed ? "justify-center px-3" : "justify-start",
+            "hover:bg-red-50 hover:text-red-600"
+          )}
         >
           <LogOut size={16} />
           {!collapsed && <span>Sign out</span>}
@@ -296,202 +299,133 @@ export default function DashboardLayout({ children }) {
   );
 
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        backgroundColor: "#F9FAFB",
-      }}
-    >
+    <div className="flex min-h-screen bg-slate-50">
       {/* Desktop sidebar */}
       <aside
-        style={{
-          width: collapsed ? 60 : 232,
-          flexShrink: 0,
-          backgroundColor: "#fff",
-          borderRight: "1px solid #E5E7EB",
-          transition: "width 0.2s",
-          position: "sticky",
-          top: 0,
-          height: "100vh",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-        }}
-        className="sidebar-desktop"
+        className={cn(
+          "sticky top-0 h-screen overflow-hidden bg-white border-r border-slate-200 transition-all duration-200",
+          collapsed ? "w-16" : "w-56"
+        )}
       >
         <SidebarContent />
       </aside>
 
       {/* Mobile sidebar overlay */}
       {mobileOpen && (
-        <div
-          style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex" }}
-        >
-          <div
-            style={{
-              flex: "none",
-              width: 240,
-              backgroundColor: "#fff",
-              borderRight: "1px solid #E5E7EB",
-              height: "100vh",
-              overflow: "hidden",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
+        <div className="fixed inset-0 z-[200] flex">
+          <div className="flex-none w-60 bg-white border-r border-slate-200 h-screen overflow-hidden">
             <SidebarContent />
           </div>
           <div
-            style={{ flex: 1, background: "rgba(0,0,0,0.4)" }}
+            className="flex-1 bg-black/40"
             onClick={() => setMobileOpen(false)}
           />
         </div>
       )}
 
       {/* Main content */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          minWidth: 0,
-        }}
-      >
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <header
-          style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 50,
-            backgroundColor: "rgba(255,255,255,0.95)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-            borderBottom: "1px solid #E5E7EB",
-            padding: "0 24px",
-            height: 56,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16,
-          }}
+          className="sticky top-0 z-50 flex items-center justify-between gap-4 px-6 h-14 bg-white/95 backdrop-blur-sm border-b border-slate-200"
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "#6B7280",
-                padding: 4,
-              }}
-              className="mobile-menu-btn"
+              className="hidden md:hidden p-1 bg-transparent border-none cursor-pointer text-slate-500"
             >
               <Menu size={20} />
             </button>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                background: "#F9FAFB",
-                border: "1px solid #E5E7EB",
-                borderRadius: 8,
-                padding: "7px 12px",
-                width: 220,
-              }}
-            >
-              <Search size={14} color="#9CA3AF" />
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 w-56">
+              <Search size={14} className="text-slate-400" />
               <input
                 placeholder="Search..."
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  fontSize: 13,
-                  color: "#374151",
-                  outline: "none",
-                  width: "100%",
-                }}
+                className="border-none bg-transparent text-sm text-slate-700 outline-none w-full"
               />
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="flex items-center gap-2.5">
             <ThemeToggle compact />
+            <div style={{ position: "relative" }}>
             <button
-              style={{
-                background: "none",
-                border: "1px solid #E5E7EB",
-                borderRadius: 8,
-                cursor: "pointer",
-                padding: "6px",
-                display: "flex",
-                alignItems: "center",
-                position: "relative",
-              }}
+              type="button"
+              onClick={() => setAnnouncementOpen((open) => !open)}
+              className="relative p-1.5 bg-white border border-slate-200 rounded-lg cursor-pointer transition-colors hover:bg-slate-50"
             >
-              <Bell size={16} color="#6B7280" />
-              <span
-                style={{
-                  position: "absolute",
-                  top: 5,
-                  right: 5,
-                  width: 7,
-                  height: 7,
-                  borderRadius: "50%",
-                  background: "#2563EB",
-                  border: "1.5px solid #fff",
-                }}
-              />
+              <Bell size={16} className="text-slate-500" />
+              {unreadAnnouncements > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-600 border-[1.5px] border-white" />
+              )}
             </button>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                background: "#F9FAFB",
-                border: "1px solid #E5E7EB",
-                borderRadius: 8,
-                padding: "6px 10px",
-                cursor: "pointer",
-              }}
-            >
+            {announcementOpen && (
               <div
                 style={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: "50%",
-                  background: "#EFF6FF",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: "#2563EB",
+                  position: "absolute",
+                  right: 0,
+                  top: 38,
+                  width: 320,
+                  maxWidth: "80vw",
+                  background: "#fff",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: 10,
+                  boxShadow: "0 12px 30px rgba(15,23,42,0.12)",
+                  zIndex: 80,
+                  overflow: "hidden",
                 }}
               >
-                ME
+                <div style={{ padding: "12px 14px", borderBottom: "1px solid #F3F4F6" }}>
+                  <p style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>Announcements</p>
+                </div>
+                {announcements.length === 0 ? (
+                  <div style={{ padding: 18, fontSize: 13, color: "#6B7280" }}>
+                    No announcements.
+                  </div>
+                ) : (
+                  announcements.slice(0, 5).map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => markAnnouncementRead(item.id)}
+                      style={{
+                        width: "100%",
+                        border: "none",
+                        borderTop: "1px solid #F3F4F6",
+                        background: item.isRead ? "#fff" : "#F9FAFB",
+                        padding: "12px 14px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <p style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>{item.title}</p>
+                      <p style={{ fontSize: 12, color: "#6B7280", marginTop: 3, lineHeight: 1.4 }}>{item.message}</p>
+                    </button>
+                  ))
+                )}
               </div>
-              <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>
-                Account
-              </span>
+            )}
+            </div>
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 cursor-pointer hover:bg-slate-100 transition-colors">
+              <div
+                className="w-6.5 h-6.5 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-[11px] overflow-hidden"
+                style={{ width: 26, height: 26 }}
+              >
+                {accountAvatar ? (
+                  <img
+                    src={accountAvatar}
+                    alt={accountName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  accountInitials
+                )}
+              </div>
+              <span className="text-sm font-medium text-slate-900">{accountName}</span>
             </div>
           </div>
         </header>
 
-        <main style={{ flex: 1, padding: "28px 24px" }}>{children}</main>
+        <main className="flex-1 p-7">{children}</main>
       </div>
-
-      <style jsx global>{`
-        @media (max-width: 768px) {
-          .sidebar-desktop { display: none !important; }
-        }
-        @media (min-width: 769px) {
-          .mobile-menu-btn { display: none !important; }
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #F9FAFB; }
-      `}</style>
     </div>
   );
 }

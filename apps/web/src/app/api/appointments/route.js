@@ -1,16 +1,17 @@
-import sql from "../utils/sql.js";
 import { json, unauthorized } from "../utils/http.js";
 import { getSessionUser } from "../utils/session.js";
+import { getSupabaseAdmin } from "../utils/supabase.js";
 
 function appointmentFromRow(row) {
   return {
     id: row.id,
     guestName: row.guest_name || "",
     guestEmail: row.guest_email || "",
-    cardName: row.card_name || "",
+    cardName: row.cards?.name || row.card_name || "",
     startsAt: row.starts_at || "",
     endsAt: row.ends_at || "",
     status: row.status || "scheduled",
+    googleEventId: row.google_event_id || "",
     notes: row.notes || "",
     createdAt: row.created_at || "",
   };
@@ -23,14 +24,16 @@ export async function GET(request) {
     return unauthorized();
   }
 
-  const rows = await sql(
-    `SELECT appointments.*, cards.name AS card_name
-     FROM appointments
-     LEFT JOIN cards ON cards.id = appointments.card_id
-     WHERE appointments.user_id = $1
-     ORDER BY appointments.starts_at ASC`,
-    [user.id],
-  );
+  const supabase = getSupabaseAdmin();
+  const { data: rows, error } = await supabase
+    .from("appointments")
+    .select("*, cards(name)")
+    .eq("user_id", user.id)
+    .order("starts_at", { ascending: true });
 
-  return json({ appointments: rows.map(appointmentFromRow) });
+  if (error) {
+    throw error;
+  }
+
+  return json({ appointments: (rows || []).map(appointmentFromRow) });
 }

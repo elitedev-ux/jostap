@@ -1,7 +1,7 @@
-import sql from "../utils/sql.js";
 import { badRequest, json, readJson, unauthorized } from "../utils/http.js";
-import { cardFromRow, cardPayload } from "../utils/cards.js";
+import { activePlanForUser, applyPlanLimits, cardFromRow, cardPayload } from "../utils/cards.js";
 import { getSessionUser } from "../utils/session.js";
+import { getSupabaseAdmin, isUniqueViolation } from "../utils/supabase.js";
 
 export async function GET(request) {
   const user = await getSessionUser(request);
@@ -10,15 +10,18 @@ export async function GET(request) {
     return unauthorized();
   }
 
-  const rows = await sql(
-    `SELECT *
-     FROM cards
-     WHERE user_id = $1
-     ORDER BY created_at DESC`,
-    [user.id],
-  );
+  const supabase = getSupabaseAdmin();
+  const { data: rows, error } = await supabase
+    .from("cards")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
 
-  return json({ cards: rows.map(cardFromRow) });
+  if (error) {
+    throw error;
+  }
+
+  return json({ cards: (rows || []).map(cardFromRow) });
 }
 
 export async function POST(request) {
@@ -34,39 +37,42 @@ export async function POST(request) {
     return badRequest("Invalid request body.");
   }
 
-  const card = cardPayload(body);
-
-  if (!card.name || !card.email || !card.slug) {
-    return badRequest("Name, email, and public slug are required.");
-  }
-
   try {
-    const [row] = await sql(
-      `INSERT INTO cards (
-         user_id, name, title, company, slug, bio, email, phone, website,
-         theme, social_links, active
-       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11::jsonb, $12)
-       RETURNING *`,
-      [
-        user.id,
-        card.name,
-        card.title,
-        card.company,
-        card.slug,
-        card.bio,
-        card.email,
-        card.phone,
-        card.website,
-        JSON.stringify(card.theme),
-        JSON.stringify(card.socialLinks),
-        card.active,
-      ],
-    );
+    const supabase = getSupabaseAdmin();
+    const plan = await activePlanForUser(supabase, user.id);
+    const card = applyPlanLimits(cardPayload(body), plan);
+
+    if (!card.name || !card.email || !card.slug) {
+      return badRequest("Name, email, and public slug are required.");
+    }
+
+    const { data: row, error } = await supabase
+      .from("cards")
+      .insert({
+        user_id: user.id,
+        name: card.name,
+        title: card.title,
+        company: card.company,
+        slug: card.slug,
+        bio: card.bio,
+        email: card.email,
+        phone: card.phone,
+        website: card.website,
+        avatar_url: card.avatarUrl,
+        theme: card.theme,
+        social_links: card.socialLinks,
+        active: card.active,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      throw error;
+    }
 
     return json({ card: cardFromRow(row) }, { status: 201 });
   } catch (error) {
-    if (error.code === "23505") {
+    if (isUniqueViolation(error)) {
       return badRequest("This public slug is already in use.");
     }
 

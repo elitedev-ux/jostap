@@ -1,14 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart3,
+  Bell,
+  Calendar,
+  ClipboardList,
   CreditCard,
+  Download,
+  FileText,
+  Gem,
+  HelpCircle,
   Headphones,
   Home,
+  KeyRound,
+  Mail,
   Menu,
   Package,
+  Palette,
   Search,
   Settings,
   Shield,
+  Tags,
+  Target,
   Users,
   X,
 } from "lucide-react";
@@ -20,15 +32,87 @@ const NAV = [
   { label: "Overview", href: "/admin", icon: Home },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Cards", href: "/admin/cards", icon: CreditCard },
-  { label: "Orders", href: "/admin/orders", icon: Package },
   { label: "Subscriptions", href: "/admin/subscriptions", icon: BarChart3 },
+  { label: "Payments", href: "/admin/payments", icon: Package },
+  { label: "Appointments", href: "/admin/appointments", icon: Calendar },
+  { label: "Leads", href: "/admin/leads", icon: Target },
+  { label: "Templates", href: "/admin/templates", icon: Palette },
+  { label: "Premium", href: "/admin/premium", icon: Gem },
+  { label: "Emails", href: "/admin/emails", icon: Mail },
+  { label: "Pages", href: "/admin/pages", icon: FileText },
+  { label: "FAQs", href: "/admin/faqs", icon: HelpCircle },
+  { label: "Pricing", href: "/admin/pricing", icon: Tags },
+  { label: "Reports", href: "/admin/reports", icon: Download },
+  { label: "Audit", href: "/admin/audit", icon: ClipboardList },
+  { label: "Notifications", href: "/admin/notifications", icon: Bell },
+  { label: "Roles", href: "/admin/roles", icon: KeyRound },
   { label: "Support", href: "/admin/support", icon: Headphones },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 export default function AdminLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [adminUser, setAdminUser] = useState(null);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
   const path = typeof window !== "undefined" ? window.location.pathname : "";
+
+  useEffect(() => {
+    let active = true;
+
+    async function requireAdmin() {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "same-origin" });
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401) {
+          window.location.href = "/auth/signin?callbackUrl=/admin";
+          if (active) setCheckingAdmin(false);
+          return;
+        }
+
+        if (!response.ok || data.user?.role !== "admin") {
+          window.location.href = "/dashboard";
+          if (active) setCheckingAdmin(false);
+          return;
+        }
+
+        if (active) {
+          setAdminUser(data.user);
+          setCheckingAdmin(false);
+        }
+      } catch {
+        if (active) {
+          setCheckingAdmin(false);
+          window.location.href = "/dashboard";
+        }
+      }
+    }
+
+    requireAdmin();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (checkingAdmin) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#F9FAFB",
+          color: "#6B7280",
+          fontSize: 14,
+          fontWeight: 600,
+        }}
+      >
+        Checking admin access...
+      </div>
+    );
+  }
 
   const Sidebar = () => (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -44,7 +128,7 @@ export default function AdminLayout({ children }) {
       >
         <img src={logo} alt="JOSTAP" style={{ width: 104, height: 42, objectFit: "contain" }} />
       </div>
-      <nav style={{ flex: 1, padding: "14px 10px" }}>
+      <nav style={{ flex: 1, padding: "14px 10px", overflowY: "auto" }}>
         {NAV.map(({ label, href, icon: Icon }) => {
           const active = path === href || (href !== "/admin" && path.startsWith(href));
           return (
@@ -60,13 +144,13 @@ export default function AdminLayout({ children }) {
                 borderRadius: 8,
                 color: active ? "#2563EB" : "#6B7280",
                 background: active ? "#EFF6FF" : "transparent",
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: active ? 700 : 500,
                 marginBottom: 3,
               }}
             >
               <Icon size={17} />
-              {label}
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
             </a>
           );
         })}
@@ -86,7 +170,7 @@ export default function AdminLayout({ children }) {
           <img src={faviconMark} alt="" style={{ width: 28, height: 28, borderRadius: 8 }} />
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: "#111827" }}>Admin Console</p>
-            <p style={{ fontSize: 11, color: "#6B7280" }}>Frontend ready</p>
+            <p style={{ fontSize: 11, color: "#6B7280" }}>{adminUser?.email || "Admin access"}</p>
           </div>
         </div>
       </div>
@@ -171,7 +255,7 @@ export default function AdminLayout({ children }) {
             >
               <Search size={15} color="#9CA3AF" />
               <input
-                placeholder="Search users, cards, orders..."
+                placeholder="Search admin data..."
                 style={{
                   border: "none",
                   outline: "none",

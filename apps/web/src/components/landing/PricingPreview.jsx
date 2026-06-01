@@ -1,37 +1,12 @@
-import { useState } from "react";
 import { Check, ChevronRight } from "lucide-react";
 import { plans } from "./landingData";
 
-const billingOptions = ["monthly", "yearly"];
-
-const planSlugs = {
-  Starter: "starter",
-  Professional: "professional",
-  "Business Suite": "business",
-};
-
 export default function PricingPreview() {
-  const [billing, setBilling] = useState("monthly");
-
   return (
     <section className="landing-section landing-section--contained">
       <div className="landing-section-heading">
-        <h2>Simple, transparent pricing</h2>
-        <p>Start free, scale as you grow. No hidden fees.</p>
-
-        <div className="landing-billing-toggle" role="group" aria-label="Billing period">
-          {billingOptions.map((option) => (
-            <button
-              className={billing === option ? "is-active" : undefined}
-              key={option}
-              onClick={() => setBilling(option)}
-              type="button"
-            >
-              {option.charAt(0).toUpperCase() + option.slice(1)}
-              {option === "yearly" && <span>-20%</span>}
-            </button>
-          ))}
-        </div>
+        <h2>JOSTAP pricing</h2>
+        <p>Start free, then order an NFC card when you are ready.</p>
       </div>
 
       <div className="landing-pricing-grid">
@@ -44,14 +19,14 @@ export default function PricingPreview() {
 
             <p className="landing-plan-card__name">{plan.name}</p>
             <div className="landing-plan-card__price">
-              <span>${plan.price[billing]}</span>
-              <span>/mo</span>
+              <span>{plan.price}</span>
+              {plan.note && <span>{plan.note}</span>}
             </div>
             <p className="landing-plan-card__desc">{plan.desc}</p>
 
             <a
               className="landing-plan-card__cta"
-              href={`/checkout?plan=${planSlugs[plan.name]}&billing=${billing}`}
+              href={plan.href}
             >
               {plan.cta}
             </a>

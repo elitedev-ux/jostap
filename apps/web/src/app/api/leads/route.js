@@ -1,6 +1,6 @@
-import sql from "../utils/sql.js";
 import { json, unauthorized } from "../utils/http.js";
 import { getSessionUser } from "../utils/session.js";
+import { getSupabaseAdmin } from "../utils/supabase.js";
 
 function leadFromRow(row) {
   return {
@@ -12,7 +12,7 @@ function leadFromRow(row) {
     message: row.message || "",
     source: row.source || "",
     status: row.status || "new",
-    cardName: row.card_name || "",
+    cardName: row.cards?.name || row.card_name || "",
     createdAt: row.created_at || "",
   };
 }
@@ -24,14 +24,16 @@ export async function GET(request) {
     return unauthorized();
   }
 
-  const rows = await sql(
-    `SELECT leads.*, cards.name AS card_name
-     FROM leads
-     LEFT JOIN cards ON cards.id = leads.card_id
-     WHERE leads.user_id = $1
-     ORDER BY leads.created_at DESC`,
-    [user.id],
-  );
+  const supabase = getSupabaseAdmin();
+  const { data: rows, error } = await supabase
+    .from("leads")
+    .select("*, cards(name)")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
 
-  return json({ leads: rows.map(leadFromRow) });
+  if (error) {
+    throw error;
+  }
+
+  return json({ leads: (rows || []).map(leadFromRow) });
 }

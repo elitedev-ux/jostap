@@ -1,7 +1,8 @@
-import sql, { hasDatabase } from "../../../utils/sql.js";
 import { createSession } from "../../../utils/session.js";
+import { getSupabaseAdmin, hasSupabase } from "../../../utils/supabase.js";
 
 const STATE_COOKIE = "jostap_google_state";
+const RETURN_COOKIE = "jostap_google_return_to";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
 
@@ -34,16 +35,65 @@ function clearStateCookie(request) {
   ].filter(Boolean).join("; ");
 }
 
+function clearReturnCookie(request) {
+  const secure =
+    process.env.NODE_ENV === "production" || request.url.startsWith("https://");
+
+  return [
+    `${RETURN_COOKIE}=`,
+    "Max-Age=0",
+    "Path=/",
+    "SameSite=Lax",
+    "HttpOnly",
+    secure ? "Secure" : "",
+  ].filter(Boolean).join("; ");
+}
+
+function safeReturnTo(value) {
+  if (!value || typeof value !== "string") {
+    return "/dashboard";
+  }
+
+  if (!value.startsWith("/") || value.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  return value;
+}
+
+function destinationForUser(user, returnTo, isNewUser) {
+  if (isNewUser) {
+    return "/kyc";
+  }
+
+  if (returnTo && returnTo !== "/dashboard") {
+    return returnTo;
+  }
+
+  return user?.role === "admin" ? "/admin" : "/dashboard";
+}
+
+function appOrigin(request) {
+  return (
+    process.env.GOOGLE_REDIRECT_ORIGIN ||
+    process.env.APP_ORIGIN ||
+    new URL(request.url).origin
+  ).replace(/\/$/, "");
+}
+
 function redirectWithError(request, message) {
   const url = new URL("/auth/signin", request.url);
   url.searchParams.set("error", message);
+  const headers = new Headers({
+    Location: url.toString(),
+  });
+
+  headers.append("Set-Cookie", clearStateCookie(request));
+  headers.append("Set-Cookie", clearReturnCookie(request));
 
   return new Response(null, {
     status: 302,
-    headers: {
-      Location: url.toString(),
-      "Set-Cookie": clearStateCookie(request),
-    },
+    headers,
   });
 }
 
@@ -57,8 +107,8 @@ function splitName(name = "") {
 }
 
 export async function GET(request) {
-  if (!hasDatabase()) {
-    return redirectWithError(request, "Database is not configured.");
+  if (!hasSupabase()) {
+    return redirectWithError(request, "Supabase is not configured.");
   }
 
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
@@ -68,13 +118,15 @@ export async function GET(request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
-  const storedState = parseCookie(request.headers.get("Cookie"))[STATE_COOKIE];
+  const cookies = parseCookie(request.headers.get("Cookie"));
+  const storedState = cookies[STATE_COOKIE];
+  const returnTo = safeReturnTo(cookies[RETURN_COOKIE]);
 
   if (!code || !state || !storedState || state !== storedState) {
     return redirectWithError(request, "Google sign in could not be verified.");
   }
 
-  const callbackUrl = new URL("/api/auth/google/callback", url.origin);
+  const callbackUrl = new URL("/api/auth/google/callback", appOrigin(request));
   const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -109,32 +161,53 @@ export async function GET(request) {
     return redirectWithError(request, "Google account email is not verified.");
   }
 
-  const [existingUser] = await sql(
-    `SELECT id, first_name, last_name, company, email, role, created_at
-     FROM users
-     WHERE lower(email) = lower($1)
-     LIMIT 1`,
-    [email],
-  );
+  const supabase = getSupabaseAdmin();
+  const { data: existingUser, error: existingError } = await supabase
+    .from("users")
+    .select("id, first_name, last_name, company, email, role, status, created_at")
+    .ilike("email", email)
+    .maybeSingle();
+
+  if (existingError) {
+    throw existingError;
+  }
 
   let user = existingUser;
+  let isNewUser = false;
 
   if (!user) {
     const { firstName, lastName } = splitName(profile.name);
-    [user] = await sql(
-      `INSERT INTO users (first_name, last_name, company, email, password_hash)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, first_name, last_name, company, email, role, created_at`,
-      [firstName, lastName, null, email, `google:${profile.sub}`],
-    );
+    const { data: insertedUser, error: insertError } = await supabase
+      .from("users")
+      .insert({
+        first_name: firstName,
+        last_name: lastName,
+        company: null,
+        email,
+        password_hash: `google:${profile.sub}`,
+      })
+      .select("id, first_name, last_name, company, email, role, status, created_at")
+      .single();
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    user = insertedUser;
+    isNewUser = true;
+  }
+
+  if (user.status === "suspended") {
+    return redirectWithError(request, "This account has been suspended.");
   }
 
   const session = await createSession(user.id, request);
   const headers = new Headers({
-    Location: new URL("/dashboard", url.origin).toString(),
+    Location: new URL(destinationForUser(user, returnTo, isNewUser), url.origin).toString(),
   });
 
   headers.append("Set-Cookie", clearStateCookie(request));
+  headers.append("Set-Cookie", clearReturnCookie(request));
   headers.append("Set-Cookie", session.cookie);
 
   return new Response(null, {

@@ -1,16 +1,20 @@
-import sql from "../../utils/sql.js";
 import { badRequest, json, readJson, unauthorized } from "../../utils/http.js";
-import { cardFromRow, cardPayload } from "../../utils/cards.js";
+import { activePlanForUser, applyPlanLimits, cardFromRow, cardPayload } from "../../utils/cards.js";
 import { getSessionUser } from "../../utils/session.js";
+import { getSupabaseAdmin, isUniqueViolation } from "../../utils/supabase.js";
 
 async function findCard(userId, id) {
-  const [row] = await sql(
-    `SELECT *
-     FROM cards
-     WHERE id = $1 AND user_id = $2
-     LIMIT 1`,
-    [id, userId],
-  );
+  const supabase = getSupabaseAdmin();
+  const { data: row, error } = await supabase
+    .from("cards")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
 
   return row || null;
 }
@@ -50,48 +54,43 @@ export async function PUT(request, { params }) {
     return json({ error: "Card not found." }, { status: 404 });
   }
 
-  const card = cardPayload({ ...cardFromRow(existing), ...body });
-
-  if (!card.name || !card.email || !card.slug) {
-    return badRequest("Name, email, and public slug are required.");
-  }
-
   try {
-    const [row] = await sql(
-      `UPDATE cards
-       SET name = $1,
-           title = $2,
-           company = $3,
-           slug = $4,
-           bio = $5,
-           email = $6,
-           phone = $7,
-           website = $8,
-           theme = $9::jsonb,
-           social_links = $10::jsonb,
-           active = $11
-       WHERE id = $12 AND user_id = $13
-       RETURNING *`,
-      [
-        card.name,
-        card.title,
-        card.company,
-        card.slug,
-        card.bio,
-        card.email,
-        card.phone,
-        card.website,
-        JSON.stringify(card.theme),
-        JSON.stringify(card.socialLinks),
-        card.active,
-        params.id,
-        user.id,
-      ],
-    );
+    const supabase = getSupabaseAdmin();
+    const plan = await activePlanForUser(supabase, user.id);
+    const card = applyPlanLimits(cardPayload({ ...cardFromRow(existing), ...body }), plan);
+
+    if (!card.name || !card.email || !card.slug) {
+      return badRequest("Name, email, and public slug are required.");
+    }
+
+    const { data: row, error } = await supabase
+      .from("cards")
+      .update({
+        name: card.name,
+        title: card.title,
+        company: card.company,
+        slug: card.slug,
+        bio: card.bio,
+        email: card.email,
+        phone: card.phone,
+        website: card.website,
+        avatar_url: card.avatarUrl,
+        theme: card.theme,
+        social_links: card.socialLinks,
+        active: card.active,
+      })
+      .eq("id", params.id)
+      .eq("user_id", user.id)
+      .select("*")
+      .single();
+
+    if (error) {
+      throw error;
+    }
 
     return json({ card: cardFromRow(row) });
   } catch (error) {
-    if (error.code === "23505") {
+    if (isUniqueViolation(error)) {
       return badRequest("This public slug is already in use.");
     }
 
@@ -106,10 +105,16 @@ export async function DELETE(request, { params }) {
     return unauthorized();
   }
 
-  await sql("DELETE FROM cards WHERE id = $1 AND user_id = $2", [
-    params.id,
-    user.id,
-  ]);
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from("cards")
+    .delete()
+    .eq("id", params.id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw error;
+  }
 
   return json({ ok: true });
 }

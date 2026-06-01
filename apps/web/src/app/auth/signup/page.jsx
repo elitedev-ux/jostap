@@ -34,8 +34,10 @@ function GoogleIcon() {
 }
 
 export default function SignUpPage() {
-  const checkoutParams =
-    typeof window !== "undefined" ? window.location.search : "";
+  const initialError =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("error") || ""
+      : "";
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -48,7 +50,9 @@ export default function SignUpPage() {
   });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initialError);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
 
   const update = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -95,9 +99,63 @@ export default function SignUpPage() {
         throw new Error(data.error || "Unable to create your account.");
       }
 
-      window.location.href = `/checkout${checkoutParams || "?plan=professional&billing=monthly"}`;
+      if (data.requiresVerification) {
+        setAwaitingVerification(true);
+        return;
+      }
+
+      window.location.href = "/kyc";
     } catch (error) {
       setError(error.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/verify-registration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ email: form.email, code: verificationCode }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to verify your account.");
+      }
+
+      window.location.href = "/kyc";
+    } catch (error) {
+      setError(error.message || "Unable to verify your account.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendCode = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ email: form.email }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to resend verification code.");
+      }
+    } catch (error) {
+      setError(error.message || "Unable to resend verification code.");
     } finally {
       setLoading(false);
     }
@@ -117,6 +175,34 @@ export default function SignUpPage() {
 
         {error && <div className="auth-error">{error}</div>}
 
+        {awaitingVerification ? (
+          <form onSubmit={handleVerify}>
+            <div className="auth-fields">
+              <label className="auth-field">
+                <span>Email verification code</span>
+                <input
+                  inputMode="numeric"
+                  value={verificationCode}
+                  onChange={(event) => setVerificationCode(event.target.value)}
+                  placeholder="6-digit code"
+                  required
+                />
+              </label>
+            </div>
+            <button className="auth-submit" disabled={loading} type="submit">
+              {loading ? "Verifying..." : "Verify Email"}
+            </button>
+            <button
+              type="button"
+              onClick={resendCode}
+              disabled={loading}
+              className="auth-submit"
+              style={{ marginTop: 10, background: "#EFF6FF", color: "#2563EB" }}
+            >
+              Resend Code
+            </button>
+          </form>
+        ) : (
         <form onSubmit={handleSubmit}>
           <div className="auth-fields auth-fields--two">
             <label className="auth-field">
@@ -222,24 +308,25 @@ export default function SignUpPage() {
             {loading ? "Creating account..." : "Sign Up"}
           </button>
         </form>
+        )}
 
-        <div className="auth-social-divider">
+        {!awaitingVerification && <div className="auth-social-divider">
           <div />
           <span>or continue with</span>
           <div />
-        </div>
+        </div>}
 
-        <div className="auth-social-grid">
+        {!awaitingVerification && <div className="auth-social-grid">
           <button
             type="button"
             onClick={() => {
-              window.location.href = "/api/auth/google";
+              window.location.href = `/api/auth/google?callbackUrl=${encodeURIComponent("/kyc")}`;
             }}
           >
             <GoogleIcon />
             Continue with Google
           </button>
-        </div>
+        </div>}
       </div>
     </AuthShell>
   );
