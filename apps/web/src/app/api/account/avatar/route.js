@@ -14,6 +14,37 @@ function extensionFor(type) {
   return "jpg";
 }
 
+function detectedImageType(bytes) {
+  if (
+    bytes[0] === 0xff &&
+    bytes[1] === 0xd8 &&
+    bytes[2] === 0xff
+  ) {
+    return "image/jpeg";
+  }
+
+  if (
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47 &&
+    bytes[4] === 0x0d &&
+    bytes[5] === 0x0a &&
+    bytes[6] === 0x1a &&
+    bytes[7] === 0x0a
+  ) {
+    return "image/png";
+  }
+
+  const riff = String.fromCharCode(...bytes.slice(0, 4));
+  const webp = String.fromCharCode(...bytes.slice(8, 12));
+  if (riff === "RIFF" && webp === "WEBP") {
+    return "image/webp";
+  }
+
+  return "";
+}
+
 async function ensureAvatarBucket(supabase) {
   const { error } = await supabase.storage.getBucket(BUCKET);
 
@@ -57,12 +88,18 @@ export async function POST(request) {
   const supabase = getSupabaseAdmin();
   await ensureAvatarBucket(supabase);
 
-  const path = `${user.id}/profile-${Date.now()}.${extensionFor(file.type)}`;
   const buffer = await file.arrayBuffer();
+  const detectedType = detectedImageType(new Uint8Array(buffer.slice(0, 16)));
+
+  if (detectedType !== file.type) {
+    return json({ error: "The uploaded file content does not match the image type." }, { status: 400 });
+  }
+
+  const path = `${user.id}/profile-${Date.now()}.${extensionFor(detectedType)}`;
   const { error: uploadError } = await supabase.storage
     .from(BUCKET)
     .upload(path, buffer, {
-      contentType: file.type,
+      contentType: detectedType,
       cacheControl: "3600",
       upsert: true,
     });

@@ -207,9 +207,14 @@ function UploadTile({ label, icon: Icon, onUpload, preview, onRemove }) {
   );
 }
 
-export default function CardBuilderPage() {
+function userLabel(user) {
+  return `${user.name || user.email}${user.email && user.name !== user.email ? ` (${user.email})` : ""}`;
+}
+
+export default function CardBuilderPage({ mode = "user" }) {
   const { id } = useParams();
   const editing = Boolean(id);
+  const isAdminMode = mode === "admin";
   const newCardSlugSuffix = useRef(Date.now().toString(36).slice(-4));
   const [card, setCard] = useState({ ...EMPTY_CARD, brandColor: COLORS[8], coverUrl: "" });
   const [activeFields, setActiveFields] = useState(DEFAULT_ACTIVE);
@@ -217,9 +222,11 @@ export default function CardBuilderPage() {
   const [message, setMessage] = useState("");
   const [imageMessage, setImageMessage] = useState("");
   const [qrLocked, setQrLocked] = useState(true);
-  const [currentPlan, setCurrentPlan] = useState("free");
-  const canUsePremiumFields = hasPremiumFeatures(currentPlan);
-  const canCustomizeBrand = hasCustomBranding(currentPlan);
+  const [currentPlan, setCurrentPlan] = useState(isAdminMode ? "custom_nfc" : "free");
+  const [users, setUsers] = useState([]);
+  const [assignedUserId, setAssignedUserId] = useState("");
+  const canUsePremiumFields = isAdminMode || hasPremiumFeatures(currentPlan);
+  const canCustomizeBrand = isAdminMode || hasCustomBranding(currentPlan);
   const previewFields = useMemo(() => {
     const next = new Set(activeFields);
     if (!canUsePremiumFields) {
@@ -261,6 +268,19 @@ export default function CardBuilderPage() {
 
     async function loadInitialCard() {
       try {
+        if (isAdminMode) {
+          setCurrentPlan("custom_nfc");
+          setQrLocked(false);
+          const response = await fetch("/api/admin/overview", { credentials: "same-origin" });
+          const data = await response.json().catch(() => ({}));
+          if (response.status === 401 || response.status === 403) {
+            window.location.href = "/auth/signin?callbackUrl=/admin/cards/new";
+            return;
+          }
+          if (active && response.ok) setUsers(data.users || []);
+          return;
+        }
+
         loadBillingPlan();
         if (editing) {
           const found = await getCard(id);
@@ -314,7 +334,7 @@ export default function CardBuilderPage() {
     return () => {
       active = false;
     };
-  }, [editing, id]);
+  }, [editing, id, isAdminMode]);
 
   const uploadProfile = async (file) => {
     setImageMessage("");
@@ -383,8 +403,8 @@ export default function CardBuilderPage() {
 
   const handleSave = async () => {
     setMessage("");
-    if (!card.name.trim() || !card.email.trim()) {
-      setMessage("Add at least your name and email before continuing.");
+    if (!card.name.trim() || (!isAdminMode && !card.email.trim())) {
+      setMessage(isAdminMode ? "Add at least the card name before continuing." : "Add at least your name and email before continuing.");
       return;
     }
     const slug = card.slug || slugFromName(card.name);
@@ -411,6 +431,19 @@ export default function CardBuilderPage() {
         showFaq: false,
         active: true,
       };
+      if (isAdminMode) {
+        const response = await fetch("/api/admin/cards", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, userId: assignedUserId || null }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Unable to create this card.");
+        window.location.href = "/admin/cards";
+        return;
+      }
+
       if (editing) await updateCard(id, payload);
       else await createCard(payload);
       window.location.href = "/dashboard/cards";
@@ -439,10 +472,10 @@ export default function CardBuilderPage() {
           <header className="card-builder-header">
             <div>
               <p>Card Builder</p>
-              <h1>{editing ? "Edit your card" : "Create your first card"}</h1>
-              <span>{editing ? "Update the details, media, and links on this card." : "Ready to design your card? Pick a field below to get started."}</span>
+              <h1>{isAdminMode ? "Create card for a user" : editing ? "Edit your card" : "Create your first card"}</h1>
+              <span>{isAdminMode ? "Build the full profile, then optionally assign it to a user account." : editing ? "Update the details, media, and links on this card." : "Ready to design your card? Pick a field below to get started."}</span>
             </div>
-            <a href="/dashboard/cards">My Cards</a>
+            <a href={isAdminMode ? "/admin/cards" : "/dashboard/cards"}>{isAdminMode ? "Admin Cards" : "My Cards"}</a>
           </header>
 
           <section className="card-builder-section">
@@ -549,12 +582,32 @@ export default function CardBuilderPage() {
             </div>
           </section>
 
+          {isAdminMode && (
+            <section className="card-builder-section">
+              <h2>Card assignment</h2>
+              <div className="card-builder-admin-assignment">
+                <label>
+                  <span>Assign to user account</span>
+                  <select value={assignedUserId} onChange={(event) => setAssignedUserId(event.target.value)}>
+                    <option value="">Unassigned card</option>
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {userLabel(user)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p>Leave this unassigned when the customer does not have an account yet. You can assign or reassign it later from Admin Cards.</p>
+              </div>
+            </section>
+          )}
+
           {message && <div className="card-builder-alert">{message}</div>}
 
           <footer className="card-builder-footer">
             <p>By continuing you agree to our Privacy Policy and Terms of Service</p>
             <button type="button" onClick={handleSave} disabled={saving}>
-              {saving ? (editing ? "Updating..." : "Publishing...") : editing ? "Update card" : "Publish card"} <ArrowRight size={16} />
+              {saving ? (isAdminMode ? "Creating..." : editing ? "Updating..." : "Publishing...") : isAdminMode ? "Create card" : editing ? "Update card" : "Publish card"} <ArrowRight size={16} />
             </button>
           </footer>
         </div>
@@ -862,6 +915,11 @@ export default function CardBuilderPage() {
         .card-builder-slug span { padding: 12px; background: #f5f5f5; color: #6b7280; font-size: 13px; border-right: 1px solid #e5e7eb; }
         .card-builder-slug input { border-top: none; }
         .card-builder-section textarea { max-width: 560px; border: 1px solid #e5e7eb; border-radius: 9px; resize: vertical; }
+        .card-builder-admin-assignment { max-width: 560px; display: grid; gap: 10px; }
+        .card-builder-admin-assignment label { display: grid; gap: 7px; color: #374151; font-size: 13px; font-weight: 800; }
+        .card-builder-admin-assignment select { width: 100%; border: 1px solid #e5e7eb; border-radius: 9px; background: #fff; color: #111827; padding: 11px 12px; font-size: 13px; outline: none; }
+        .card-builder-admin-assignment select:focus { border-color: #0d6ffd; box-shadow: 0 0 0 3px #eaf3ff; }
+        .card-builder-admin-assignment p { margin: 0; color: #6b7280; font-size: 12px; line-height: 1.5; }
         .card-builder-alert { max-width: 560px; padding: 12px 14px; border-radius: 10px; border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; font-weight: 800; font-size: 13px; margin-bottom: 18px; }
         .card-builder-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 56px; }
         .card-builder-footer p { color: #6b7280; font-size: 12px; }

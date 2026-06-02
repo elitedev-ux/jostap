@@ -2,6 +2,10 @@ import { badRequest, json, readJson, unauthorized } from "../utils/http.js";
 import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin } from "../utils/supabase.js";
 
+function boundedText(value, max) {
+  return String(value || "").trim().slice(0, max);
+}
+
 export async function GET(request) {
   const user = await getSessionUser(request);
 
@@ -53,9 +57,9 @@ export async function POST(request) {
 
   if (!body) return badRequest("Invalid request body.");
 
-  const subject = String(body.subject || "").trim();
-  const message = String(body.message || "").trim();
-  const category = String(body.category || "General").trim() || "General";
+  const subject = boundedText(body.subject, 180);
+  const message = boundedText(body.message, 4000);
+  const category = boundedText(body.category || "General", 80) || "General";
   const priority = ["low", "normal", "high", "urgent"].includes(body.priority)
     ? body.priority
     : "normal";

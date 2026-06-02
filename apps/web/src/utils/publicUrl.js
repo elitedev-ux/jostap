@@ -41,10 +41,10 @@ export function publicOrigin(options = {}) {
 
   return (
     cleanOrigin(options.origin) ||
-    requestOrigin(options.request) ||
     cleanOrigin(fromEnv) ||
     (typeof window !== "undefined" ? cleanOrigin(window.location.origin) : "") ||
-    DEFAULT_PUBLIC_ORIGIN
+    DEFAULT_PUBLIC_ORIGIN ||
+    requestOrigin(options.request)
   );
 }
 

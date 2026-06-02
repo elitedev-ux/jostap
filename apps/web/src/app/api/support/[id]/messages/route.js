@@ -2,6 +2,10 @@ import { badRequest, json, readJson, unauthorized } from "../../../utils/http.js
 import { getSessionUser } from "../../../utils/session.js";
 import { getSupabaseAdmin } from "../../../utils/supabase.js";
 
+function boundedText(value, max) {
+  return String(value || "").trim().slice(0, max);
+}
+
 async function loadOwnedTicket(supabase, userId, ticketId) {
   const { data, error } = await supabase
     .from("support_tickets")
@@ -40,7 +44,7 @@ export async function POST(request, { params }) {
   const body = await readJson(request);
   if (!body) return badRequest("Invalid request body.");
 
-  const message = String(body.message || "").trim();
+  const message = boundedText(body.message, 4000);
   if (!message) return badRequest("Message is required.");
 
   const supabase = getSupabaseAdmin();

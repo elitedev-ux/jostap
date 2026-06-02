@@ -219,7 +219,7 @@ export default function CheckoutPage() {
                     marginBottom: 14,
                   }}
                 >
-                  <Sparkles size={13} /> Billing bypass enabled
+                  <Sparkles size={13} /> Payment setup required
                 </span>
                 <h1
                   style={{
@@ -233,7 +233,7 @@ export default function CheckoutPage() {
                   Start your JOSTAP plan
                 </h1>
                 <p style={{ color: "#6B7280", fontSize: 14, lineHeight: 1.6 }}>
-                  Billing is bypassed for now. This records your selected JOSTAP product and opens your dashboard.
+                  Free plans can be activated immediately. Paid JOSTAP Card orders require a configured payment provider or manual admin processing.
                 </p>
               </div>
 
@@ -358,7 +358,7 @@ export default function CheckoutPage() {
                   marginBottom: 18,
                 }}
               >
-                Payment method
+                Payment details
               </h2>
 
               <div
@@ -643,8 +643,8 @@ export default function CheckoutPage() {
             >
               <ShieldCheck size={16} style={{ flexShrink: 0, marginTop: 1 }} />
               <span>
-                Payment is bypassed for now. Connect Stripe, Paystack, or your
-                preferred provider when billing is ready.
+                  Paid checkout is blocked until Stripe, Paystack, or another
+                  approved payment provider is connected.
               </span>
             </div>
           </aside>

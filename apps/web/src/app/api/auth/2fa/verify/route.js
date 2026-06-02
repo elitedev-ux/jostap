@@ -25,6 +25,10 @@ async function verifyLoginChallenge(supabase, request, challengeId, code) {
   if (userError) throw userError;
   if (!user || user.status === "suspended") return unauthorized("Invalid two-factor challenge.");
 
+  if (Number(challenge.attempts || 0) >= 5) {
+    return badRequest("Too many attempts. Sign in again.");
+  }
+
   if (!verifyTotp(user.two_factor_secret, code)) {
     await supabase
       .from("auth_challenges")

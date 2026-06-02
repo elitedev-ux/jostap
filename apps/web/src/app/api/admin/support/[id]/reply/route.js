@@ -2,6 +2,10 @@ import { badRequest, json, readJson } from "../../../../utils/http.js";
 import { requireAdmin, logAdminAction } from "../../../../utils/admin.js";
 import { getSupabaseAdmin } from "../../../../utils/supabase.js";
 
+function boundedText(value, max) {
+  return String(value || "").trim().slice(0, max);
+}
+
 export async function POST(request, { params }) {
   const { user: adminUser, response } = await requireAdmin(request);
   if (response) return response;
@@ -9,7 +13,7 @@ export async function POST(request, { params }) {
   const body = await readJson(request);
   if (!body) return badRequest("Invalid request body.");
 
-  const message = String(body.message || "").trim();
+  const message = boundedText(body.message, 4000);
   const status = ["open", "pending", "resolved", "closed"].includes(body.status)
     ? body.status
     : null;

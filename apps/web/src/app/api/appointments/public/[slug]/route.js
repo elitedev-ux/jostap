@@ -11,6 +11,14 @@ function toIso(value) {
   return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
+function truncate(value, max) {
+  return String(value || "").trim().slice(0, max);
+}
+
+function isEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 export async function POST(request, { params }) {
   if (!hasSupabase()) {
     return badRequest("Booking is not available right now.");
@@ -19,13 +27,17 @@ export async function POST(request, { params }) {
   const body = await readJson(request);
   if (!body) return badRequest("Invalid request body.");
 
-  const guestName = String(body.guestName || "").trim();
-  const guestEmail = String(body.guestEmail || "").trim().toLowerCase();
+  const guestName = truncate(body.guestName, 120);
+  const guestEmail = truncate(body.guestEmail, 254).toLowerCase();
   const startsAt = toIso(body.startsAt);
-  const notes = String(body.notes || "").trim();
+  const notes = truncate(body.notes, 2000);
 
   if (!guestName || !guestEmail || !startsAt) {
     return badRequest("Name, email, and date/time are required.");
+  }
+
+  if (!isEmail(guestEmail)) {
+    return badRequest("Enter a valid email address.");
   }
 
   const start = new Date(startsAt);

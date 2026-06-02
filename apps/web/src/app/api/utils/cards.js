@@ -7,6 +7,10 @@ export function normalizeSlug(value) {
     .slice(0, 80);
 }
 
+export function isEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || ""));
+}
+
 const PREMIUM_FEATURE_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
 const CUSTOM_BRANDING_PLANS = new Set(["custom_nfc"]);
 const MULTI_VALUE_SOCIAL_FIELDS = new Set([
@@ -74,15 +78,15 @@ function sanitizeActiveFields(value) {
   return list;
 }
 
-function normalizeText(value) {
-  return String(value || "").trim();
+function normalizeText(value, max = 500) {
+  return String(value || "").trim().slice(0, max);
 }
 
 function normalizeMultiText(value) {
   if (Array.isArray(value)) {
-    return value.map((item) => normalizeText(item)).filter(Boolean);
+    return value.map((item) => normalizeText(item, 500)).filter(Boolean).slice(0, 20);
   }
-  const one = normalizeText(value);
+  const one = normalizeText(value, 500);
   return one ? [one] : [];
 }
 
@@ -232,14 +236,14 @@ export function cardPayload(body) {
   const slug = normalizeSlug(body.slug);
 
   return {
-    name: String(body.name || "").trim(),
-    title: String(body.title || body.role || "").trim() || null,
-    company: String(body.company || "").trim() || null,
-    bio: String(body.bio || "").trim() || null,
-    phone: String(body.phone || "").trim() || null,
-    email: String(body.email || "").trim(),
-    website: String(body.website || "").trim() || null,
-    avatarUrl: String(body.avatarUrl || "").trim() || null,
+    name: normalizeText(body.name, 120),
+    title: normalizeText(body.title || body.role, 120) || null,
+    company: normalizeText(body.company, 160) || null,
+    bio: normalizeText(body.bio, 2000) || null,
+    phone: normalizeText(body.phone, 60) || null,
+    email: normalizeText(body.email, 254),
+    website: normalizeText(body.website, 500) || null,
+    avatarUrl: normalizeText(body.avatarUrl, 1000) || null,
     slug,
     active: body.active ?? true,
     theme: {
@@ -249,10 +253,10 @@ export function cardPayload(body) {
       showTestimonials: body.showTestimonials ?? true,
       showGallery: body.showGallery ?? false,
       showFaq: body.showFaq ?? false,
-      logoUrl: String(body.logoUrl || "").trim(),
-      coverUrl: String(body.coverUrl || "").trim(),
-      brandColor: String(body.brandColor || "").trim(),
-      videoUrl: String(body.videoUrl || "").trim(),
+      logoUrl: normalizeText(body.logoUrl, 1000),
+      coverUrl: normalizeText(body.coverUrl, 1000),
+      brandColor: normalizeText(body.brandColor, 32),
+      videoUrl: normalizeText(body.videoUrl, 1000),
     },
     socialLinks: {
       whatsapp: toSocialValue("whatsapp", body.whatsapp),

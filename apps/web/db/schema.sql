@@ -352,6 +352,7 @@ CREATE TABLE IF NOT EXISTS support_ticket_messages (
 );
 
 CREATE INDEX IF NOT EXISTS support_ticket_messages_ticket_id_idx ON support_ticket_messages (ticket_id);
+CREATE INDEX IF NOT EXISTS support_ticket_messages_sender_user_id_idx ON support_ticket_messages (sender_user_id);
 CREATE INDEX IF NOT EXISTS support_ticket_messages_created_at_idx ON support_ticket_messages (created_at);
 
 CREATE TABLE IF NOT EXISTS admin_audit_logs (
@@ -572,6 +573,52 @@ ALTER TABLE announcement_reads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE support_ticket_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_audit_logs ENABLE ROW LEVEL SECURITY;
+
+DO $$
+DECLARE
+  policy_table text;
+BEGIN
+  FOREACH policy_table IN ARRAY ARRAY[
+    'users',
+    'sessions',
+    'auth_challenges',
+    'kyc_profiles',
+    'cards',
+    'leads',
+    'appointments',
+    'google_calendar_connections',
+    'subscriptions',
+    'payments',
+    'invoices',
+    'card_templates',
+    'premium_features',
+    'email_templates',
+    'static_pages',
+    'faqs',
+    'pricing_plans',
+    'role_permissions',
+    'admin_notifications',
+    'announcements',
+    'announcement_reads',
+    'support_tickets',
+    'support_ticket_messages',
+    'admin_audit_logs'
+  ]
+  LOOP
+    IF NOT EXISTS (
+      SELECT 1
+      FROM pg_policies
+      WHERE schemaname = 'public'
+        AND tablename = policy_table
+        AND policyname = 'server_role_full_access'
+    ) THEN
+      EXECUTE format(
+        'CREATE POLICY server_role_full_access ON public.%I FOR ALL TO service_role USING (true) WITH CHECK (true)',
+        policy_table
+      );
+    END IF;
+  END LOOP;
+END $$;
 
 GRANT USAGE ON SCHEMA public TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO service_role;

@@ -1,5 +1,4 @@
 import {
-  CheckCircle2,
   CreditCard,
   Download,
   Eye,
@@ -28,16 +27,6 @@ const assignmentColors = {
   unassigned: ["#FFF7ED", "#C2410C", "#FED7AA"],
 };
 
-const emptyForm = {
-  name: "",
-  title: "",
-  company: "",
-  email: "",
-  slug: "",
-  userId: "",
-  active: true,
-};
-
 function userLabel(user) {
   return `${user.name || user.email}${user.email && user.name !== user.email ? ` (${user.email})` : ""}`;
 }
@@ -51,8 +40,6 @@ export default function AdminCardsPage() {
   const [userFilter, setUserFilter] = useState("");
   const [loadError, setLoadError] = useState("");
   const [busyId, setBusyId] = useState("");
-  const [createOpen, setCreateOpen] = useState(false);
-  const [form, setForm] = useState(emptyForm);
 
   async function loadCards(active = true) {
     setLoadError("");
@@ -109,28 +96,6 @@ export default function AdminCardsPage() {
     }
   }
 
-  async function createCard(event) {
-    event.preventDefault();
-    setBusyId("create");
-    setLoadError("");
-    try {
-      const response = await fetch("/api/admin/cards", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "Unable to create card.");
-      setForm(emptyForm);
-      setCreateOpen(false);
-      await loadCards();
-    } catch (error) {
-      setLoadError(error.message || "Unable to create card.");
-    } finally {
-      setBusyId("");
-    }
-  }
-
   useEffect(() => {
     let active = true;
     loadCards(active);
@@ -162,68 +127,13 @@ export default function AdminCardsPage() {
             Create, assign, reassign, publish, and monitor digital card records.
           </p>
         </div>
-        <button
-          onClick={() => setCreateOpen((value) => !value)}
+        <a
+          href="/admin/cards/new"
           style={{ border: "none", background: "#0d6ffd", color: "#fff", borderRadius: 9, padding: "10px 15px", fontSize: 13, fontWeight: 800, cursor: "pointer" }}
         >
-          {createOpen ? "Close form" : "Create card"}
-        </button>
+          Create card
+        </a>
       </div>
-
-      {createOpen && (
-        <form onSubmit={createCard} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 18, marginBottom: 20 }}>
-          <div style={{ marginBottom: 14 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 4 }}>Create card</h2>
-            <p style={{ fontSize: 13, color: "#6B7280" }}>Leave user assignment empty to create an unassigned card.</p>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 12 }}>
-            {[
-              ["name", "Card name", true],
-              ["title", "Title", false],
-              ["company", "Company", false],
-              ["email", "Contact email", false],
-              ["slug", "Public slug", true],
-            ].map(([key, label, required]) => (
-              <label key={key} className="ui-field">
-                <span>{label}</span>
-                <input
-                  value={form[key]}
-                  required={required}
-                  onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}
-                />
-              </label>
-            ))}
-            <label className="ui-field">
-              <span>Assign to user</span>
-              <select value={form.userId} onChange={(event) => setForm((current) => ({ ...current, userId: event.target.value }))}>
-                <option value="">Unassigned</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {userLabel(user)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <label style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 14, fontSize: 13, color: "#374151", fontWeight: 700 }}>
-            <input
-              type="checkbox"
-              checked={form.active}
-              onChange={(event) => setForm((current) => ({ ...current, active: event.target.checked }))}
-            />
-            Publish card immediately
-          </label>
-          <div style={{ marginTop: 16 }}>
-            <button
-              type="submit"
-              disabled={busyId === "create"}
-              style={{ border: "none", background: "#0d6ffd", color: "#fff", borderRadius: 9, padding: "10px 15px", fontSize: 13, fontWeight: 800, cursor: busyId === "create" ? "wait" : "pointer" }}
-            >
-              {busyId === "create" ? "Creating..." : "Create card"}
-            </button>
-          </div>
-        </form>
-      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 14, marginBottom: 20 }}>
         {[

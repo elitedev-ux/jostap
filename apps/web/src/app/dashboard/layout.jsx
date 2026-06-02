@@ -20,6 +20,7 @@ import logo from "../../assets/jostap logo.png3.png";
 import faviconMark from "../../assets/jostap favicon bg.png";
 import { getCards } from "../../utils/cardsStore";
 import cn from "classnames";
+import "./dashboard-layout.css";
 
 const NAV = [
   { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
@@ -331,7 +332,7 @@ export default function DashboardLayout({ children }) {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="hidden md:hidden p-1 bg-transparent border-none cursor-pointer text-slate-500"
+              className="dashboard-menu-button p-1 bg-transparent border-none cursor-pointer text-slate-500"
             >
               <Menu size={20} />
             </button>

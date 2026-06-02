@@ -2,6 +2,10 @@ import { badRequest, json, readJson } from "../../../utils/http.js";
 import { requireAdmin, logAdminAction } from "../../../utils/admin.js";
 import { getSupabaseAdmin } from "../../../utils/supabase.js";
 
+function boundedText(value, max) {
+  return String(value || "").trim().slice(0, max);
+}
+
 export async function GET(request, { params }) {
   const { response } = await requireAdmin(request);
   if (response) return response;
@@ -57,7 +61,7 @@ export async function PATCH(request, { params }) {
   }
 
   if (Object.prototype.hasOwnProperty.call(body, "admin_notes")) {
-    updates.admin_notes = String(body.admin_notes || "");
+    updates.admin_notes = boundedText(body.admin_notes, 4000);
   }
 
   if (!Object.keys(updates).length) {

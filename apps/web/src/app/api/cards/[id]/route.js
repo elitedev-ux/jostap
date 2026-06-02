@@ -1,5 +1,5 @@
 import { badRequest, json, readJson, unauthorized } from "../../utils/http.js";
-import { activePlanForUser, applyPlanLimits, cardFromRow, cardPayload } from "../../utils/cards.js";
+import { activePlanForUser, applyPlanLimits, cardFromRow, cardPayload, isEmail } from "../../utils/cards.js";
 import { getSessionUser } from "../../utils/session.js";
 import { getSupabaseAdmin, isUniqueViolation } from "../../utils/supabase.js";
 import { cardProfileUrl, cardQrUrl } from "../../../../utils/publicUrl.js";
@@ -70,6 +70,10 @@ export async function PUT(request, { params }) {
 
     if (!card.name || !card.email || !card.slug) {
       return badRequest("Name, email, and public slug are required.");
+    }
+
+    if (!isEmail(card.email)) {
+      return badRequest("Enter a valid card email address.");
     }
 
     const { data: row, error } = await supabase

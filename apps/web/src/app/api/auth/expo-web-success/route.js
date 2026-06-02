@@ -2,6 +2,7 @@ import { getSessionUser } from "../../utils/session.js";
 
 export async function GET(request) {
 	const user = await getSessionUser(request);
+	const targetOrigin = new URL(request.url).origin;
 
 	if (!user) {
 		return new Response(
@@ -9,7 +10,7 @@ export async function GET(request) {
 			<html>
 				<body>
 					<script>
-						window.parent.postMessage({ type: 'AUTH_ERROR', error: 'Unauthorized' }, '*');
+						window.parent.postMessage({ type: 'AUTH_ERROR', error: 'Unauthorized' }, ${JSON.stringify(targetOrigin)});
 					</script>
 				</body>
 			</html>
@@ -38,7 +39,7 @@ export async function GET(request) {
 		<html>
 			<body>
 				<script>
-					window.parent.postMessage(${JSON.stringify(message)}, '*');
+					window.parent.postMessage(${JSON.stringify(message)}, ${JSON.stringify(targetOrigin)});
 				</script>
 			</body>
 		</html>
