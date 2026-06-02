@@ -12,9 +12,27 @@ async function getHandler() {
   return cachedHandler;
 }
 
+function getAbsoluteRequestUrl(request) {
+  try {
+    return new URL(request.url);
+  } catch {
+    const headers = request.headers;
+    const host =
+      headers?.get?.('x-forwarded-host') ||
+      headers?.get?.('host') ||
+      process.env.VERCEL_URL ||
+      'localhost';
+    const protocol =
+      headers?.get?.('x-forwarded-proto') ||
+      (host.includes('localhost') ? 'http' : 'https');
+
+    return new URL(request.url || '/', `${protocol}://${host}`);
+  }
+}
+
 export default async function handler(request, context) {
   const handler = await getHandler();
-  const url = new URL(request.url);
+  const url = getAbsoluteRequestUrl(request);
   const originalPath = url.searchParams.get('path') || '';
 
   url.searchParams.delete('path');
