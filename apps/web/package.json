@@ -6,7 +6,7 @@
 		"node": ">=22.20.0"
 	},
 	"scripts": {
-		"build": "react-router typegen && react-router build",
+		"build": "react-router typegen && react-router build && node scripts/mark-server-build-as-esm.mjs",
 		"build:netlify": "node scripts/clean-netlify-artifacts.mjs && react-router build",
 		"check:supabase": "node scripts/check-supabase.js",
 		"dev": "react-router dev",
