@@ -508,6 +508,7 @@ export default function CardsPage() {
   const [search, setSearch] = useState("");
   const [loadError, setLoadError] = useState("");
   const [qrLocked, setQrLocked] = useState(true);
+  const [cardLimit, setCardLimit] = useState(null);
 
   const refreshCards = async () => {
     try {
@@ -524,7 +525,10 @@ export default function CardsPage() {
       try {
         const response = await fetch("/api/billing", { credentials: "same-origin" });
         const data = await response.json().catch(() => ({}));
-        if (response.ok) setQrLocked(!hasDownloadableQr(data.subscription?.plan));
+        if (response.ok) {
+          setQrLocked(!hasDownloadableQr(data.subscription?.plan));
+          setCardLimit(data.subscription?.cardLimit ?? null);
+        }
       } catch {
         setQrLocked(true);
       }
@@ -547,6 +551,7 @@ export default function CardsPage() {
   }, [cards, search]);
 
   const hasCards = cards.length > 0;
+  const reachedCardLimit = cardLimit !== null && cards.length >= cardLimit;
 
   return (
     <>
@@ -577,7 +582,7 @@ export default function CardsPage() {
           </p>
         </div>
         <a
-          href="/create-card"
+          href={reachedCardLimit ? "/pricing" : "/create-card"}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -588,12 +593,29 @@ export default function CardsPage() {
             textDecoration: "none",
             padding: "9px 18px",
             borderRadius: 9,
-            background: "#0d6ffd",
+            background: reachedCardLimit ? "#ff9f0d" : "#0d6ffd",
           }}
         >
-          <Plus size={15} /> New Card
+          <Plus size={15} /> {reachedCardLimit ? "Upgrade for more cards" : "New Card"}
         </a>
       </div>
+
+      {reachedCardLimit && (
+        <div
+          style={{
+            background: "#FFFBEB",
+            border: "1px solid #FED7AA",
+            borderRadius: 10,
+            color: "#92400E",
+            fontSize: 13,
+            fontWeight: 600,
+            padding: "11px 14px",
+            marginBottom: 18,
+          }}
+        >
+          Free users can create 1 card. Upgrade to create additional cards and unlock premium features.
+        </div>
+      )}
 
       {hasCards && (
         <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>

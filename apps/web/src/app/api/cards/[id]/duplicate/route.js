@@ -1,5 +1,5 @@
 import { json, unauthorized } from "../../../utils/http.js";
-import { cardFromRow } from "../../../utils/cards.js";
+import { activePlanForUser, assertCanCreateCard, cardFromRow } from "../../../utils/cards.js";
 import { getSessionUser } from "../../../utils/session.js";
 import { getSupabaseAdmin } from "../../../utils/supabase.js";
 import { publicCardUrl, cardQrUrl } from "../../../../../utils/publicUrl.js";
@@ -20,6 +20,16 @@ export async function POST(request, { params }) {
   }
 
   const supabase = getSupabaseAdmin();
+  const plan = await activePlanForUser(supabase, user.id);
+  try {
+    await assertCanCreateCard(supabase, user.id, plan);
+  } catch (error) {
+    if (error.code === "PLAN_CARD_LIMIT") {
+      return json({ error: error.message, upgradeRequired: true }, { status: 402 });
+    }
+    throw error;
+  }
+
   const { data: source, error: sourceError } = await supabase
     .from("cards")
     .select("*")

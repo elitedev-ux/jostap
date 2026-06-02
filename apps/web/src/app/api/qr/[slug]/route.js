@@ -1,4 +1,5 @@
 import { getSupabaseAdmin, hasSupabase } from "../../utils/supabase.js";
+import { recordCardEngagement } from "../../utils/engagement.js";
 import { absolutePublicUrl, publicCardPath } from "../../../../utils/publicUrl.js";
 
 function redirectTo(path, request, status = 302) {
@@ -19,7 +20,7 @@ export async function GET(request, { params }) {
   const supabase = getSupabaseAdmin();
   let query = supabase
     .from("cards")
-    .select("id,slug,active,qr_scans")
+    .select("id,user_id,slug,active,qr_scans")
     .eq("active", true);
 
   query = isUuid(token) ? query.eq("id", token) : query.eq("slug", token);
@@ -30,10 +31,7 @@ export async function GET(request, { params }) {
     return redirectTo("/?card=not-found", request);
   }
 
-  await supabase
-    .from("cards")
-    .update({ qr_scans: Number(row.qr_scans || 0) + 1 })
-    .eq("id", row.id);
+  await recordCardEngagement(supabase, { card: row, type: "qr_scan", request });
 
   return redirectTo(publicCardPath(row.id), request);
 }

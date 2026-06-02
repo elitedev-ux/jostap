@@ -13,6 +13,7 @@ export function isEmail(value) {
 
 const PREMIUM_FEATURE_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
 const CUSTOM_BRANDING_PLANS = new Set(["custom_nfc"]);
+const FREE_CARD_LIMIT = 1;
 const MULTI_VALUE_SOCIAL_FIELDS = new Set([
   "twitter",
   "instagram",
@@ -127,6 +128,29 @@ export async function activePlanForUser(supabase, userId) {
   }
 
   return data?.plan || "free";
+}
+
+export function cardLimitForPlan(plan) {
+  return String(plan || "free").toLowerCase() === "free" ? FREE_CARD_LIMIT : null;
+}
+
+export async function assertCanCreateCard(supabase, userId, plan) {
+  const limit = cardLimitForPlan(plan);
+  if (limit === null) return;
+
+  const { count, error } = await supabase
+    .from("cards")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  if (error) throw error;
+
+  if (Number(count || 0) >= limit) {
+    const error = new Error("Free users can create 1 card. Upgrade to create additional cards.");
+    error.code = "PLAN_CARD_LIMIT";
+    error.status = 402;
+    throw error;
+  }
 }
 
 export function applyPlanLimits(card, plan) {

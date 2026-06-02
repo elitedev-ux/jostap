@@ -22,13 +22,10 @@ import {
   Cell,
 } from "recharts";
 
-const deviceData = [];
-
 const COLORS = ["#0d6ffd", "#ff9f0d", "#059669"];
 
 const LOCATIONS = [];
 
-const REFERRERS = [];
 const PREMIUM_FEATURE_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
 
 function hasPremiumFeatures(plan) {
@@ -42,7 +39,7 @@ function AdvancedAnalyticsGate() {
         <LockKeyhole size={18} />
       </div>
       <p className="ui-empty-state__title">Advanced analytics unlock with premium access</p>
-      <p className="ui-empty-state__copy">Free cards include basic analytics. Upgrade for lead metrics, visitor insights, referrers, location data, and exports.</p>
+      <p className="ui-empty-state__copy">Free cards include basic analytics. Upgrade for deeper visitor insights, referrers, location data, and exports.</p>
       <a href="/pricing" style={{ display: "inline-flex", marginTop: 16, background: "#0d6ffd", color: "#fff", borderRadius: 9, padding: "10px 16px", textDecoration: "none", fontSize: 13, fontWeight: 800 }}>
         Upgrade plan
       </a>
@@ -60,9 +57,10 @@ export default function AnalyticsPage() {
   const chartData = analytics?.trend || [];
   const barData = chartData.map((item) => ({
     day: item.date,
-    clicks: Number(item.taps || 0) + Number(item.qr || 0),
+    clicks: Number(item.taps || 0) + Number(item.qr || 0) + Number(item.contactDownloads || 0),
   }));
-  const referrers = analytics?.sources || REFERRERS;
+  const deviceData = analytics?.devices || [];
+  const referrers = analytics?.sources || [];
 
   useEffect(() => {
     let active = true;
@@ -229,7 +227,7 @@ export default function AnalyticsPage() {
           ["Total Views", totals.views || 0, "live", "#0d6ffd", "#eaf3ff"],
           ["NFC Taps", totals.taps || 0, "live", "#059669", "#ECFDF5"],
           ["QR Scans", totals.qrScans || 0, "live", "#ff9f0d", "#F5F3FF"],
-          ...(!advancedLocked ? [["Leads", totals.leads || 0, "live", "#D97706", "#FFFBEB"]] : []),
+          ["Contact Saves", totals.contactDownloads || 0, "live", "#D97706", "#FFFBEB"],
         ].map(([label, val, change, color, bg]) => (
           <div
             key={label}
@@ -390,7 +388,7 @@ export default function AnalyticsPage() {
               marginBottom: 18,
             }}
           >
-            Link Clicks by Day
+            Actions by Day
           </h2>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart
@@ -426,7 +424,7 @@ export default function AnalyticsPage() {
                 stroke="#0d6ffd"
                 strokeWidth={1.5}
                 radius={[4, 4, 0, 0]}
-                name="Clicks"
+                name="Actions"
               />
             </BarChart>
           </ResponsiveContainer>
@@ -537,7 +535,7 @@ export default function AnalyticsPage() {
             {referrers.length === 0 && (
               <div className="ui-empty-state" style={{ border: "none", padding: "24px 12px" }}>
                 <p className="ui-empty-state__title">No referrers yet</p>
-                <p className="ui-empty-state__copy">Traffic sources will appear here after backend tracking is connected.</p>
+                <p className="ui-empty-state__copy">Traffic sources will appear here after visitors open your public card.</p>
               </div>
             )}
             {referrers.map((r) => (

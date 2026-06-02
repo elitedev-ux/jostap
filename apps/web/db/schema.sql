@@ -105,6 +105,20 @@ ALTER TABLE cards ADD COLUMN IF NOT EXISTS contact_downloads integer NOT NULL DE
 CREATE UNIQUE INDEX IF NOT EXISTS cards_slug_idx ON cards (slug);
 CREATE INDEX IF NOT EXISTS cards_user_id_idx ON cards (user_id);
 
+CREATE TABLE IF NOT EXISTS card_engagement_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  card_id uuid NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  event_type text NOT NULL CHECK (event_type IN ('profile_view', 'qr_scan', 'nfc_tap', 'contact_download')),
+  referrer text,
+  user_agent text,
+  ip_hash text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS card_engagement_events_card_id_idx ON card_engagement_events (card_id);
+CREATE INDEX IF NOT EXISTS card_engagement_events_user_created_idx ON card_engagement_events (user_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS leads (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -554,6 +568,7 @@ ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE auth_challenges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kyc_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE card_engagement_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE google_calendar_connections ENABLE ROW LEVEL SECURITY;
@@ -584,6 +599,7 @@ BEGIN
     'auth_challenges',
     'kyc_profiles',
     'cards',
+    'card_engagement_events',
     'leads',
     'appointments',
     'google_calendar_connections',

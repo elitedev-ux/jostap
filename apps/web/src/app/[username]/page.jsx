@@ -41,7 +41,9 @@ export function PublicCardProfile({ token }) {
 
     async function loadCard() {
       try {
-        const found = await getPublicCard(cardToken);
+        const found = await getPublicCard(cardToken, {
+          referrer: typeof document !== "undefined" ? document.referrer : "",
+        });
         if (active) {
           setCard(found || null);
           setLoaded(true);

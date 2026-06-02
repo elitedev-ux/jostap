@@ -1,4 +1,5 @@
 import { cardFromRow } from "../../../utils/cards.js";
+import { recordCardEngagement } from "../../../utils/engagement.js";
 import { json } from "../../../utils/http.js";
 import { getSupabaseAdmin, hasSupabase } from "../../../utils/supabase.js";
 import { publicCardUrl, cardQrUrl } from "../../../../../utils/publicUrl.js";
@@ -55,10 +56,12 @@ export async function GET(request, { params }) {
     return json({ error: "Card not found." }, { status: 404 });
   }
 
-  await supabase
-    .from("cards")
-    .update({ views: Number(row.views || 0) + 1 })
-    .eq("id", row.id);
+  await recordCardEngagement(supabase, { card: row, type: "profile_view", request });
+
+  const source = new URL(request.url).searchParams.get("source");
+  if (source === "qr") {
+    await recordCardEngagement(supabase, { card: row, type: "qr_scan", request });
+  }
 
   let subscription = null;
 
@@ -86,13 +89,13 @@ export async function GET(request, { params }) {
   });
 }
 
-export async function POST(_request, { params }) {
+export async function POST(request, { params }) {
   if (!hasSupabase()) {
     return json({ ok: true });
   }
 
   const supabase = getSupabaseAdmin();
-  const { data: row, error } = await findPublicCard(supabase, params.id, "id, contact_downloads");
+  const { data: row, error } = await findPublicCard(supabase, params.id, "id, user_id, contact_downloads");
 
   if (error) throw error;
 
@@ -100,12 +103,7 @@ export async function POST(_request, { params }) {
     return json({ error: "Card not found." }, { status: 404 });
   }
 
-  const { error: updateError } = await supabase
-    .from("cards")
-    .update({ contact_downloads: Number(row.contact_downloads || 0) + 1 })
-    .eq("id", row.id);
-
-  if (updateError) throw updateError;
+  await recordCardEngagement(supabase, { card: row, type: "contact_download", request });
 
   return json({ ok: true });
 }

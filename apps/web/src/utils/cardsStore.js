@@ -96,8 +96,12 @@ export async function getCard(id) {
   return data.card || null;
 }
 
-export async function getPublicCard(slug) {
-  const data = await requestJson(`/api/public/card/${slug}`);
+export async function getPublicCard(slug, options = {}) {
+  const params = new URLSearchParams();
+  if (options.source) params.set("source", options.source);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const headers = options.referrer ? { "x-jostap-referrer": options.referrer } : undefined;
+  const data = await requestJson(`/api/public/card/${slug}${query}`, { headers });
   return data.card || null;
 }
 

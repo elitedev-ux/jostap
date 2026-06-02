@@ -1,17 +1,18 @@
 import { json, unauthorized } from "../utils/http.js";
+import { cardLimitForPlan } from "../utils/cards.js";
 import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin } from "../utils/supabase.js";
 
-const CARD_LIMITS = {
-  free: 1,
-  jostap_nfc: 1,
-  custom_nfc: 1,
-  basic_renewal: 1,
-  premium_renewal: 1,
-};
-
 function subscriptionFromRow(row) {
-  if (!row) return null;
+  if (!row) {
+    return {
+      plan: "free",
+      billingCycle: "free",
+      status: "active",
+      provider: "free",
+      cardLimit: cardLimitForPlan("free"),
+    };
+  }
 
   return {
     id: row.id,
@@ -21,7 +22,7 @@ function subscriptionFromRow(row) {
     provider: row.provider || "manual",
     currentPeriodStart: row.current_period_start || "",
     currentPeriodEnd: row.current_period_end || "",
-    cardLimit: CARD_LIMITS[row.plan] ?? null,
+    cardLimit: cardLimitForPlan(row.plan),
   };
 }
 
@@ -50,7 +51,6 @@ export async function GET(request) {
     { data: subscription, error: subscriptionError },
     { data: invoices, error: invoicesError },
     { data: cards, error: cardsError },
-    { data: leads, error: leadsError },
     { data: appointments, error: appointmentsError },
   ] = await Promise.all([
     supabase
@@ -66,12 +66,11 @@ export async function GET(request) {
       .eq("user_id", user.id)
       .order("issued_at", { ascending: false }),
     supabase.from("cards").select("id, views, taps, qr_scans").eq("user_id", user.id),
-    supabase.from("leads").select("id").eq("user_id", user.id),
     supabase.from("appointments").select("id").eq("user_id", user.id),
   ]);
 
   const error =
-    subscriptionError || invoicesError || cardsError || leadsError || appointmentsError;
+    subscriptionError || invoicesError || cardsError || appointmentsError;
 
   if (error) {
     throw error;
@@ -83,7 +82,6 @@ export async function GET(request) {
     views: cardRows.reduce((sum, card) => sum + Number(card.views || 0), 0),
     qrScans: cardRows.reduce((sum, card) => sum + Number(card.qr_scans || 0), 0),
     taps: cardRows.reduce((sum, card) => sum + Number(card.taps || 0), 0),
-    leads: (leads || []).length,
     appointments: (appointments || []).length,
   };
 

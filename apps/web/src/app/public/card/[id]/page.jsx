@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router";
+import { useLocation, useParams } from "react-router";
 import { Calendar, ExternalLink } from "lucide-react";
 import CardPhonePreview, {
   activeFieldsForCard,
@@ -21,6 +21,7 @@ function hasCustomBranding(plan) {
 
 export default function PublicCardByIdPage() {
   const { id } = useParams();
+  const location = useLocation();
   const [card, setCard] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [booking, setBooking] = useState({
@@ -40,7 +41,11 @@ export default function PublicCardByIdPage() {
 
     async function loadCard() {
       try {
-        const found = await getPublicCard(id);
+        const params = new URLSearchParams(location.search);
+        const found = await getPublicCard(id, {
+          source: params.get("source") === "qr" ? "qr" : "",
+          referrer: typeof document !== "undefined" ? document.referrer : "",
+        });
         if (active) {
           setCard(found || null);
           setLoaded(true);
@@ -57,7 +62,7 @@ export default function PublicCardByIdPage() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, location.search]);
 
   if (!loaded) return null;
 

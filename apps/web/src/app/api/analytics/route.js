@@ -22,14 +22,19 @@ function periodFromRequest(request) {
   return PERIOD_DAYS[value] ? value : "30d";
 }
 
-function buildTrend({ cards, leads, period }) {
+function periodStart(period) {
   const days = PERIOD_DAYS[period] || 30;
-  const today = new Date();
-  const start = new Date(today);
+  const start = new Date();
   start.setHours(0, 0, 0, 0);
   start.setDate(start.getDate() - (days - 1));
+  return start;
+}
 
-  const buckets = Array.from({ length: days }, (_, index) => {
+function buildEmptyTrend(period) {
+  const days = PERIOD_DAYS[period] || 30;
+  const start = periodStart(period);
+
+  return Array.from({ length: days }, (_, index) => {
     const date = new Date(start);
     date.setDate(start.getDate() + index);
     return {
@@ -41,24 +46,54 @@ function buildTrend({ cards, leads, period }) {
       views: 0,
       taps: 0,
       qr: 0,
-      leads: 0,
+      contactDownloads: 0,
     };
   });
+}
+
+function deviceName(userAgent = "") {
+  const value = String(userAgent).toLowerCase();
+  if (!value) return "Unknown";
+  if (value.includes("iphone") || value.includes("ipad") || value.includes("android") || value.includes("mobile")) return "Mobile";
+  if (value.includes("tablet")) return "Tablet";
+  return "Desktop";
+}
+
+function sourceName(referrer = "") {
+  const value = String(referrer || "").trim();
+  if (!value) return "Direct";
+
+  try {
+    const url = new URL(value);
+    if (url.hostname.includes("jostap.vercel.app")) return "JOSTAP";
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return value.slice(0, 80);
+  }
+}
+
+function countBy(items, keyFn, valueName) {
+  const counts = new Map();
+  for (const item of items || []) {
+    const key = keyFn(item);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return Array.from(counts.entries()).map(([name, count]) => ({ [valueName]: name, visits: count, value: count }));
+}
+
+function buildTrend({ events, period }) {
+  const buckets = buildEmptyTrend(period);
   const bucketByKey = new Map(buckets.map((bucket) => [bucket.key, bucket]));
 
-  for (const card of cards) {
-    const sourceDate = new Date(card.updated_at || card.created_at || today);
-    const key = bucketByKey.has(dayKey(sourceDate)) ? dayKey(sourceDate) : dayKey(today);
-    const bucket = bucketByKey.get(key) || buckets[buckets.length - 1];
-    bucket.views += Number(card.views || 0);
-    bucket.taps += Number(card.taps || 0);
-    bucket.qr += Number(card.qr_scans || 0);
-  }
+  for (const event of events || []) {
+    const key = dayKey(new Date(event.created_at));
+    const bucket = bucketByKey.get(key);
+    if (!bucket) continue;
 
-  for (const lead of leads) {
-    const sourceDate = new Date(lead.created_at || today);
-    const bucket = bucketByKey.get(dayKey(sourceDate));
-    if (bucket) bucket.leads += 1;
+    if (event.event_type === "profile_view") bucket.views += 1;
+    if (event.event_type === "nfc_tap") bucket.taps += 1;
+    if (event.event_type === "qr_scan") bucket.qr += 1;
+    if (event.event_type === "contact_download") bucket.contactDownloads += 1;
   }
 
   return buckets;
@@ -73,31 +108,39 @@ export async function GET(request) {
 
   const supabase = getSupabaseAdmin();
   const period = periodFromRequest(request);
-  const [{ data: cards, error: cardsError }, { data: leads, error: leadsError }] =
+  const start = periodStart(period);
+
+  const [{ data: cards, error: cardsError }, { data: events, error: eventsError }] =
     await Promise.all([
       supabase.from("cards").select("*").eq("user_id", user.id),
-      supabase.from("leads").select("id, source, created_at").eq("user_id", user.id),
+      supabase
+        .from("card_engagement_events")
+        .select("event_type, referrer, user_agent, created_at")
+        .eq("user_id", user.id)
+        .gte("created_at", start.toISOString()),
     ]);
 
-  if (cardsError || leadsError) {
-    throw cardsError || leadsError;
+  if (cardsError || eventsError) {
+    throw cardsError || eventsError;
   }
 
   const cardRows = cards || [];
-  const leadRows = leads || [];
+  const eventRows = events || [];
   const totals = {
     views: total(cardRows, "views"),
     taps: total(cardRows, "taps"),
     qrScans: total(cardRows, "qr_scans"),
-    leads: leadRows.length,
+    contactDownloads: total(cardRows, "contact_downloads"),
   };
 
-  const trend = buildTrend({ cards: cardRows, leads: leadRows, period });
+  const sourceEvents = eventRows.filter((event) => event.event_type === "profile_view" || event.event_type === "qr_scan");
+  const deviceCounts = countBy(sourceEvents, (event) => deviceName(event.user_agent), "name");
+  const deviceTotal = deviceCounts.reduce((sum, item) => sum + item.value, 0) || 1;
 
   return json({
     totals,
     period,
-    trend,
+    trend: buildTrend({ events: eventRows, period }),
     cards: cardRows.map((card) => ({
       id: card.id,
       name: card.name,
@@ -105,13 +148,13 @@ export async function GET(request) {
       views: card.views || 0,
       taps: card.taps || 0,
       qrScans: card.qr_scans || 0,
+      contactDownloads: card.contact_downloads || 0,
     })),
-    sources: leadRows.reduce((items, lead) => {
-      const source = lead.source || "card";
-      const found = items.find((item) => item.source === source);
-      if (found) found.visits += 1;
-      else items.push({ source, visits: 1 });
-      return items;
-    }, []),
+    sources: countBy(sourceEvents, (event) => sourceName(event.referrer), "source").sort((a, b) => b.visits - a.visits),
+    devices: deviceCounts.map((item) => ({
+      name: item.name,
+      value: Math.round((item.value / deviceTotal) * 100),
+      visits: item.value,
+    })),
   });
 }

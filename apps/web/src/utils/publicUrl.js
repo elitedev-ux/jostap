@@ -73,7 +73,8 @@ export function publicCardUrl(card, options = {}) {
 }
 
 export function cardQrPath(card) {
-  return publicCardPath(card);
+  const path = publicCardPath(card);
+  return path === "/" ? path : `${path}?source=qr`;
 }
 
 export function cardProfileUrl(slug, options = {}) {
@@ -81,7 +82,7 @@ export function cardProfileUrl(slug, options = {}) {
 }
 
 export function cardQrUrl(card, options = {}) {
-  return publicCardUrl(card, options);
+  return absolutePublicUrl(cardQrPath(card), options);
 }
 
 export function displayCardUrl(slug, options = {}) {

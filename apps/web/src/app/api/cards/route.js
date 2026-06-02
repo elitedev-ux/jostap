@@ -1,5 +1,5 @@
 import { badRequest, json, readJson, unauthorized } from "../utils/http.js";
-import { activePlanForUser, applyPlanLimits, cardFromRow, cardPayload, isEmail } from "../utils/cards.js";
+import { activePlanForUser, applyPlanLimits, assertCanCreateCard, cardFromRow, cardPayload, isEmail } from "../utils/cards.js";
 import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin, isUniqueViolation } from "../utils/supabase.js";
 import { publicCardUrl, cardQrUrl } from "../../../utils/publicUrl.js";
@@ -49,6 +49,7 @@ export async function POST(request) {
   try {
     const supabase = getSupabaseAdmin();
     const plan = await activePlanForUser(supabase, user.id);
+    await assertCanCreateCard(supabase, user.id, plan);
     const card = applyPlanLimits(cardPayload(body), plan);
 
     if (!card.name || !card.email || !card.slug) {
@@ -87,6 +88,10 @@ export async function POST(request) {
   } catch (error) {
     if (isUniqueViolation(error)) {
       return badRequest("This public slug is already in use.");
+    }
+
+    if (error.code === "PLAN_CARD_LIMIT") {
+      return json({ error: error.message, upgradeRequired: true }, { status: 402 });
     }
 
     throw error;
