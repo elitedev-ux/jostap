@@ -7,6 +7,7 @@
 	},
 	"scripts": {
 		"build": "react-router build",
+		"build:netlify": "react-router build && node scripts/prepare-netlify-server-entry.mjs",
 		"check:supabase": "node scripts/check-supabase.js",
 		"dev": "react-router dev",
 		"start": "node ./build/server/index.js",

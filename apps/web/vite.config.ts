@@ -19,6 +19,7 @@ export default defineConfig({
   envPrefix: 'NEXT_PUBLIC_',
   build: {
     target: 'es2022',
+    ssrEmitAssets: true,
   },
   optimizeDeps: {
     // Explicitly include fast-glob, since it gets dynamically imported and we

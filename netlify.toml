@@ -1,6 +1,6 @@
 [build]
   base = "apps/web"
-  command = "npm run build"
+  command = "npm run build:netlify"
   publish = "build/client"
 
 [build.environment]

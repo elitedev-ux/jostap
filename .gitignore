@@ -12,6 +12,7 @@ build/
 apps/*/build/
 apps/*/.react-router/
 apps/*/.vitest/
+apps/*/.netlify/
 .vercel/
 apps/*/.vercel/
 
