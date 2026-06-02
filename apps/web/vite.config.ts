@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { reactRouter } from '@react-router/dev/vite';
+import netlifyReactRouter from '@netlify/vite-plugin-react-router';
 import { reactRouterHonoServer } from 'react-router-hono-server/dev';
 import { defineConfig } from 'vite';
 import babel from 'vite-plugin-babel';
@@ -61,6 +62,7 @@ export default defineConfig({
     loadFontsFromTailwindSource(),
     addRenderIds(),
     reactRouter(),
+    netlifyReactRouter(),
     tsconfigPaths(),
     aliases(),
     layoutWrapperPlugin(),
