@@ -16,7 +16,6 @@ import {
   Menu,
   Package,
   Palette,
-  Search,
   Settings,
   Shield,
   Tags,
@@ -239,32 +238,6 @@ export default function AdminLayout({ children }) {
             >
               <Menu size={18} />
             </button>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                width: 280,
-                maxWidth: "50vw",
-                background: "#f5f5f5",
-                border: "1px solid #E5E7EB",
-                borderRadius: 9,
-                padding: "8px 12px",
-              }}
-            >
-              <Search size={15} color="#9CA3AF" />
-              <input
-                placeholder="Search admin data..."
-                style={{
-                  border: "none",
-                  outline: "none",
-                  background: "transparent",
-                  fontSize: 13,
-                  width: "100%",
-                  color: "#374151",
-                }}
-              />
-            </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <a

@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Bell,
-  Search,
   Menu,
   X,
   Wallet,
@@ -336,13 +335,6 @@ export default function DashboardLayout({ children }) {
             >
               <Menu size={20} />
             </button>
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 w-56">
-              <Search size={14} className="text-slate-400" />
-              <input
-                placeholder="Search..."
-                className="border-none bg-transparent text-sm text-slate-700 outline-none w-full"
-              />
-            </div>
           </div>
           <div className="flex items-center gap-2.5">
             <div style={{ position: "relative" }}>
