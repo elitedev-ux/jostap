@@ -1,9 +1,9 @@
 export const CARD_THEMES = [
-  { name: "Navy Pro", c1: "#1e3a8a", c2: "#2563EB", color1: "#1e3a8a", color2: "#2563EB" },
+  { name: "Navy Pro", c1: "#1e3a8a", c2: "#0d6ffd", color1: "#1e3a8a", color2: "#0d6ffd" },
   { name: "Midnight", c1: "#0f172a", c2: "#1e293b", color1: "#0f172a", color2: "#1e293b" },
   { name: "Emerald", c1: "#065f46", c2: "#059669", color1: "#065f46", color2: "#059669" },
   { name: "Sunset", c1: "#7c2d12", c2: "#EA580C", color1: "#7c2d12", color2: "#EA580C" },
-  { name: "Violet", c1: "#4c1d95", c2: "#7C3AED", color1: "#4c1d95", color2: "#7C3AED" },
+  { name: "Violet", c1: "#4c1d95", c2: "#ff9f0d", color1: "#4c1d95", color2: "#ff9f0d" },
   { name: "Rose", c1: "#881337", c2: "#E11D48", color1: "#881337", color2: "#E11D48" },
 ];
 

@@ -19,9 +19,9 @@ export default function AdminAppointmentsPage() {
       emptyTitle="No appointments yet"
       emptyCopy="Booked appointment requests will appear here."
       statCards={[
-        ["Total", (data) => data?.appointments?.length || 0, "#2563EB", "#EFF6FF"],
+        ["Total", (data) => data?.appointments?.length || 0, "#0d6ffd", "#eaf3ff"],
         ["Scheduled", (data) => data?.appointments?.filter((item) => item.status === "scheduled").length || 0, "#047857", "#ECFDF5"],
-        ["Completed", (data) => data?.appointments?.filter((item) => item.status === "completed").length || 0, "#7C3AED", "#F5F3FF"],
+        ["Completed", (data) => data?.appointments?.filter((item) => item.status === "completed").length || 0, "#ff9f0d", "#F5F3FF"],
       ]}
     />
   );

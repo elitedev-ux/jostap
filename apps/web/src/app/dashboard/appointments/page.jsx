@@ -15,7 +15,7 @@ function UpgradeGate() {
       </div>
       <p className="ui-empty-state__title">Appointment booking is a premium feature</p>
       <p className="ui-empty-state__copy">Upgrade to a JOSTAP NFC plan to add booking links and monitor appointment activity.</p>
-      <a href="/pricing" style={{ display: "inline-flex", marginTop: 16, background: "#2563EB", color: "#fff", borderRadius: 9, padding: "10px 16px", textDecoration: "none", fontSize: 13, fontWeight: 800 }}>
+      <a href="/pricing" style={{ display: "inline-flex", marginTop: 16, background: "#0d6ffd", color: "#fff", borderRadius: 9, padding: "10px 16px", textDecoration: "none", fontSize: 13, fontWeight: 800 }}>
         Upgrade plan
       </a>
     </div>
@@ -202,7 +202,7 @@ export default function AppointmentsPage() {
                 fontSize: 13,
                 fontWeight: 600,
                 color: "#fff",
-                background: "#2563EB",
+                background: "#0d6ffd",
                 textDecoration: "none",
                 border: "none",
                 borderRadius: 8,
@@ -219,7 +219,7 @@ export default function AppointmentsPage() {
         <div
           style={{
             marginBottom: 16,
-            background: calendarStatus.connected ? "#ECFDF5" : "#F9FAFB",
+            background: calendarStatus.connected ? "#ECFDF5" : "#f5f5f5",
             border: `1px solid ${calendarStatus.connected ? "#A7F3D0" : "#E5E7EB"}`,
             color: calendarStatus.connected ? "#065F46" : "#4B5563",
             borderRadius: 10,
@@ -240,7 +240,7 @@ export default function AppointmentsPage() {
         <div
           style={{
             marginBottom: 16,
-            background: "#EFF6FF",
+            background: "#eaf3ff",
             border: "1px solid #BFDBFE",
             color: "#1E40AF",
             borderRadius: 10,
@@ -262,9 +262,9 @@ export default function AppointmentsPage() {
         }}
       >
         {[
-          [appointments.length, "Upcoming", "#2563EB", "#EFF6FF", Calendar],
+          [appointments.length, "Upcoming", "#0d6ffd", "#eaf3ff", Calendar],
           [completedThisMonth, "Completed this month", "#059669", "#ECFDF5", Check],
-          ["0m", "Avg. meeting length", "#7C3AED", "#F5F3FF", Clock],
+          ["0m", "Avg. meeting length", "#ff9f0d", "#F5F3FF", Clock],
           ["0%", "Show-up rate", "#D97706", "#FFFBEB", User],
         ].map(([val, label, color, bg, Icon]) => (
           <div
@@ -372,8 +372,8 @@ export default function AppointmentsPage() {
                       justifySelf: "start",
                       fontSize: 11,
                       fontWeight: 800,
-                      color: "#2563EB",
-                      background: "#EFF6FF",
+                      color: "#0d6ffd",
+                      background: "#eaf3ff",
                       borderRadius: 999,
                       padding: "3px 8px",
                     }}

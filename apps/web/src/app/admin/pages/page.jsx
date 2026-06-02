@@ -27,7 +27,7 @@ export default function AdminStaticPagesPage() {
       emptyTitle="No pages yet"
       emptyCopy="Static page records will appear here."
       statCards={[
-        ["Pages", (data) => data?.staticPages?.length || 0, "#2563EB", "#EFF6FF"],
+        ["Pages", (data) => data?.staticPages?.length || 0, "#0d6ffd", "#eaf3ff"],
         ["Published", (data) => data?.staticPages?.filter((item) => item.is_published).length || 0, "#047857", "#ECFDF5"],
       ]}
       rowAction={{

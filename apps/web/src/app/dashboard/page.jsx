@@ -176,8 +176,8 @@ export default function DashboardPage() {
       value: totals.views.toLocaleString(),
       note: "Across your created cards",
       icon: Eye,
-      color: "#2563EB",
-      bg: "#EFF6FF",
+      color: "#0d6ffd",
+      bg: "#eaf3ff",
     },
     {
       label: "NFC Taps",
@@ -192,7 +192,7 @@ export default function DashboardPage() {
       value: totals.qr.toLocaleString(),
       note: "Recorded from your cards",
       icon: QrCode,
-      color: "#7C3AED",
+      color: "#ff9f0d",
       bg: "#F5F3FF",
     },
     {
@@ -254,7 +254,7 @@ export default function DashboardPage() {
               textDecoration: "none",
               padding: "9px 18px",
               borderRadius: 9,
-              background: "#2563EB",
+              background: "#0d6ffd",
             }}
           >
             <Plus size={15} /> New Card
@@ -310,7 +310,7 @@ export default function DashboardPage() {
             <div
               style={{
                 display: "inline-flex",
-                background: "#F9FAFB",
+                background: "#f5f5f5",
                 border: "1px solid #E5E7EB",
                 borderRadius: 8,
                 padding: 3,
@@ -347,8 +347,8 @@ export default function DashboardPage() {
             >
               <defs>
                 <linearGradient id="gViews" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2563EB" stopOpacity={0.12} />
-                  <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#0d6ffd" stopOpacity={0.12} />
+                  <stop offset="95%" stopColor="#0d6ffd" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="gTaps" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#059669" stopOpacity={0.12} />
@@ -382,7 +382,7 @@ export default function DashboardPage() {
               <Area
                 type="monotone"
                 dataKey="views"
-                stroke="#2563EB"
+                stroke="#0d6ffd"
                 strokeWidth={2}
                 fill="url(#gViews)"
                 name="Views"
@@ -449,7 +449,7 @@ export default function DashboardPage() {
                       borderRadius: "50%",
                       marginTop: 5,
                       flexShrink: 0,
-                      background: "#2563EB",
+                      background: "#0d6ffd",
                     }}
                   />
                   <div>
@@ -497,7 +497,7 @@ export default function DashboardPage() {
             style={{
               fontSize: 13,
               fontWeight: 500,
-              color: "#2563EB",
+              color: "#0d6ffd",
               textDecoration: "none",
               display: "flex",
               alignItems: "center",
@@ -527,7 +527,7 @@ export default function DashboardPage() {
                 textDecoration: "none",
                 padding: "9px 18px",
                 borderRadius: 9,
-                background: "#2563EB",
+                background: "#0d6ffd",
               }}
             >
               <Plus size={15} /> Create Card
@@ -552,7 +552,7 @@ export default function DashboardPage() {
                     width: 38,
                     height: 38,
                     borderRadius: 9,
-                    background: "linear-gradient(135deg,#2563EB,#7C3AED)",
+                    background: "linear-gradient(135deg,#0d6ffd,#ff9f0d)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",

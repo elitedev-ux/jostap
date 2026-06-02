@@ -72,7 +72,7 @@ export default function AdminSubscriptionsPage() {
   const billingCycles = ["monthly", "yearly"].map((cycle, index) => {
     const count = subscriptions.filter((item) => item.billingCycle === cycle).length;
     const share = subscriptions.length ? `${Math.round((count / subscriptions.length) * 100)}%` : "0%";
-    return [cycle === "yearly" ? "Yearly" : "Monthly", count, "Live", share, index ? "#059669" : "#2563EB", index ? "#ECFDF5" : "#EFF6FF"];
+    return [cycle === "yearly" ? "Yearly" : "Monthly", count, "Live", share, index ? "#059669" : "#0d6ffd", index ? "#ECFDF5" : "#eaf3ff"];
   });
 
   return (
@@ -86,9 +86,9 @@ export default function AdminSubscriptionsPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 14, marginBottom: 20 }}>
         {[
-          ["Revenue", money(data?.stats?.revenueCents), DollarSign, "#2563EB", "#EFF6FF"],
+          ["Revenue", money(data?.stats?.revenueCents), DollarSign, "#0d6ffd", "#eaf3ff"],
           ["Active Plans", data?.stats?.subscriptions || 0, TrendingUp, "#059669", "#ECFDF5"],
-          ["Invoices", invoices.length, RefreshCcw, "#7C3AED", "#F5F3FF"],
+          ["Invoices", invoices.length, RefreshCcw, "#ff9f0d", "#F5F3FF"],
           ["Open Invoices", data?.stats?.openInvoices || 0, ArrowUpRight, "#D97706", "#FFFBEB"],
         ].map(([label, value, Icon, color, bg]) => (
           <div key={label} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 20 }}>
@@ -189,7 +189,7 @@ export default function AdminSubscriptionsPage() {
                 <p style={{ fontSize: 12, color: "#6B7280" }}>{invoice.account}</p>
               </div>
               <span style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>{invoice.amount}</span>
-              <span style={{ fontSize: 11, fontWeight: 800, color: "#2563EB", background: "#EFF6FF", borderRadius: 999, padding: "3px 8px" }}>Invoice</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "#0d6ffd", background: "#eaf3ff", borderRadius: 999, padding: "3px 8px" }}>Invoice</span>
               <span style={{ fontSize: 11, fontWeight: 800, color: invoice.status === "open" ? "#B45309" : "#047857", background: invoice.status === "open" ? "#FFFBEB" : "#ECFDF5", borderRadius: 999, padding: "3px 8px" }}>{invoice.status}</span>
               <span style={{ fontSize: 12, color: "#9CA3AF" }}>{invoice.issued}</span>
             </div>

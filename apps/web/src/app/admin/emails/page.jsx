@@ -27,7 +27,7 @@ export default function AdminEmailsPage() {
       emptyTitle="No email templates yet"
       emptyCopy="Email templates will appear here."
       statCards={[
-        ["Templates", (data) => data?.emailTemplates?.length || 0, "#2563EB", "#EFF6FF"],
+        ["Templates", (data) => data?.emailTemplates?.length || 0, "#0d6ffd", "#eaf3ff"],
         ["Active", (data) => data?.emailTemplates?.filter((item) => item.is_active).length || 0, "#047857", "#ECFDF5"],
       ]}
       rowAction={{

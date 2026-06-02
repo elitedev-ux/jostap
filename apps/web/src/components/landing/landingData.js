@@ -12,39 +12,6 @@ export const previewStats = [
   ["8", "Appointments booked"],
 ];
 
-export const features = [
-  {
-    icon: "smartphone",
-    title: "NFC-Powered Sharing",
-    desc: "One tap transfers your complete profile to any smartphone. No app required on the receiver's end.",
-  },
-  {
-    icon: "barChart",
-    title: "Real-Time Analytics",
-    desc: "Know exactly who viewed your card, when, and from where. Track taps, scans, and link clicks.",
-  },
-  {
-    icon: "share",
-    title: "Dynamic QR Code",
-    desc: "Every card ships with a live QR code that syncs with your profile in real time.",
-  },
-  {
-    icon: "globe",
-    title: "Custom Public URL",
-    desc: "Get a personalized link like jostap.com/yourname and share it anywhere.",
-  },
-  {
-    icon: "users",
-    title: "Lead Capture",
-    desc: "Collect visitor contact info automatically every time someone views your card.",
-  },
-  {
-    icon: "wifi",
-    title: "Appointment Booking",
-    desc: "Let visitors book meetings directly from your card with full Cal.com integration.",
-  },
-];
-
 export const steps = [
   {
     step: "01",

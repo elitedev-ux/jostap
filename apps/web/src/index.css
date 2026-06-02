@@ -1,3 +1,2 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Legacy entry kept intentionally empty.
+   The app-wide design system lives in app/global.css. */

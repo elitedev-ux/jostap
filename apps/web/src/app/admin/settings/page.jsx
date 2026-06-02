@@ -3,8 +3,8 @@ import { Bell, Database, KeyRound, Save, ShieldCheck, SlidersHorizontal } from "
 function SettingRow({ icon: Icon, title, copy, action = "Configure" }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 0", borderBottom: "1px solid #F3F4F6" }}>
-      <div style={{ width: 38, height: 38, borderRadius: 10, background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Icon size={17} color="#2563EB" />
+      <div style={{ width: 38, height: 38, borderRadius: 10, background: "#eaf3ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Icon size={17} color="#0d6ffd" />
       </div>
       <div style={{ flex: 1 }}>
         <p style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>{title}</p>
@@ -23,7 +23,7 @@ export default function AdminSettingsPage() {
           <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", marginBottom: 4 }}>Admin Settings</h1>
           <p style={{ fontSize: 14, color: "#6B7280" }}>Prepare platform controls, moderation, integrations, and access rules for backend wiring.</p>
         </div>
-        <button style={{ display: "inline-flex", alignItems: "center", gap: 7, alignSelf: "flex-start", background: "#2563EB", color: "#fff", border: "none", borderRadius: 9, padding: "10px 15px", fontSize: 13, fontWeight: 700 }}>
+        <button style={{ display: "inline-flex", alignItems: "center", gap: 7, alignSelf: "flex-start", background: "#0d6ffd", color: "#fff", border: "none", borderRadius: 9, padding: "10px 15px", fontSize: 13, fontWeight: 700 }}>
           <Save size={14} /> Save Changes
         </button>
       </div>

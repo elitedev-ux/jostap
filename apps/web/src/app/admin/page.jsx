@@ -88,10 +88,10 @@ export default function AdminOverviewPage() {
   const statsData = admin?.stats || {};
   const totalUsers = statsData.users || 0;
   const stats = [
-    ["Total Users", totalUsers, `${statsData.admins || 0} admins`, Users, "#2563EB", "#EFF6FF"],
+    ["Total Users", totalUsers, `${statsData.admins || 0} admins`, Users, "#0d6ffd", "#eaf3ff"],
     ["Premium Users", statsData.premiumUsers || 0, "Custom + Premium renewal", UserCheck, "#059669", "#ECFDF5"],
     ["Free Users", statsData.freeUsers || 0, "No active plan", ShieldCheck, "#D97706", "#FFFBEB"],
-    ["Active Cards", statsData.activeCards || 0, `${statsData.cards || 0} total cards`, CreditCard, "#7C3AED", "#F5F3FF"],
+    ["Active Cards", statsData.activeCards || 0, `${statsData.cards || 0} total cards`, CreditCard, "#ff9f0d", "#F5F3FF"],
     ["NFC Taps", statsData.taps || 0, "physical card taps", Package, "#0F766E", "#CCFBF1"],
     ["QR Scans", statsData.qrScans || 0, "public profile scans", BarChart3, "#DB2777", "#FCE7F3"],
     ["Contact Downloads", statsData.contactDownloads || 0, "saved contacts", CheckCircle2, "#047857", "#ECFDF5"],
@@ -102,7 +102,7 @@ export default function AdminOverviewPage() {
   ];
   const tasks = [
     ["Review public profiles", `${statsData.cards || 0} total`, "#FEF3C7", "#B45309"],
-    ["Monitor premium accounts", `${statsData.premiumUsers || 0} premium`, "#EFF6FF", "#2563EB"],
+    ["Monitor premium accounts", `${statsData.premiumUsers || 0} premium`, "#eaf3ff", "#0d6ffd"],
     ["Complete KYC follow-up", `${statsData.kycPending || 0} pending`, "#FEF2F2", "#DC2626"],
   ];
   const activity = [
@@ -140,7 +140,7 @@ export default function AdminOverviewPage() {
             gap: 7,
             textDecoration: "none",
             color: "#fff",
-            background: "#2563EB",
+            background: "#0d6ffd",
             borderRadius: 9,
             padding: "10px 16px",
             fontSize: 14,
@@ -167,7 +167,7 @@ export default function AdminOverviewPage() {
           <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 12 }}>Live platform segmentation from Supabase.</p>
           <ProgressRow label="Premium users" value={statsData.premiumUsers || 0} total={totalUsers} color="#059669" />
           <ProgressRow label="Free users" value={statsData.freeUsers || 0} total={totalUsers} color="#D97706" />
-          <ProgressRow label="KYC completed" value={statsData.kycComplete || 0} total={totalUsers} color="#2563EB" />
+          <ProgressRow label="KYC completed" value={statsData.kycComplete || 0} total={totalUsers} color="#0d6ffd" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 10, marginTop: 16 }}>
             {[
               ["Free", statsData.freePlanUsers || 0],
@@ -212,7 +212,7 @@ export default function AdminOverviewPage() {
         )}
         {activity.map(([id, title, detail, time], index) => (
           <div key={id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 0", borderBottom: index < activity.length - 1 ? "1px solid #F3F4F6" : "none" }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#2563EB", flexShrink: 0 }} />
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#0d6ffd", flexShrink: 0 }} />
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>{title}</p>
               <p style={{ fontSize: 12, color: "#6B7280" }}>{detail}</p>

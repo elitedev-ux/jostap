@@ -197,7 +197,7 @@ export default function SignUpPage() {
               onClick={resendCode}
               disabled={loading}
               className="auth-submit"
-              style={{ marginTop: 10, background: "#EFF6FF", color: "#2563EB" }}
+              style={{ marginTop: 10, background: "#eaf3ff", color: "#0d6ffd" }}
             >
               Resend Code
             </button>

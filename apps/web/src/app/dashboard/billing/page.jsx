@@ -43,8 +43,8 @@ const PLANS = [
 const INVOICES = [];
 
 const USAGE = [
-  ["Cards", 0, 0, "#2563EB"],
-  ["Profile Views", 0, 0, "#7C3AED"],
+  ["Cards", 0, 0, "#0d6ffd"],
+  ["Profile Views", 0, 0, "#ff9f0d"],
   ["Lead Captures", 0, 0, "#059669"],
   ["Appointments", 0, 0, "#D97706"],
 ];
@@ -236,8 +236,8 @@ export default function BillingPage() {
           }}
         >
         {[
-          ["Cards", usage.cards || 0, subscription?.cardLimit || 0, "#2563EB"],
-          ["Profile Views", usage.views || 0, 0, "#7C3AED"],
+          ["Cards", usage.cards || 0, subscription?.cardLimit || 0, "#0d6ffd"],
+          ["Profile Views", usage.views || 0, 0, "#ff9f0d"],
           ["Lead Captures", usage.leads || 0, 0, "#059669"],
           ["Appointments", usage.appointments || 0, 0, "#D97706"],
         ].map(([label, used, total, color]) => (
@@ -303,7 +303,7 @@ export default function BillingPage() {
           <div
             style={{
               display: "inline-flex",
-              background: "#F9FAFB",
+              background: "#f5f5f5",
               border: "1px solid #E5E7EB",
               borderRadius: 8,
               padding: 3,
@@ -327,7 +327,7 @@ export default function BillingPage() {
               <div
                 key={plan.name}
                 style={{
-                  border: isCurrent ? "2px solid #2563EB" : "1px solid #E5E7EB",
+                  border: isCurrent ? "2px solid #0d6ffd" : "1px solid #E5E7EB",
                   borderRadius: 12,
                   padding: "22px",
                   position: "relative",
@@ -340,7 +340,7 @@ export default function BillingPage() {
                       position: "absolute",
                       top: -11,
                       left: 20,
-                      background: "#2563EB",
+                      background: "#0d6ffd",
                       color: "#fff",
                       fontSize: 11,
                       fontWeight: 700,
@@ -385,7 +385,7 @@ export default function BillingPage() {
                     padding: "9px",
                     borderRadius: 8,
                     border: isCurrent ? "1px solid #E5E7EB" : "none",
-                    background: isCurrent ? "transparent" : "#2563EB",
+                    background: isCurrent ? "transparent" : "#0d6ffd",
                     color: isCurrent ? "#6B7280" : "#fff",
                     fontSize: 13,
                     fontWeight: 600,
@@ -411,7 +411,7 @@ export default function BillingPage() {
                     >
                       <Check
                         size={13}
-                        color={isCurrent ? "#2563EB" : "#9CA3AF"}
+                        color={isCurrent ? "#0d6ffd" : "#9CA3AF"}
                       />
                       {feature}
                     </div>
@@ -501,11 +501,11 @@ export default function BillingPage() {
             <span style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>
               {formatMoney(invoice.amountCents, invoice.currency)}
             </span>
-            <span style={{ fontSize: 12, fontWeight: 800, color: "#2563EB", textTransform: "capitalize" }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: "#0d6ffd", textTransform: "capitalize" }}>
               {invoice.status}
             </span>
             {invoice.hostedInvoiceUrl ? (
-              <a href={invoice.hostedInvoiceUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#2563EB", fontWeight: 700 }}>
+              <a href={invoice.hostedInvoiceUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#0d6ffd", fontWeight: 700 }}>
                 View invoice
               </a>
             ) : (

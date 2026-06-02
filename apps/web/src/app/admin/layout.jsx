@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 import logo from "../../assets/jostap logo.png3.png";
 import faviconMark from "../../assets/jostap favicon bg.png";
-import ThemeToggle from "../../components/ThemeToggle";
 
 const NAV = [
   { label: "Overview", href: "/admin", icon: Home },
@@ -103,7 +102,7 @@ export default function AdminLayout({ children }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#F9FAFB",
+          background: "#f5f5f5",
           color: "#6B7280",
           fontSize: 14,
           fontWeight: 600,
@@ -142,8 +141,8 @@ export default function AdminLayout({ children }) {
                 textDecoration: "none",
                 padding: "10px 12px",
                 borderRadius: 8,
-                color: active ? "#2563EB" : "#6B7280",
-                background: active ? "#EFF6FF" : "transparent",
+                color: active ? "#0d6ffd" : "#6B7280",
+                background: active ? "#eaf3ff" : "transparent",
                 fontSize: 13,
                 fontWeight: active ? 700 : 500,
                 marginBottom: 3,
@@ -161,7 +160,7 @@ export default function AdminLayout({ children }) {
             display: "flex",
             alignItems: "center",
             gap: 10,
-            background: "#F9FAFB",
+            background: "#f5f5f5",
             border: "1px solid #E5E7EB",
             borderRadius: 10,
             padding: 10,
@@ -178,7 +177,7 @@ export default function AdminLayout({ children }) {
   );
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", background: "#F9FAFB" }}>
+    <div style={{ minHeight: "100vh", display: "flex", background: "#f5f5f5" }}>
       <aside
         className="admin-sidebar"
         style={{
@@ -247,7 +246,7 @@ export default function AdminLayout({ children }) {
                 gap: 8,
                 width: 280,
                 maxWidth: "50vw",
-                background: "#F9FAFB",
+                background: "#f5f5f5",
                 border: "1px solid #E5E7EB",
                 borderRadius: 9,
                 padding: "8px 12px",
@@ -286,7 +285,6 @@ export default function AdminLayout({ children }) {
             >
               <Shield size={14} /> User App
             </a>
-            <ThemeToggle compact />
           </div>
         </header>
         <main style={{ flex: 1, padding: "28px 24px" }}>{children}</main>

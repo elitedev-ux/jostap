@@ -100,7 +100,7 @@ export default function AdminNotificationsPage() {
           rows={3}
           style={{ gridColumn: "1 / -1", border: "1px solid #E5E7EB", borderRadius: 9, padding: "10px 12px", fontSize: 13, resize: "vertical" }}
         />
-        <button disabled={submitting} type="submit" style={{ width: "fit-content", border: "none", background: "#2563EB", color: "#fff", borderRadius: 9, padding: "10px 14px", fontSize: 13, fontWeight: 800, cursor: submitting ? "wait" : "pointer" }}>
+        <button disabled={submitting} type="submit" style={{ width: "fit-content", border: "none", background: "#0d6ffd", color: "#fff", borderRadius: 9, padding: "10px 14px", fontSize: 13, fontWeight: 800, cursor: submitting ? "wait" : "pointer" }}>
           {submitting ? "Publishing..." : "Publish Announcement"}
         </button>
       </form>
@@ -113,7 +113,7 @@ export default function AdminNotificationsPage() {
       emptyTitle="No notifications yet"
       emptyCopy="Platform notifications will appear here."
       statCards={[
-        ["Notifications", (data) => data?.notifications?.length || 0, "#2563EB", "#EFF6FF"],
+        ["Notifications", (data) => data?.notifications?.length || 0, "#0d6ffd", "#eaf3ff"],
         ["Unread", (data) => data?.notifications?.filter((item) => !item.is_read).length || 0, "#B45309", "#FEF3C7"],
       ]}
       rowAction={{

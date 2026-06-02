@@ -1,4 +1,4 @@
-import { ArrowRight, Wifi, Zap } from "lucide-react";
+import { ArrowRight, Wifi } from "lucide-react";
 import heroMockup from "../../assets/JOSTAP Design.png";
 import { previewStats } from "./landingData";
 
@@ -6,21 +6,16 @@ export default function HeroSection() {
   return (
     <section className="landing-hero">
       <div className="landing-hero__copy">
-        <span className="landing-eyebrow landing-eyebrow--blue">
-          <Zap size={11} fill="#2563EB" color="#2563EB" />
-          Next-Generation NFC Business Cards
-        </span>
-
         <h1 className="landing-hero__title">
           Your entire professional
           <br />
-          identity — <span>one tap away.</span>
+          identity, <span>one tap away.</span>
         </h1>
 
         <p className="landing-hero__text">
-          JOSTAP NFC gives you a stunning digital business card, real-time
-          analytics, appointment booking, and lead capture — all from a single
-          smart card.
+          JOSTAP NFC gives you a polished digital business card, real-time
+          analytics, appointment booking, and lead capture, all from one smart
+          card.
         </p>
 
         <div className="landing-actions">
@@ -36,7 +31,7 @@ export default function HeroSection() {
         </div>
 
         <p className="landing-trust-note">
-          No credit card required · 14-day free trial
+          No credit card required - 14-day free trial
         </p>
       </div>
 
@@ -46,6 +41,9 @@ export default function HeroSection() {
             <img
               src={heroMockup}
               alt="JOSTAP NFC card and digital profile mockup"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
             />
           </div>
 
@@ -54,7 +52,7 @@ export default function HeroSection() {
             <div className="landing-hidden-card__circle landing-hidden-card__circle--bottom" />
             <div className="landing-hidden-card__avatar">JD</div>
             <p className="landing-hidden-card__name">Jordan Daley</p>
-            <p className="landing-hidden-card__role">VP of Product · Arclite Inc.</p>
+            <p className="landing-hidden-card__role">VP of Product - Arclite Inc.</p>
             <div className="landing-hidden-card__chips">
               {["LinkedIn", "Twitter", "Calendar"].map((label) => (
                 <span key={label}>{label}</span>
@@ -63,7 +61,7 @@ export default function HeroSection() {
             <div className="landing-hidden-card__footer">
               <span>jostap.com/jordan</span>
               <div>
-                <Wifi size={14} color="#2563EB" />
+                <Wifi size={14} color="#0d6ffd" />
               </div>
             </div>
           </div>

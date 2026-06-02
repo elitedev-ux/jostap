@@ -567,7 +567,7 @@ export default function CardBuilderPage() {
           grid-template-columns: minmax(430px, 42vw) minmax(0, 1fr);
           background: #f8fafc;
           color: #111827;
-          font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          font-family: Archivo, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
         .card-builder-left {
           min-height: 100vh;
@@ -782,15 +782,15 @@ export default function CardBuilderPage() {
         .card-builder-qr.is-locked .card-builder-qr-code { filter: blur(5px); opacity: .48; pointer-events: none; user-select: none; }
         .card-builder-qr svg { max-width: 64%; height: auto; }
         .card-builder-qr span { overflow-wrap: anywhere; text-align: center; }
-        .card-builder-qr em { margin-top: 2px; font-style: normal; color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 800; text-align: center; }
+        .card-builder-qr em { margin-top: 2px; font-style: normal; color: #0d6ffd; background: #eaf3ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 800; text-align: center; }
         .card-builder-preview-list { padding: 0 22px 18px; display: flex; flex-direction: column; gap: 8px; }
         .card-builder-preview-list > a { display: flex; align-items: center; gap: 11px; min-width: 0; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; text-decoration: none; color: #111827; }
-        .card-builder-brand-mark { width: 30px; height: 30px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 950; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        .card-builder-brand-mark { width: 30px; height: 30px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 950; font-family: Archivo, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
         .card-builder-preview-list p { margin: 0; font-size: 13px; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .card-builder-preview-list a { color: inherit; text-decoration: none; }
         .card-builder-preview-list small { display: block; color: #9a918b; font-size: 11px; font-weight: 500; }
         .card-builder-powered { margin: 2px 22px 0; border-top: 1px solid #f3f4f6; padding: 24px 0 38px; text-align: center; color: #9ca3af; font-size: 12px; }
-        .card-builder-powered strong { color: #2563eb; margin-left: 4px; }
+        .card-builder-powered strong { color: #0d6ffd; margin-left: 4px; }
         .card-builder-main { padding: 0 0 0 0; }
         .card-builder-panel {
           min-height: 100vh;
@@ -800,18 +800,18 @@ export default function CardBuilderPage() {
           padding: clamp(32px, 5vw, 72px);
         }
         .card-builder-header { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; margin-bottom: 42px; }
-        .card-builder-header p { margin: 0 0 8px; font-size: 12px; color: #2563eb; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+        .card-builder-header p { margin: 0 0 8px; font-size: 12px; color: #0d6ffd; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
         .card-builder-header h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: -0.03em; }
         .card-builder-header span { color: #6b7280; font-size: 15px; }
-        .card-builder-header a { color: #2563eb; border: 1px solid #bfdbfe; background: #eff6ff; border-radius: 10px; text-decoration: none; padding: 10px 14px; font-size: 13px; font-weight: 800; }
+        .card-builder-header a { color: #0d6ffd; border: 1px solid #bfdbfe; background: #eaf3ff; border-radius: 10px; text-decoration: none; padding: 10px 14px; font-size: 13px; font-weight: 800; }
         .card-builder-section { margin-bottom: 34px; }
         .card-builder-section h2 { margin: 0 0 18px; font-size: 23px; }
         .card-builder-section-title { display: flex; align-items: center; gap: 18px; }
         .card-builder-section-title button { border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; color: #6b7280; padding: 10px 18px; font-weight: 800; }
         .card-builder-upload-grid { display: grid; grid-template-columns: repeat(2, minmax(150px, 1fr)); gap: 12px; max-width: 420px; }
         .card-builder-upload-wrap { display: grid; gap: 8px; }
-        .card-builder-upload { min-height: 82px; border: 1px solid #e5e7eb; background: #f9fafb; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; color: #374151; font-weight: 800; font-size: 13px; overflow: hidden; }
-        .card-builder-upload:hover { border-color: #2563eb; background: #eff6ff; }
+        .card-builder-upload { min-height: 82px; border: 1px solid #e5e7eb; background: #f5f5f5; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; color: #374151; font-weight: 800; font-size: 13px; overflow: hidden; }
+        .card-builder-upload:hover { border-color: #0d6ffd; background: #eaf3ff; }
         .card-builder-upload img { width: 100%; height: 82px; object-fit: cover; }
         .card-builder-upload-remove { border: 1px solid #fecaca; background: #fff; color: #b91c1c; border-radius: 8px; padding: 8px 10px; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
         .card-builder-upload-remove:hover { background: #fef2f2; }
@@ -819,21 +819,21 @@ export default function CardBuilderPage() {
         .card-builder-colors { display: flex; flex-wrap: wrap; gap: 10px; }
         .card-builder-colors button { width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(0,0,0,.08); cursor: pointer; transition: transform 0.2s ease; }
         .card-builder-colors button:hover { transform: scale(1.15); }
-        .card-builder-colors button.is-active { outline: 2px solid #2563eb; outline-offset: 2px; transform: scale(1.1); }
-        .card-builder-locked-row { max-width: 560px; display: flex; align-items: center; gap: 10px; border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; border-radius: 10px; padding: 12px 14px; font-size: 13px; font-weight: 800; }
+        .card-builder-colors button.is-active { outline: 2px solid #0d6ffd; outline-offset: 2px; transform: scale(1.1); }
+        .card-builder-locked-row { max-width: 560px; display: flex; align-items: center; gap: 10px; border: 1px solid #bfdbfe; background: #eaf3ff; color: #0b5ed7; border-radius: 10px; padding: 12px 14px; font-size: 13px; font-weight: 800; }
         .card-builder-locked-row span { flex: 1; }
-        .card-builder-locked-row a { color: #ffffff; background: #2563eb; border-radius: 8px; text-decoration: none; padding: 7px 10px; font-size: 12px; }
+        .card-builder-locked-row a { color: #ffffff; background: #0d6ffd; border-radius: 8px; text-decoration: none; padding: 7px 10px; font-size: 12px; }
         .card-builder-group { margin-top: 22px; }
         .card-builder-group h3 { margin: 0 0 12px; font-size: 16px; }
         .card-builder-field-grid { display: grid; grid-template-columns: repeat(3, minmax(170px, 1fr)); gap: 12px; }
         .card-builder-field { border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; overflow: hidden; transition: all 0.2s ease; }
-        .card-builder-field:hover:not(.is-locked) { border-color: #93c5fd; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); }
+        .card-builder-field:hover:not(.is-locked) { border-color: #8fc1ff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); }
         .card-builder-field button { width: 100%; border: none; background: transparent; display: grid; grid-template-columns: 30px 1fr 28px; align-items: center; gap: 8px; text-align: left; padding: 11px 12px; cursor: pointer; color: #201c19; font-weight: 700; transition: background 0.2s ease; }
         .card-builder-field button > svg:last-child { justify-self: end; border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px; width: 24px; height: 24px; }
         .card-builder-field.is-locked { background: #f8fafc; border-color: #e2e8f0; opacity: 0.85; }
         .card-builder-field.is-locked button { grid-template-columns: 30px minmax(0,1fr) auto; color: #94a3b8; cursor: default; }
         .card-builder-field.is-locked .card-builder-brand-mark { background: #f3f4f6; color: #6b7280; }
-        .card-builder-field.is-locked button > a { justify-self: end; color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 7px; padding: 5px 8px; font-size: 11px; font-weight: 900; text-decoration: none; }
+        .card-builder-field.is-locked button > a { justify-self: end; color: #0d6ffd; background: #eaf3ff; border: 1px solid #bfdbfe; border-radius: 7px; padding: 5px 8px; font-size: 11px; font-weight: 900; text-decoration: none; }
         .card-builder-field input, .card-builder-slug input, .card-builder-section textarea {
           width: 100%;
           border: none;
@@ -851,40 +851,20 @@ export default function CardBuilderPage() {
           box-shadow: 0 0 0 1000px #ffffff inset;
           -webkit-text-fill-color: #111827;
         }
-        html[data-theme="dark"] .card-builder-page .card-builder-field input,
-        html[data-theme="dark"] .card-builder-page .card-builder-slug input,
-        html[data-theme="dark"] .card-builder-page textarea {
-          background: #ffffff !important;
-          background-color: #ffffff !important;
-          color: #111827 !important;
-          border-color: #e5e7eb !important;
-          -webkit-text-fill-color: #111827 !important;
-          color-scheme: light;
-        }
-        html[data-theme="dark"] .card-builder-page .card-builder-field input::placeholder,
-        html[data-theme="dark"] .card-builder-page .card-builder-slug input::placeholder,
-        html[data-theme="dark"] .card-builder-page textarea::placeholder {
-          color: #9ca3af !important;
-          -webkit-text-fill-color: #9ca3af !important;
-        }
-        html[data-theme="dark"] .card-builder-page .card-builder-field input:-webkit-autofill {
-          box-shadow: 0 0 0 1000px #ffffff inset !important;
-          -webkit-text-fill-color: #111827 !important;
-        }
-        .card-builder-field.is-active { border-color: #93c5fd; box-shadow: 0 0 0 3px #eff6ff; }
+        .card-builder-field.is-active { border-color: #8fc1ff; box-shadow: 0 0 0 3px #eaf3ff; }
         .card-builder-multi-inputs { border-top: 1px solid #e5e7eb; padding: 8px 8px 10px; display: grid; gap: 8px; }
         .card-builder-multi-row { display: grid; grid-template-columns: minmax(0, 1fr) 34px; gap: 6px; }
         .card-builder-multi-row input { border: 1px solid #e5e7eb; border-radius: 8px; padding: 9px 10px; font-size: 13px; border-top: 1px solid #e5e7eb; }
         .card-builder-multi-remove { border: 1px solid #fecaca; background: #fff; color: #b91c1c; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
-        .card-builder-multi-add { border: 1px dashed #bfdbfe; background: #eff6ff; color: #1d4ed8; border-radius: 8px; min-height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; font-weight: 800; cursor: pointer; }
+        .card-builder-multi-add { border: 1px dashed #bfdbfe; background: #eaf3ff; color: #0b5ed7; border-radius: 8px; min-height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; font-weight: 800; cursor: pointer; }
         .card-builder-slug { max-width: 560px; display: flex; border: 1px solid #e5e7eb; border-radius: 9px; overflow: hidden; background: #fff; margin-bottom: 12px; }
-        .card-builder-slug span { padding: 12px; background: #f9fafb; color: #6b7280; font-size: 13px; border-right: 1px solid #e5e7eb; }
+        .card-builder-slug span { padding: 12px; background: #f5f5f5; color: #6b7280; font-size: 13px; border-right: 1px solid #e5e7eb; }
         .card-builder-slug input { border-top: none; }
         .card-builder-section textarea { max-width: 560px; border: 1px solid #e5e7eb; border-radius: 9px; resize: vertical; }
         .card-builder-alert { max-width: 560px; padding: 12px 14px; border-radius: 10px; border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; font-weight: 800; font-size: 13px; margin-bottom: 18px; }
         .card-builder-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 56px; }
         .card-builder-footer p { color: #6b7280; font-size: 12px; }
-        .card-builder-footer button { border: none; border-radius: 999px; background: #2563eb; color: #fff; padding: 13px 24px; display: inline-flex; align-items: center; gap: 8px; font-weight: 900; cursor: pointer; }
+        .card-builder-footer button { border: none; border-radius: 999px; background: #0d6ffd; color: #fff; padding: 13px 24px; display: inline-flex; align-items: center; gap: 8px; font-weight: 900; cursor: pointer; }
         .card-builder-footer button:disabled { opacity: .7; cursor: wait; }
         @media (max-width: 980px) {
           .card-builder-page { grid-template-columns: 1fr; }

@@ -38,10 +38,10 @@ const DEFAULT_ACTIVE_FIELDS = [
 ];
 
 export const BRAND_META = {
-  email: { color: "#2563EB" },
+  email: { color: "#0d6ffd" },
   phone: { color: "#059669" },
-  website: { color: "#7C3AED" },
-  portfolio: { color: "#7C3AED" },
+  website: { color: "#ff9f0d" },
+  portfolio: { color: "#ff9f0d" },
   address: { color: "#DC2626" },
   twitter: { color: "#111827", icon: SiX },
   instagram: { color: "#E1306C", icon: SiInstagram },
@@ -276,7 +276,7 @@ function embedVideoUrl(value) {
 
 function colorWithAlpha(color, alpha) {
   const hex = String(color || "").replace("#", "");
-  if (!/^[0-9a-f]{6}$/i.test(hex)) return `rgba(37, 99, 235, ${alpha})`;
+  if (!/^[0-9a-f]{6}$/i.test(hex)) return `rgba(13, 111, 253, ${alpha})`;
   const r = parseInt(hex.slice(0, 2), 16);
   const g = parseInt(hex.slice(2, 4), 16);
   const b = parseInt(hex.slice(4, 6), 16);
@@ -368,7 +368,7 @@ export default function CardPhonePreview({
   const color = card?.brandColor || DEFAULT_COLOR;
   const coverBackground = card?.coverUrl
     ? `url(${card.coverUrl}) center/cover`
-    : `linear-gradient(135deg, ${color} 0%, #1d4ed8 58%, #0f172a 100%)`;
+    : `linear-gradient(135deg, ${color} 0%, #0b5ed7 58%, #0f172a 100%)`;
   const contactButtons = [
     ["phone", Phone, "Call", card?.phone ? `tel:${card.phone}` : ""],
     ["email", Mail, "Email", card?.email ? `mailto:${card.email}` : ""],
@@ -708,8 +708,8 @@ export default function CardPhonePreview({
         .card-preview-qr.is-locked .card-preview-qr-code { filter: blur(5px); opacity: .48; pointer-events: none; user-select: none; }
         .card-preview-qr svg { max-width: 64%; height: auto; }
         .card-preview-qr span { overflow-wrap: anywhere; text-align: center; }
-        .card-preview-qr em { margin-top: 2px; font-style: normal; color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 800; text-align: center; }
-        .card-preview-brand-mark { width: 30px; height: 30px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 950; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        .card-preview-qr em { margin-top: 2px; font-style: normal; color: #0d6ffd; background: #eaf3ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 800; text-align: center; }
+        .card-preview-brand-mark { width: 30px; height: 30px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 950; font-family: Archivo, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
         @media (max-width: 640px) {
           .card-preview-wrap:not(.is-compact) .card-preview-copy h2 { font-size: 22px; line-height: 1.15; }
         }

@@ -29,8 +29,8 @@ export default function AdminTemplatesPage() {
       emptyTitle="No templates yet"
       emptyCopy="Card templates and themes will appear here."
       statCards={[
-        ["Templates", (data) => data?.templates?.length || 0, "#2563EB", "#EFF6FF"],
-        ["Premium", (data) => data?.templates?.filter((item) => item.is_premium).length || 0, "#7C3AED", "#F5F3FF"],
+        ["Templates", (data) => data?.templates?.length || 0, "#0d6ffd", "#eaf3ff"],
+        ["Premium", (data) => data?.templates?.filter((item) => item.is_premium).length || 0, "#ff9f0d", "#F5F3FF"],
         ["Active", (data) => data?.templates?.filter((item) => item.is_active).length || 0, "#047857", "#ECFDF5"],
       ]}
       rowAction={{

@@ -4,7 +4,7 @@ import { downloadQrSvg } from "../../../components/QRCode";
 
 const statusColors = {
   Published: ["#ECFDF5", "#047857", "#A7F3D0"],
-  Draft: ["#F9FAFB", "#6B7280", "#E5E7EB"],
+  Draft: ["#f5f5f5", "#6B7280", "#E5E7EB"],
   Paused: ["#FFFBEB", "#B45309", "#FDE68A"],
 };
 
@@ -78,9 +78,9 @@ export default function AdminCardsPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 14, marginBottom: 20 }}>
         {[
-          ["Total Cards", stats.cards || 0, CreditCard, "#2563EB", "#EFF6FF"],
+          ["Total Cards", stats.cards || 0, CreditCard, "#0d6ffd", "#eaf3ff"],
           ["Published", stats.activeCards || 0, CheckCircle2, "#059669", "#ECFDF5"],
-          ["QR Scans", stats.qrScans || 0, QrCode, "#7C3AED", "#F5F3FF"],
+          ["QR Scans", stats.qrScans || 0, QrCode, "#ff9f0d", "#F5F3FF"],
           ["Contact Downloads", stats.contactDownloads || 0, Flag, "#D97706", "#FFFBEB"],
         ].map(([label, value, Icon, color, bg]) => (
           <div key={label} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 18 }}>
@@ -118,7 +118,7 @@ export default function AdminCardsPage() {
               <div>
                 <p style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>{title}</p>
                 {cardLink ? (
-                  <a href={cardLink} title={cardLink} style={{ fontSize: 12, color: "#2563EB", fontWeight: 700, textDecoration: "none" }}>
+                  <a href={cardLink} title={cardLink} style={{ fontSize: 12, color: "#0d6ffd", fontWeight: 700, textDecoration: "none" }}>
                     jostap.com/{slug}
                   </a>
                 ) : (

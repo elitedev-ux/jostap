@@ -84,7 +84,7 @@ export default function AdminReportsPage() {
               <button
                 onClick={() => downloadCsv(`${key}.csv`, rows)}
                 disabled={!rows.length}
-                style={{ marginTop: 14, display: "inline-flex", alignItems: "center", gap: 7, border: "none", background: rows.length ? "#2563EB" : "#E5E7EB", borderRadius: 9, padding: "9px 13px", fontSize: 13, fontWeight: 800, color: rows.length ? "#fff" : "#6B7280", cursor: rows.length ? "pointer" : "not-allowed" }}
+                style={{ marginTop: 14, display: "inline-flex", alignItems: "center", gap: 7, border: "none", background: rows.length ? "#0d6ffd" : "#E5E7EB", borderRadius: 9, padding: "9px 13px", fontSize: 13, fontWeight: 800, color: rows.length ? "#fff" : "#6B7280", cursor: rows.length ? "pointer" : "not-allowed" }}
               >
                 <Download size={14} /> Export CSV
               </button>

@@ -8,7 +8,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import logo from "../../assets/jostap logo.png3.png";
-import ThemeToggle from "../../components/ThemeToggle";
 
 const PLANS = {
   free: {
@@ -127,7 +126,7 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F9FAFB" }}>
+    <div style={{ minHeight: "100vh", background: "#f5f5f5" }}>
       <header
         style={{
           height: 72,
@@ -160,7 +159,6 @@ export default function CheckoutPage() {
           >
             <LockKeyhole size={14} /> Secure checkout
           </span>
-          <ThemeToggle compact />
         </div>
       </header>
 
@@ -211,8 +209,8 @@ export default function CheckoutPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    color: "#2563EB",
-                    background: "#EFF6FF",
+                    color: "#0d6ffd",
+                    background: "#eaf3ff",
                     border: "1px solid #BFDBFE",
                     borderRadius: 999,
                     padding: "4px 10px",
@@ -256,7 +254,7 @@ export default function CheckoutPage() {
                       textAlign: "left",
                       border:
                         planKey === key
-                          ? "2px solid #2563EB"
+                          ? "2px solid #0d6ffd"
                           : "1px solid #E5E7EB",
                       borderRadius: 12,
                       background: planKey === key ? "#FAFBFF" : "#fff",
@@ -267,7 +265,7 @@ export default function CheckoutPage() {
                     <span
                       style={{
                         display: "block",
-                        color: planKey === key ? "#2563EB" : "#111827",
+                        color: planKey === key ? "#0d6ffd" : "#111827",
                         fontSize: 14,
                         fontWeight: 700,
                         marginBottom: 4,
@@ -482,7 +480,7 @@ export default function CheckoutPage() {
                     marginTop: 18,
                     border: "1px solid #BFDBFE",
                     borderRadius: 10,
-                    background: "#EFF6FF",
+                    background: "#eaf3ff",
                     color: "#1D4ED8",
                     fontSize: 13,
                     padding: "11px 13px",
@@ -500,7 +498,7 @@ export default function CheckoutPage() {
                   marginTop: 20,
                   border: "none",
                   borderRadius: 10,
-                  background: loading ? "#93C5FD" : "#2563EB",
+                  background: loading ? "#8fc1ff" : "#0d6ffd",
                   color: "#fff",
                   cursor: loading ? "not-allowed" : "pointer",
                   fontSize: 15,
@@ -538,14 +536,14 @@ export default function CheckoutPage() {
               style={{
                 border: "1px solid #E5E7EB",
                 borderRadius: 12,
-                background: "#F9FAFB",
+                background: "#f5f5f5",
                 padding: 16,
                 marginBottom: 18,
               }}
             >
               <p
                 style={{
-                  color: "#2563EB",
+                  color: "#0d6ffd",
                   fontSize: 12,
                   fontWeight: 800,
                   letterSpacing: "0.06em",
@@ -587,7 +585,7 @@ export default function CheckoutPage() {
                     fontSize: 13,
                   }}
                 >
-                  <Check size={14} color="#2563EB" /> {feature}
+                  <Check size={14} color="#0d6ffd" /> {feature}
                 </div>
               ))}
             </div>

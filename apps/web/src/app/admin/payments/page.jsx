@@ -18,7 +18,7 @@ export default function AdminPaymentsPage() {
       emptyTitle="No payments yet"
       emptyCopy="Payment activity will appear here when users subscribe or renew."
       statCards={[
-        ["Total Payments", (data) => data?.payments?.length || 0, "#2563EB", "#EFF6FF"],
+        ["Total Payments", (data) => data?.payments?.length || 0, "#0d6ffd", "#eaf3ff"],
         ["Successful", (data) => data?.payments?.filter((item) => item.status === "succeeded").length || 0, "#047857", "#ECFDF5"],
         ["Revenue", (data) => data?.stats?.revenueCents ? `$${Math.round(data.stats.revenueCents / 100).toLocaleString()}` : "$0", "#4F46E5", "#EEF2FF"],
       ]}

@@ -415,7 +415,7 @@ export default function SettingsPage() {
               color: activeTab === tab ? "#111827" : "#6B7280",
               borderBottom:
                 activeTab === tab
-                  ? "2px solid #2563EB"
+                  ? "2px solid #0d6ffd"
                   : "2px solid transparent",
               marginBottom: -1,
             }}
@@ -454,7 +454,7 @@ export default function SettingsPage() {
                     width: 72,
                     height: 72,
                     borderRadius: "50%",
-                    background: "linear-gradient(135deg,#2563EB,#7C3AED)",
+                    background: "linear-gradient(135deg,#0d6ffd,#ff9f0d)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -514,8 +514,8 @@ export default function SettingsPage() {
                   style={{
                     fontSize: 13,
                     fontWeight: 500,
-                    color: "#2563EB",
-                    background: "#EFF6FF",
+                    color: "#0d6ffd",
+                    background: "#eaf3ff",
                     border: "1px solid #BFDBFE",
                     borderRadius: 8,
                     padding: "7px 14px",
@@ -565,7 +565,7 @@ export default function SettingsPage() {
                   value={profile.name}
                   onChange={(e) => update("name", e.target.value)}
                   style={inputStyle}
-                  onFocus={(e) => (e.target.style.borderColor = "#2563EB")}
+                  onFocus={(e) => (e.target.style.borderColor = "#0d6ffd")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
               </div>
@@ -585,7 +585,7 @@ export default function SettingsPage() {
                   value={profile.title}
                   onChange={(e) => update("title", e.target.value)}
                   style={inputStyle}
-                  onFocus={(e) => (e.target.style.borderColor = "#2563EB")}
+                  onFocus={(e) => (e.target.style.borderColor = "#0d6ffd")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
               </div>
@@ -605,7 +605,7 @@ export default function SettingsPage() {
                   value={profile.company}
                   onChange={(e) => update("company", e.target.value)}
                   style={inputStyle}
-                  onFocus={(e) => (e.target.style.borderColor = "#2563EB")}
+                  onFocus={(e) => (e.target.style.borderColor = "#0d6ffd")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
               </div>
@@ -625,7 +625,7 @@ export default function SettingsPage() {
                   value={profile.email}
                   onChange={(e) => update("email", e.target.value)}
                   style={inputStyle}
-                  onFocus={(e) => (e.target.style.borderColor = "#2563EB")}
+                  onFocus={(e) => (e.target.style.borderColor = "#0d6ffd")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
               </div>
@@ -645,7 +645,7 @@ export default function SettingsPage() {
                   value={profile.phone}
                   onChange={(e) => update("phone", e.target.value)}
                   style={inputStyle}
-                  onFocus={(e) => (e.target.style.borderColor = "#2563EB")}
+                  onFocus={(e) => (e.target.style.borderColor = "#0d6ffd")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
               </div>
@@ -665,7 +665,7 @@ export default function SettingsPage() {
                   value={profile.website}
                   onChange={(e) => update("website", e.target.value)}
                   style={inputStyle}
-                  onFocus={(e) => (e.target.style.borderColor = "#2563EB")}
+                  onFocus={(e) => (e.target.style.borderColor = "#0d6ffd")}
                   onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                 />
               </div>
@@ -768,7 +768,7 @@ export default function SettingsPage() {
                 onChange={(e) => update("bio", e.target.value)}
                 rows={3}
                 style={{ ...inputStyle, resize: "vertical" }}
-                onFocus={(e) => (e.target.style.borderColor = "#2563EB")}
+                onFocus={(e) => (e.target.style.borderColor = "#0d6ffd")}
                 onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
               />
             </div>
@@ -796,7 +796,7 @@ export default function SettingsPage() {
                 <span
                   style={{
                     padding: "9px 12px",
-                    background: "#F9FAFB",
+                    background: "#f5f5f5",
                     borderRight: "1px solid #E5E7EB",
                     fontSize: 13,
                     color: "#9CA3AF",
@@ -821,7 +821,7 @@ export default function SettingsPage() {
                 fontSize: 14,
                 fontWeight: 600,
                 color: "#fff",
-                background: saved ? "#059669" : "#2563EB",
+                background: saved ? "#059669" : "#0d6ffd",
                 border: "none",
                 borderRadius: 8,
                 padding: "9px 20px",
@@ -913,7 +913,7 @@ export default function SettingsPage() {
                   height: 24,
                   borderRadius: 12,
                   cursor: "pointer",
-                  background: notifs[key] ? "#2563EB" : "#E5E7EB",
+                  background: notifs[key] ? "#0d6ffd" : "#E5E7EB",
                   position: "relative",
                   transition: "background 0.2s",
                   flexShrink: 0,
@@ -997,7 +997,7 @@ export default function SettingsPage() {
                   fontSize: 14,
                   fontWeight: 600,
                   color: "#fff",
-                  background: "#2563EB",
+                  background: "#0d6ffd",
                   border: "none",
                   borderRadius: 8,
                   padding: "9px 16px",
@@ -1011,7 +1011,7 @@ export default function SettingsPage() {
 
           {twoFactor.setup && (
             <div style={{ marginTop: 18, display: "grid", gap: 12, maxWidth: 560 }}>
-              <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 10, padding: 14 }}>
+              <div style={{ background: "#f5f5f5", border: "1px solid #E5E7EB", borderRadius: 10, padding: 14 }}>
                 <p style={{ fontSize: 12, color: "#6B7280", marginBottom: 6 }}>Authenticator setup URL</p>
                 <p style={{ fontSize: 12, color: "#111827", wordBreak: "break-all" }}>{twoFactor.setup.otpauthUrl}</p>
                 <p style={{ fontSize: 12, color: "#6B7280", marginTop: 10 }}>Manual secret: <strong>{twoFactor.setup.secret}</strong></p>
@@ -1089,7 +1089,7 @@ export default function SettingsPage() {
                     type={showPass ? "text" : "password"}
                     placeholder="••••••••"
                     style={{ ...inputStyle, paddingRight: 40 }}
-                    onFocus={(e) => (e.target.style.borderColor = "#2563EB")}
+                    onFocus={(e) => (e.target.style.borderColor = "#0d6ffd")}
                     onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                   />
                   <button
@@ -1120,7 +1120,7 @@ export default function SettingsPage() {
                 fontSize: 14,
                 fontWeight: 600,
                 color: "#fff",
-                background: "#2563EB",
+                background: "#0d6ffd",
                 border: "none",
                 borderRadius: 8,
                 padding: "9px 20px",
@@ -1144,7 +1144,7 @@ export default function SettingsPage() {
               name: "Cal.com",
               desc: "Appointment booking",
               connected: true,
-              color: "#2563EB",
+              color: "#0d6ffd",
             },
             {
               name: "Stripe",
@@ -1217,8 +1217,8 @@ export default function SettingsPage() {
                   style={{
                     fontSize: 13,
                     fontWeight: 500,
-                    color: int.connected ? "#DC2626" : "#2563EB",
-                    background: int.connected ? "#FEF2F2" : "#EFF6FF",
+                    color: int.connected ? "#DC2626" : "#0d6ffd",
+                    background: int.connected ? "#FEF2F2" : "#eaf3ff",
                     border: int.connected
                       ? "1px solid #FECACA"
                       : "1px solid #BFDBFE",

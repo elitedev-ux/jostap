@@ -16,8 +16,8 @@ export default function AdminRolesPage() {
       emptyTitle="No roles yet"
       emptyCopy="Role permission records will appear here."
       statCards={[
-        ["Roles", (data) => data?.roles?.length || 0, "#2563EB", "#EFF6FF"],
-        ["Admin Roles", (data) => data?.roles?.filter((item) => item.role === "admin").length || 0, "#7C3AED", "#F5F3FF"],
+        ["Roles", (data) => data?.roles?.length || 0, "#0d6ffd", "#eaf3ff"],
+        ["Admin Roles", (data) => data?.roles?.filter((item) => item.role === "admin").length || 0, "#ff9f0d", "#F5F3FF"],
       ]}
     />
   );

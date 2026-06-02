@@ -5,7 +5,6 @@ import {
   LockKeyhole,
   TrendingUp,
   Globe,
-  Smartphone,
   ChevronDown,
 } from "lucide-react";
 import {
@@ -25,7 +24,7 @@ import {
 
 const deviceData = [];
 
-const COLORS = ["#2563EB", "#7C3AED", "#059669"];
+const COLORS = ["#0d6ffd", "#ff9f0d", "#059669"];
 
 const LOCATIONS = [];
 
@@ -44,7 +43,7 @@ function AdvancedAnalyticsGate() {
       </div>
       <p className="ui-empty-state__title">Advanced analytics unlock with premium access</p>
       <p className="ui-empty-state__copy">Free cards include basic analytics. Upgrade for lead metrics, visitor insights, referrers, location data, and exports.</p>
-      <a href="/pricing" style={{ display: "inline-flex", marginTop: 16, background: "#2563EB", color: "#fff", borderRadius: 9, padding: "10px 16px", textDecoration: "none", fontSize: 13, fontWeight: 800 }}>
+      <a href="/pricing" style={{ display: "inline-flex", marginTop: 16, background: "#0d6ffd", color: "#fff", borderRadius: 9, padding: "10px 16px", textDecoration: "none", fontSize: 13, fontWeight: 800 }}>
         Upgrade plan
       </a>
     </div>
@@ -149,7 +148,7 @@ export default function AnalyticsPage() {
           <div
             style={{
               display: "inline-flex",
-              background: "#F9FAFB",
+              background: "#f5f5f5",
               border: "1px solid #E5E7EB",
               borderRadius: 8,
               padding: 3,
@@ -227,9 +226,9 @@ export default function AnalyticsPage() {
         }}
       >
         {[
-          ["Total Views", totals.views || 0, "live", "#2563EB", "#EFF6FF"],
+          ["Total Views", totals.views || 0, "live", "#0d6ffd", "#eaf3ff"],
           ["NFC Taps", totals.taps || 0, "live", "#059669", "#ECFDF5"],
-          ["QR Scans", totals.qrScans || 0, "live", "#7C3AED", "#F5F3FF"],
+          ["QR Scans", totals.qrScans || 0, "live", "#ff9f0d", "#F5F3FF"],
           ...(!advancedLocked ? [["Leads", totals.leads || 0, "live", "#D97706", "#FFFBEB"]] : []),
         ].map(([label, val, change, color, bg]) => (
           <div
@@ -304,9 +303,9 @@ export default function AnalyticsPage() {
           >
             <defs>
               {[
-                ["gV", "#2563EB"],
+                ["gV", "#0d6ffd"],
                 ["gT", "#059669"],
-                ["gQ", "#7C3AED"],
+                ["gQ", "#ff9f0d"],
               ].map(([id, c]) => (
                 <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={c} stopOpacity={0.1} />
@@ -341,7 +340,7 @@ export default function AnalyticsPage() {
             <Area
               type="monotone"
               dataKey="views"
-              stroke="#2563EB"
+              stroke="#0d6ffd"
               strokeWidth={2}
               fill="url(#gV)"
               name="Views"
@@ -357,7 +356,7 @@ export default function AnalyticsPage() {
             <Area
               type="monotone"
               dataKey="qr"
-              stroke="#7C3AED"
+              stroke="#ff9f0d"
               strokeWidth={2}
               fill="url(#gQ)"
               name="QR Scans"
@@ -423,8 +422,8 @@ export default function AnalyticsPage() {
               />
               <Bar
                 dataKey="clicks"
-                fill="#EFF6FF"
-                stroke="#2563EB"
+                fill="#eaf3ff"
+                stroke="#0d6ffd"
                 strokeWidth={1.5}
                 radius={[4, 4, 0, 0]}
                 name="Clicks"
@@ -571,7 +570,7 @@ export default function AnalyticsPage() {
                     style={{
                       width: `${Math.min((r.visits / Math.max(...referrers.map((item) => item.visits), 1)) * 100, 100)}%`,
                       height: "100%",
-                      background: "#2563EB",
+                      background: "#0d6ffd",
                       borderRadius: 999,
                     }}
                   />
@@ -647,7 +646,7 @@ export default function AnalyticsPage() {
                   style={{
                     width: `${l.pct}%`,
                     height: "100%",
-                    background: "#2563EB",
+                    background: "#0d6ffd",
                     borderRadius: 999,
                   }}
                 />
@@ -669,4 +668,3 @@ export default function AnalyticsPage() {
     </>
   );
 }
-

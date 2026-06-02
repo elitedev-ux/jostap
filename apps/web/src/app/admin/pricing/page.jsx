@@ -29,7 +29,7 @@ export default function AdminPricingPage() {
       emptyTitle="No pricing plans yet"
       emptyCopy="Pricing plan records will appear here."
       statCards={[
-        ["Plans", (data) => data?.pricingPlans?.length || 0, "#2563EB", "#EFF6FF"],
+        ["Plans", (data) => data?.pricingPlans?.length || 0, "#0d6ffd", "#eaf3ff"],
         ["Active", (data) => data?.pricingPlans?.filter((item) => item.is_active).length || 0, "#047857", "#ECFDF5"],
       ]}
       rowAction={{

@@ -1,7 +1,6 @@
 import Footer from "../Footer";
 import Navbar from "../Navbar";
 import CtaSection from "./CtaSection";
-import FeaturesSection from "./FeaturesSection";
 import HeroSection from "./HeroSection";
 import HowItWorksSection from "./HowItWorksSection";
 import PricingPreview from "./PricingPreview";
@@ -15,7 +14,6 @@ export default function LandingPage() {
       <Navbar />
       <HeroSection />
       <StatsBar />
-      <FeaturesSection />
       <HowItWorksSection />
       <PricingPreview />
       <TestimonialsSection />

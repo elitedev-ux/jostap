@@ -46,7 +46,7 @@
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 30%),
+    radial-gradient(circle at top right, rgba(13, 111, 253, 0.08), transparent 30%),
     #ffffff;
   padding: 72px 56px;
   box-sizing: border-box;
@@ -117,7 +117,7 @@
 }
 
 .auth-form a {
-  color: #2563eb;
+  color: #0d6ffd;
   font-weight: 750;
   text-decoration: none;
 }
@@ -181,9 +181,9 @@
 
 .auth-field input:focus,
 .auth-field select:focus {
-  border-color: #2563eb;
+  border-color: #0d6ffd;
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.11);
+  box-shadow: 0 0 0 4px rgba(13, 111, 253, 0.11);
 }
 
 .auth-password-row {
@@ -260,7 +260,7 @@
   width: 15px;
   height: 15px;
   margin-top: 2px;
-  accent-color: #2563eb;
+  accent-color: #0d6ffd;
 }
 
 .auth-submit {
@@ -268,12 +268,12 @@
   height: 50px;
   border: 0;
   border-radius: 10px;
-  background: #2563eb;
+  background: #0d6ffd;
   color: #ffffff;
   cursor: pointer;
   font-size: 15px;
   font-weight: 800;
-  box-shadow: 0 16px 28px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 16px 28px rgba(13, 111, 253, 0.25);
   transition:
     transform 0.16s ease,
     box-shadow 0.16s ease,
@@ -282,13 +282,13 @@
 
 .auth-submit:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: #1d4ed8;
-  box-shadow: 0 20px 34px rgba(37, 99, 235, 0.3);
+  background: #0b5ed7;
+  box-shadow: 0 20px 34px rgba(13, 111, 253, 0.3);
 }
 
 .auth-submit:disabled {
   cursor: not-allowed;
-  background: #93c5fd;
+  background: #8fc1ff;
   box-shadow: none;
 }
 
@@ -343,44 +343,13 @@
 
 .auth-social-grid button:hover {
   border-color: #bfdbfe;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: #eaf3ff;
+  color: #0b5ed7;
 }
 
 .auth-bottom-link {
   margin-top: 24px;
   text-align: center;
-}
-
-html[data-theme="dark"] .auth-page,
-html[data-theme="dark"] .auth-card,
-html[data-theme="dark"] .auth-form-panel {
-  background: #0f172a;
-}
-
-html[data-theme="dark"] .auth-form h1,
-html[data-theme="dark"] .auth-field span,
-html[data-theme="dark"] .auth-password-row > span,
-html[data-theme="dark"] .auth-password-label span {
-  color: #f8fafc;
-}
-
-html[data-theme="dark"] .auth-form__switch,
-html[data-theme="dark"] .auth-social-divider span,
-html[data-theme="dark"] .auth-back,
-html[data-theme="dark"] .auth-checks label {
-  color: #cbd5e1;
-}
-
-html[data-theme="dark"] .auth-field input,
-html[data-theme="dark"] .auth-social-grid button {
-  background: #111827;
-  border-color: #334155;
-  color: #f8fafc;
-}
-
-html[data-theme="dark"] .auth-social-divider div {
-  background: #334155;
 }
 
 @media (max-width: 980px) {

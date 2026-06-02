@@ -68,7 +68,7 @@ function FeatureList({ features }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
       {features.map(([feature, enabled]) => (
         <div key={feature} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {enabled ? <Check size={15} color="#2563EB" /> : <X size={15} color="#D1D5DB" />}
+          {enabled ? <Check size={15} color="#0d6ffd" /> : <X size={15} color="#D1D5DB" />}
           <span style={{ fontSize: 13, color: enabled ? "#374151" : "#9CA3AF" }}>{feature}</span>
         </div>
       ))}
@@ -80,24 +80,24 @@ function PlanCard({ plan }) {
   return (
     <article
       style={{
-        border: plan.popular ? "2px solid #2563EB" : "1px solid #E5E7EB",
+        border: plan.popular ? "2px solid #0d6ffd" : "1px solid #E5E7EB",
         borderRadius: 16,
         padding: "32px 28px",
-        background: plan.popular ? "#FAFBFF" : "#fff",
+        background: plan.popular ? "#fbfdff" : "#fff",
         position: "relative",
       }}
     >
       {plan.popular && (
-        <span style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)", background: "#2563EB", color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: 999, padding: "4px 16px", whiteSpace: "nowrap" }}>
+        <span style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)", background: "#ff9f0d", color: "#111827", fontSize: 11, fontWeight: 800, borderRadius: 999, padding: "4px 16px", whiteSpace: "nowrap" }}>
           Most Popular
         </span>
       )}
-      <p style={{ fontSize: 12, fontWeight: 800, color: plan.popular ? "#2563EB" : "#6B7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{plan.name}</p>
+      <p style={{ fontSize: 12, fontWeight: 800, color: plan.popular ? "#0d6ffd" : "#6B7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{plan.name}</p>
       <p style={{ fontSize: 48, fontWeight: 800, color: "#111827", letterSpacing: "-0.035em", marginBottom: 4 }}>{plan.price}</p>
-      {plan.note && <p style={{ fontSize: 13, color: "#111827", fontWeight: 800, marginBottom: 6 }}>{plan.note}</p>}
+      {plan.note && <p style={{ fontSize: 13, color: "#8a5000", fontWeight: 800, marginBottom: 6 }}>{plan.note}</p>}
       {plan.subNote && <p style={{ fontSize: 12, color: "#6B7280", fontWeight: 700, marginBottom: 6 }}>{plan.subNote}</p>}
       <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 24 }}>{plan.desc}</p>
-      <a href={plan.href} style={{ display: "block", textAlign: "center", padding: "12px", borderRadius: 9, fontSize: 14, fontWeight: 700, textDecoration: "none", background: plan.popular ? "#2563EB" : "#F9FAFB", color: plan.popular ? "#fff" : "#111827", border: plan.popular ? "none" : "1px solid #E5E7EB", marginBottom: 26 }}>
+      <a href={plan.href} style={{ display: "block", textAlign: "center", padding: "12px", borderRadius: 9, fontSize: 14, fontWeight: 700, textDecoration: "none", background: plan.popular ? "#0d6ffd" : "#f5f5f5", color: plan.popular ? "#fff" : "#111827", border: plan.popular ? "none" : "1px solid #E5E7EB", marginBottom: 26 }}>
         {plan.cta} <ArrowRight size={13} style={{ display: "inline", marginLeft: 4 }} />
       </a>
       <FeatureList features={plan.features} />
@@ -112,7 +112,7 @@ export default function PricingPage() {
     <div style={{ backgroundColor: "#fff", minHeight: "100vh" }}>
       <Navbar />
 
-      <section style={{ paddingTop: 108, paddingBottom: 64, textAlign: "center", borderBottom: "1px solid #E5E7EB", background: "#F9FAFB" }}>
+      <section style={{ paddingTop: 108, paddingBottom: 64, textAlign: "center", borderBottom: "1px solid #E5E7EB", background: "#f5f5f5" }}>
         <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 24px" }}>
           <h1 style={{ fontSize: "clamp(32px,5vw,52px)", fontWeight: 800, color: "#111827", letterSpacing: "-0.03em", marginBottom: 14 }}>
             JOSTAP Pricing
@@ -148,7 +148,7 @@ export default function PricingPage() {
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
           <h2 style={{ fontSize: 32, fontWeight: 800, color: "#111827", marginBottom: 14 }}>Ready to get started?</h2>
           <p style={{ fontSize: 16, color: "#6B7280", marginBottom: 32 }}>Create your free profile now. Add an NFC card whenever you are ready.</p>
-          <a href="/auth/signup" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, color: "#fff", textDecoration: "none", padding: "13px 28px", borderRadius: 10, background: "#2563EB" }}>
+          <a href="/auth/signup" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, color: "#fff", textDecoration: "none", padding: "13px 28px", borderRadius: 10, background: "#0d6ffd" }}>
             Get Started <ArrowRight size={15} />
           </a>
         </div>

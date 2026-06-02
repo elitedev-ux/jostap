@@ -47,16 +47,16 @@ export default function AdminOrdersPage() {
           <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", marginBottom: 4 }}>NFC Orders</h1>
           <p style={{ fontSize: 14, color: "#6B7280" }}>Track card production, shipping, artwork approval, and fulfillment status.</p>
         </div>
-        <button style={{ display: "inline-flex", alignItems: "center", gap: 7, alignSelf: "flex-start", background: "#2563EB", color: "#fff", border: "none", borderRadius: 9, padding: "10px 15px", fontSize: 13, fontWeight: 700 }}>
+        <button style={{ display: "inline-flex", alignItems: "center", gap: 7, alignSelf: "flex-start", background: "#0d6ffd", color: "#fff", border: "none", borderRadius: 9, padding: "10px 15px", fontSize: 13, fontWeight: 700 }}>
           <Printer size={14} /> Print Batch
         </button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 20 }}>
         {[
-          ["Open Orders", stats.openInvoices || 0, Package, "#2563EB", "#EFF6FF"],
+          ["Open Orders", stats.openInvoices || 0, Package, "#0d6ffd", "#eaf3ff"],
           ["In Production", 0, Clock, "#D97706", "#FFFBEB"],
-          ["Shipped Today", "0", Truck, "#7C3AED", "#F5F3FF"],
+          ["Shipped Today", "0", Truck, "#ff9f0d", "#F5F3FF"],
           ["Delivered", "0", CheckCircle2, "#059669", "#ECFDF5"],
         ].map(([label, value, Icon, color, bg]) => (
           <div key={label} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 18 }}>
@@ -80,7 +80,7 @@ export default function AdminOrdersPage() {
         </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead style={{ background: "#F9FAFB" }}>
+            <thead style={{ background: "#f5f5f5" }}>
               <tr>{["Order", "Customer", "Product", "Payment", "Status", "Date"].map((heading) => <th key={heading} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, color: "#6B7280", textTransform: "uppercase" }}>{heading}</th>)}</tr>
             </thead>
             <tbody>
@@ -101,7 +101,7 @@ export default function AdminOrdersPage() {
               {orders.map((order, index) => (
                 <tr key={order[0]} style={{ borderTop: index ? "1px solid #F3F4F6" : "none" }}>
                   {order.map((cell, cellIndex) => (
-                    <td key={cellIndex} style={{ padding: "15px 16px", fontSize: 13, color: cellIndex === 0 ? "#2563EB" : "#374151", fontWeight: cellIndex === 0 || cellIndex === 1 ? 700 : 500 }}>
+                    <td key={cellIndex} style={{ padding: "15px 16px", fontSize: 13, color: cellIndex === 0 ? "#0d6ffd" : "#374151", fontWeight: cellIndex === 0 || cellIndex === 1 ? 700 : 500 }}>
                       {cell}
                     </td>
                   ))}

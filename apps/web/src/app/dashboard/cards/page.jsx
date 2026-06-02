@@ -300,7 +300,7 @@ function CardRow({ card, onChange, qrLocked }) {
                 style={{
                   fontSize: 11,
                   color: "#9CA3AF",
-                  background: "#F9FAFB",
+                  background: "#f5f5f5",
                   border: "1px solid #E5E7EB",
                   borderRadius: 999,
                   padding: "3px 10px",
@@ -326,7 +326,7 @@ function CardRow({ card, onChange, qrLocked }) {
           padding: 10,
           border: "1px solid #E5E7EB",
           borderRadius: 10,
-          background: "#F9FAFB",
+          background: "#f5f5f5",
           width: 132,
         }}
       >
@@ -350,7 +350,7 @@ function CardRow({ card, onChange, qrLocked }) {
           style={{
             maxWidth: "100%",
             fontSize: 11,
-            color: copied ? "#047857" : "#2563EB",
+            color: copied ? "#047857" : "#0d6ffd",
             background: "#fff",
             border: copied ? "1px solid #A7F3D0" : "1px solid #BFDBFE",
             borderRadius: 999,
@@ -373,8 +373,8 @@ function CardRow({ card, onChange, qrLocked }) {
             width: "100%",
             fontSize: 12,
             fontWeight: 600,
-            color: "#2563EB",
-            background: "#EFF6FF",
+            color: "#0d6ffd",
+            background: "#eaf3ff",
             border: "1px solid #BFDBFE",
             borderRadius: 7,
             padding: "6px 8px",
@@ -398,7 +398,7 @@ function CardRow({ card, onChange, qrLocked }) {
             fontWeight: 500,
             color: "#6B7280",
             textDecoration: "none",
-            background: "#F9FAFB",
+            background: "#f5f5f5",
             border: "1px solid #E5E7EB",
             borderRadius: 7,
             padding: "5px 10px",
@@ -415,9 +415,9 @@ function CardRow({ card, onChange, qrLocked }) {
             gap: 5,
             fontSize: 12,
             fontWeight: 500,
-            color: "#2563EB",
+            color: "#0d6ffd",
             textDecoration: "none",
-            background: "#EFF6FF",
+            background: "#eaf3ff",
             border: "1px solid #BFDBFE",
             borderRadius: 7,
             padding: "5px 10px",
@@ -430,7 +430,7 @@ function CardRow({ card, onChange, qrLocked }) {
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             style={{
-              background: "#F9FAFB",
+              background: "#f5f5f5",
               border: "1px solid #E5E7EB",
               borderRadius: 7,
               padding: "5px 8px",
@@ -488,7 +488,7 @@ function CardRow({ card, onChange, qrLocked }) {
                     color,
                     borderRadius: 6,
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#F9FAFB")}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
                   <Icon size={13} /> {label}
@@ -587,7 +587,7 @@ export default function CardsPage() {
             textDecoration: "none",
             padding: "9px 18px",
             borderRadius: 9,
-            background: "#2563EB",
+            background: "#0d6ffd",
           }}
         >
           <Plus size={15} /> New Card
@@ -699,7 +699,7 @@ export default function CardsPage() {
                 textDecoration: "none",
                 padding: "9px 18px",
                 borderRadius: 9,
-                background: "#2563EB",
+                background: "#0d6ffd",
               }}
             >
               <Plus size={15} /> Create Card

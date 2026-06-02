@@ -10,6 +10,7 @@ export default function RootLayout({ children }) {
   return (
     <>
       <head>
+        <link rel="preconnect" href="https://api.fontshare.com" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -17,19 +18,21 @@ export default function RootLayout({ children }) {
           crossOrigin="true"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+          href="https://api.fontshare.com/v2/css?f[]=clash-display@600&display=swap"
           rel="stylesheet"
         />
-        <title>JOSTAP NFC — Digital Business Cards</title>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+        <title>JOSTAP NFC - Digital Business Cards</title>
         <meta
           name="description"
           content="Create stunning digital NFC business cards. Share your profile with a tap."
         />
       </head>
       <QueryClientProvider client={queryClient}>
-        <div style={{ fontFamily: "'Inter',-apple-system,sans-serif" }}>
-          {children}
-        </div>
+        {children}
       </QueryClientProvider>
     </>
   );

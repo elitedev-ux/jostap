@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import logo from "../../assets/jostap logo.png3.png";
 import faviconMark from "../../assets/jostap favicon bg.png";
-import ThemeToggle from "../../components/ThemeToggle";
 import { getCards } from "../../utils/cardsStore";
 import cn from "classnames";
 
@@ -345,7 +344,6 @@ export default function DashboardLayout({ children }) {
             </div>
           </div>
           <div className="flex items-center gap-2.5">
-            <ThemeToggle compact />
             <div style={{ position: "relative" }}>
             <button
               type="button"
@@ -390,7 +388,7 @@ export default function DashboardLayout({ children }) {
                         width: "100%",
                         border: "none",
                         borderTop: "1px solid #F3F4F6",
-                        background: item.isRead ? "#fff" : "#F9FAFB",
+                        background: item.isRead ? "#fff" : "#f5f5f5",
                         padding: "12px 14px",
                         textAlign: "left",
                         cursor: "pointer",

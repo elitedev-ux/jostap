@@ -27,9 +27,9 @@ export default function AdminPremiumPage() {
       emptyTitle="No premium features yet"
       emptyCopy="Premium feature controls will appear here."
       statCards={[
-        ["Features", (data) => data?.features?.length || 0, "#2563EB", "#EFF6FF"],
+        ["Features", (data) => data?.features?.length || 0, "#0d6ffd", "#eaf3ff"],
         ["Enabled", (data) => data?.features?.filter((item) => item.is_enabled).length || 0, "#047857", "#ECFDF5"],
-        ["Premium Features Renewal", (data) => data?.features?.filter((item) => item.plan === "premium_renewal").length || 0, "#7C3AED", "#F5F3FF"],
+        ["Premium Features Renewal", (data) => data?.features?.filter((item) => item.plan === "premium_renewal").length || 0, "#ff9f0d", "#F5F3FF"],
       ]}
       rowAction={{
         label: (row) => (row.is_enabled ? "Disable" : "Enable"),

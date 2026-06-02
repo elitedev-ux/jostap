@@ -3,9 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 
 const statusStyle = {
   Active: ["#ECFDF5", "#047857", "#A7F3D0"],
-  Trial: ["#EFF6FF", "#2563EB", "#BFDBFE"],
+  Trial: ["#eaf3ff", "#0d6ffd", "#BFDBFE"],
   Suspended: ["#FEF2F2", "#DC2626", "#FECACA"],
-  "No plan": ["#F9FAFB", "#6B7280", "#E5E7EB"],
+  "No plan": ["#f5f5f5", "#6B7280", "#E5E7EB"],
 };
 
 function downloadCsv(rows) {
@@ -108,7 +108,7 @@ export default function AdminUsersPage() {
         </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead style={{ background: "#F9FAFB" }}>
+            <thead style={{ background: "#f5f5f5" }}>
               <tr>
                 {["User", "Plan", "Status", "Cards", "Revenue", "Actions"].map((heading) => (
                   <th key={heading} style={{ textAlign: "left", padding: "12px 16px", fontSize: 12, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.04em" }}>{heading}</th>
@@ -140,7 +140,7 @@ export default function AdminUsersPage() {
                   <tr key={user.email} style={{ borderTop: index ? "1px solid #F3F4F6" : "none" }}>
                     <td style={{ padding: 16 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#EFF6FF", color: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, overflow: "hidden" }}>
+                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#eaf3ff", color: "#0d6ffd", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, overflow: "hidden" }}>
                           {user.avatarUrl ? <img src={user.avatarUrl} alt={user.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : user.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}
                         </div>
                         <div>
@@ -171,7 +171,7 @@ export default function AdminUsersPage() {
                       <button
                         onClick={() => updateUser(user, { role: user.role === "admin" ? "user" : "admin" })}
                         disabled={busyId === user.id}
-                        style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "7px 10px", fontSize: 12, fontWeight: 800, color: "#2563EB", cursor: busyId === user.id ? "wait" : "pointer" }}
+                        style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "7px 10px", fontSize: 12, fontWeight: 800, color: "#0d6ffd", cursor: busyId === user.id ? "wait" : "pointer" }}
                       >
                         {user.role === "admin" ? "Make user" : "Make admin"}
                       </button>

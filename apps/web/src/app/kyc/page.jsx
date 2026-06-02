@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, BadgeCheck, Building2, MapPin, Phone } from "lucide-react";
 import logo from "../../assets/jostap logo.png3.png";
-import ThemeToggle from "../../components/ThemeToggle";
 
 const inputStyle = {
   width: "100%",
@@ -46,7 +45,7 @@ function Field({ label, children, required = true }) {
         }}
       >
         {label}
-        {required && <span style={{ color: "#2563EB" }}> *</span>}
+        {required && <span style={{ color: "#0d6ffd" }}> *</span>}
       </span>
       {children}
     </label>
@@ -151,7 +150,7 @@ export default function KycPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F9FAFB" }}>
+    <div style={{ minHeight: "100vh", background: "#f5f5f5" }}>
       <header
         style={{
           height: 70,
@@ -170,7 +169,6 @@ export default function KycPage() {
             style={{ width: 112, height: 44, objectFit: "contain" }}
           />
         </a>
-        <ThemeToggle compact />
       </header>
 
       <main
@@ -233,7 +231,7 @@ export default function KycPage() {
               [MapPin, "Location and goals"],
             ].map(([Icon, text]) => (
               <div key={text} style={{ display: "flex", gap: 10 }}>
-                <Icon size={16} color="#93C5FD" />
+                <Icon size={16} color="#8fc1ff" />
                 <span>{text}</span>
               </div>
             ))}
@@ -389,7 +387,7 @@ export default function KycPage() {
                   width: "100%",
                   border: "none",
                   borderRadius: 8,
-                  background: saving ? "#93C5FD" : "#2563EB",
+                  background: saving ? "#8fc1ff" : "#0d6ffd",
                   color: "#fff",
                   padding: "13px 18px",
                   fontSize: 15,

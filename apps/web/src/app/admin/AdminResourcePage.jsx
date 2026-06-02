@@ -102,7 +102,7 @@ export default function AdminResourcePage({
           </button>
           <button
             onClick={() => downloadCsv(`${dataset}.csv`, filteredRows, columns)}
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "none", background: "#2563EB", borderRadius: 9, padding: "9px 13px", fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "none", background: "#0d6ffd", borderRadius: 9, padding: "9px 13px", fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer" }}
           >
             <Download size={14} /> Export CSV
           </button>
@@ -132,12 +132,12 @@ export default function AdminResourcePage({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={`Search ${title.toLowerCase()}...`}
-            style={{ width: "100%", border: "1px solid #E5E7EB", outline: "none", background: "#F9FAFB", borderRadius: 9, padding: "10px 12px", fontSize: 13, boxSizing: "border-box" }}
+            style={{ width: "100%", border: "1px solid #E5E7EB", outline: "none", background: "#f5f5f5", borderRadius: 9, padding: "10px 12px", fontSize: 13, boxSizing: "border-box" }}
           />
         </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead style={{ background: "#F9FAFB" }}>
+            <thead style={{ background: "#f5f5f5" }}>
               <tr>
                 {columns.map((column) => (
                   <th key={column.label} style={{ textAlign: "left", padding: "12px 16px", fontSize: 12, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>
@@ -170,7 +170,7 @@ export default function AdminResourcePage({
                       <button
                         onClick={() => runAction(row)}
                         disabled={busyId === row.id}
-                        style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "7px 11px", fontSize: 12, fontWeight: 800, color: rowAction.color?.(row) || "#2563EB", cursor: busyId === row.id ? "wait" : "pointer" }}
+                        style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "7px 11px", fontSize: 12, fontWeight: 800, color: rowAction.color?.(row) || "#0d6ffd", cursor: busyId === row.id ? "wait" : "pointer" }}
                       >
                         {busyId === row.id ? "Saving..." : rowAction.label(row)}
                       </button>

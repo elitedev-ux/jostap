@@ -19,8 +19,8 @@ export default function AdminAuditPage() {
       emptyTitle="No audit logs yet"
       emptyCopy="Admin actions will appear here after changes are made."
       statCards={[
-        ["Logged Actions", (data) => data?.auditLogs?.length || 0, "#2563EB", "#EFF6FF"],
-        ["User Changes", (data) => data?.auditLogs?.filter((item) => item.targetType === "user").length || 0, "#7C3AED", "#F5F3FF"],
+        ["Logged Actions", (data) => data?.auditLogs?.length || 0, "#0d6ffd", "#eaf3ff"],
+        ["User Changes", (data) => data?.auditLogs?.filter((item) => item.targetType === "user").length || 0, "#ff9f0d", "#F5F3FF"],
         ["Card Changes", (data) => data?.auditLogs?.filter((item) => item.targetType === "card").length || 0, "#047857", "#ECFDF5"],
       ]}
     />

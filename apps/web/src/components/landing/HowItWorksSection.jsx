@@ -14,6 +14,8 @@ export default function HowItWorksSection() {
           <img
             src={socialMockup}
             alt="JOSTAP mobile profile and NFC card mockup"
+            loading="lazy"
+            decoding="async"
           />
         </div>
 

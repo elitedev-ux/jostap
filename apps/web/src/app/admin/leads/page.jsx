@@ -20,7 +20,7 @@ export default function AdminLeadsPage() {
       emptyTitle="No leads yet"
       emptyCopy="Leads captured from public profiles will appear here."
       statCards={[
-        ["Total Leads", (data) => data?.leads?.length || 0, "#2563EB", "#EFF6FF"],
+        ["Total Leads", (data) => data?.leads?.length || 0, "#0d6ffd", "#eaf3ff"],
         ["New", (data) => data?.leads?.filter((item) => item.status === "new").length || 0, "#B45309", "#FEF3C7"],
         ["Qualified", (data) => data?.leads?.filter((item) => item.status === "qualified").length || 0, "#047857", "#ECFDF5"],
       ]}

@@ -1,5 +1,4 @@
 import { ArrowLeft } from "lucide-react";
-import ThemeToggle from "../ThemeToggle";
 import "./auth.css";
 
 export default function AuthShell({
@@ -13,7 +12,7 @@ export default function AuthShell({
       <div className={`auth-card${reverse ? " auth-card--reverse" : ""}`}>
         <section className="auth-visual">
           <div className="auth-visual__mockup">
-            <img src={mockup} alt={mockupAlt} />
+            <img src={mockup} alt={mockupAlt} loading="lazy" decoding="async" />
           </div>
         </section>
 
@@ -22,7 +21,6 @@ export default function AuthShell({
             <a href="/" className="auth-back">
               <ArrowLeft size={14} /> Back to home
             </a>
-            <ThemeToggle compact />
           </div>
           {children}
         </section>

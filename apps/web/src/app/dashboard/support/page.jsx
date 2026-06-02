@@ -142,7 +142,7 @@ export default function UserSupportPage() {
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 380px", gap: 20 }}>
         <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 22 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
-            <Headphones size={17} color="#2563EB" />
+            <Headphones size={17} color="#0d6ffd" />
             <h2 style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>Create Ticket</h2>
           </div>
           <form onSubmit={submitTicket} style={{ display: "grid", gap: 14 }}>
@@ -185,7 +185,7 @@ export default function UserSupportPage() {
             <button
               disabled={loading}
               type="submit"
-              style={{ display: "inline-flex", alignItems: "center", gap: 7, width: "fit-content", background: "#2563EB", color: "#fff", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 14, fontWeight: 700, cursor: loading ? "wait" : "pointer" }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, width: "fit-content", background: "#0d6ffd", color: "#fff", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 14, fontWeight: 700, cursor: loading ? "wait" : "pointer" }}
             >
               <Send size={14} /> {loading ? "Submitting..." : "Submit Ticket"}
             </button>
@@ -224,14 +224,14 @@ export default function UserSupportPage() {
                     <p style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
                       {ticket.category} - {ticket.priority}
                     </p>
-                    <span style={{ display: "inline-flex", marginTop: 7, fontSize: 11, fontWeight: 800, color: "#2563EB", background: "#EFF6FF", borderRadius: 999, padding: "3px 8px" }}>
+                    <span style={{ display: "inline-flex", marginTop: 7, fontSize: 11, fontWeight: 800, color: "#0d6ffd", background: "#eaf3ff", borderRadius: 999, padding: "3px 8px" }}>
                       {ticket.status}
                     </span>
                   </button>
                 ))}
               </div>
 
-              <div style={{ padding: 12, maxHeight: 230, overflowY: "auto", background: "#F9FAFB" }}>
+              <div style={{ padding: 12, maxHeight: 230, overflowY: "auto", background: "#f5f5f5" }}>
                 {(selectedTicket?.messages || []).length === 0 ? (
                   <div className="ui-empty-state" style={{ border: "none", padding: "22px 10px" }}>
                     <p className="ui-empty-state__title">No replies yet</p>
@@ -241,7 +241,7 @@ export default function UserSupportPage() {
                     {selectedTicket.messages.map((message) => {
                       const isAdmin = message.sender_role !== "user";
                       return (
-                        <div key={message.id} style={{ marginLeft: isAdmin ? "auto" : 0, maxWidth: "82%", background: isAdmin ? "#EFF6FF" : "#fff", border: "1px solid #E5E7EB", borderRadius: 9, padding: "9px 10px" }}>
+                        <div key={message.id} style={{ marginLeft: isAdmin ? "auto" : 0, maxWidth: "82%", background: isAdmin ? "#eaf3ff" : "#fff", border: "1px solid #E5E7EB", borderRadius: 9, padding: "9px 10px" }}>
                           <p style={{ fontSize: 11, color: "#6B7280", marginBottom: 3 }}>{isAdmin ? "Admin" : "You"}</p>
                           <p style={{ fontSize: 13, color: "#111827", lineHeight: 1.45 }}>{message.message}</p>
                         </div>
@@ -266,7 +266,7 @@ export default function UserSupportPage() {
                   type="button"
                   onClick={sendReply}
                   disabled={!selectedTicket || !reply.trim() || loading}
-                  style={{ width: "fit-content", border: "none", background: "#2563EB", color: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: !selectedTicket || !reply.trim() ? 0.55 : 1 }}
+                  style={{ width: "fit-content", border: "none", background: "#0d6ffd", color: "#fff", borderRadius: 8, padding: "8px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: !selectedTicket || !reply.trim() ? 0.55 : 1 }}
                 >
                   {loading ? "Sending..." : "Send Reply"}
                 </button>

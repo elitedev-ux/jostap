@@ -28,7 +28,7 @@ export default function AdminFaqsPage() {
       emptyTitle="No FAQs yet"
       emptyCopy="FAQ content will appear here."
       statCards={[
-        ["FAQs", (data) => data?.faqs?.length || 0, "#2563EB", "#EFF6FF"],
+        ["FAQs", (data) => data?.faqs?.length || 0, "#0d6ffd", "#eaf3ff"],
         ["Published", (data) => data?.faqs?.filter((item) => item.is_published).length || 0, "#047857", "#ECFDF5"],
       ]}
       rowAction={{

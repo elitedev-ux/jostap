@@ -6,6 +6,7 @@ import CardPhonePreview, {
   platformUrl,
 } from "../../components/card-preview/CardPhonePreview";
 import { getPublicCard } from "../../utils/cardsStore";
+import "./page.css";
 
 const PREMIUM_FEATURE_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
 const CUSTOM_BRANDING_PLANS = new Set(["custom_nfc"]);
@@ -62,40 +63,17 @@ export default function PublicProfilePage() {
 
   if (!card) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#F9FAFB",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 24,
-          fontFamily: "'Inter',-apple-system,sans-serif",
-        }}
-      >
-        <div className="ui-empty-state" style={{ maxWidth: 460 }}>
+      <main className="public-profile public-profile--empty">
+        <div className="ui-empty-state public-profile__not-found">
           <p className="ui-empty-state__title">Card not found</p>
           <p className="ui-empty-state__copy">
             This card has not been created yet, or its public slug was changed.
           </p>
-          <a
-            href="/create-card"
-            style={{
-              display: "inline-flex",
-              marginTop: 18,
-              fontSize: 14,
-              fontWeight: 600,
-              color: "#fff",
-              textDecoration: "none",
-              padding: "9px 18px",
-              borderRadius: 9,
-              background: "#2563EB",
-            }}
-          >
+          <a href="/create-card" className="ui-button ui-button--primary public-profile__empty-action">
             Create Card
           </a>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -138,15 +116,8 @@ export default function PublicProfilePage() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#F9FAFB",
-        padding: "28px 16px",
-        fontFamily: "'Inter',-apple-system,sans-serif",
-      }}
-    >
-      <div style={{ maxWidth: 460, margin: "0 auto" }}>
+    <main className="public-profile">
+      <div className="public-profile__shell">
         <CardPhonePreview
           card={{ ...card, brandColor }}
           activeFields={visibleFields}
@@ -159,38 +130,27 @@ export default function PublicProfilePage() {
         />
 
         {includePremium && (
-          <section
-            style={{
-              marginTop: 20,
-              background: "#fff",
-              border: "1px solid #E5E7EB",
-              borderRadius: 16,
-              padding: 16,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
-              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#111827" }}>
-                Book Appointment
-              </h2>
+          <section className="booking-panel" aria-labelledby="booking-title">
+            <div className="booking-panel__header">
+              <h2 id="booking-title">Book Appointment</h2>
               {calendarUrl && (
                 <a
                   href={calendarUrl}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none", fontSize: 12, color: "#2563EB", fontWeight: 700 }}
+                  className="booking-panel__external"
                 >
                   Open Calendar <ExternalLink size={12} />
                 </a>
               )}
             </div>
 
-            <form onSubmit={submitBooking} style={{ display: "grid", gap: 10 }}>
+            <form onSubmit={submitBooking} className="booking-form">
               <input
                 required
                 placeholder="Your name"
                 value={booking.guestName}
                 onChange={(event) => setBooking((current) => ({ ...current, guestName: event.target.value }))}
-                style={{ border: "1px solid #E5E7EB", borderRadius: 10, padding: "10px 12px", fontSize: 14 }}
               />
               <input
                 required
@@ -198,17 +158,15 @@ export default function PublicProfilePage() {
                 placeholder="Your email"
                 value={booking.guestEmail}
                 onChange={(event) => setBooking((current) => ({ ...current, guestEmail: event.target.value }))}
-                style={{ border: "1px solid #E5E7EB", borderRadius: 10, padding: "10px 12px", fontSize: 14 }}
               />
-              <label style={{ display: "grid", gap: 6 }}>
-                <span style={{ fontSize: 12, color: "#6B7280", fontWeight: 700 }}>Preferred time</span>
+              <label>
+                <span>Preferred time</span>
                 <input
                   required
                   type="datetime-local"
                   min={minDateTime}
                   value={booking.startsAt}
                   onChange={(event) => setBooking((current) => ({ ...current, startsAt: event.target.value }))}
-                  style={{ border: "1px solid #E5E7EB", borderRadius: 10, padding: "10px 12px", fontSize: 14 }}
                 />
               </label>
               <textarea
@@ -216,32 +174,17 @@ export default function PublicProfilePage() {
                 value={booking.notes}
                 onChange={(event) => setBooking((current) => ({ ...current, notes: event.target.value }))}
                 rows={3}
-                style={{ border: "1px solid #E5E7EB", borderRadius: 10, padding: "10px 12px", fontSize: 14, resize: "vertical" }}
               />
               {bookingState.error && (
-                <p style={{ margin: 0, fontSize: 12, color: "#B91C1C", fontWeight: 700 }}>{bookingState.error}</p>
+                <p className="booking-form__message booking-form__message--error">{bookingState.error}</p>
               )}
               {bookingState.message && (
-                <p style={{ margin: 0, fontSize: 12, color: "#047857", fontWeight: 700 }}>{bookingState.message}</p>
+                <p className="booking-form__message booking-form__message--success">{bookingState.message}</p>
               )}
               <button
                 type="submit"
                 disabled={bookingState.submitting}
-                style={{
-                  border: "none",
-                  borderRadius: 10,
-                  background: "#2563EB",
-                  color: "#fff",
-                  padding: "10px 12px",
-                  fontSize: 14,
-                  fontWeight: 800,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  cursor: bookingState.submitting ? "wait" : "pointer",
-                  opacity: bookingState.submitting ? 0.75 : 1,
-                }}
+                className="ui-button ui-button--primary booking-form__submit"
               >
                 <Calendar size={14} />
                 {bookingState.submitting ? "Submitting..." : "Request Appointment"}
@@ -250,6 +193,6 @@ export default function PublicProfilePage() {
           </section>
         )}
       </div>
-    </div>
+    </main>
   );
 }

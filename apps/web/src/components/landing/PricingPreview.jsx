@@ -34,7 +34,7 @@ export default function PricingPreview() {
             <div className="landing-plan-card__features">
               {plan.features.map((feature) => (
                 <div key={feature}>
-                  <Check size={14} color="#2563EB" />
+                  <Check size={14} color="#0d6ffd" />
                   <span>{feature}</span>
                 </div>
               ))}
@@ -45,7 +45,7 @@ export default function PricingPreview() {
 
       <div className="landing-pricing-link">
         <a href="/pricing">
-          Compare all features <ChevronRight size={14} />
+          View full pricing <ChevronRight size={14} />
         </a>
       </div>
     </section>

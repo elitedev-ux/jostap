@@ -10,7 +10,7 @@ const panelStyle = {
 function statusColor(status) {
   if (status === "resolved") return { fg: "#047857", bg: "#ECFDF5" };
   if (status === "closed") return { fg: "#374151", bg: "#F3F4F6" };
-  if (status === "pending") return { fg: "#1D4ED8", bg: "#EFF6FF" };
+  if (status === "pending") return { fg: "#1D4ED8", bg: "#eaf3ff" };
   return { fg: "#B45309", bg: "#FFFBEB" };
 }
 
@@ -251,7 +251,7 @@ export default function AdminSupportPage() {
             </div>
           </div>
 
-          <div style={{ padding: 14, overflowY: "auto", background: "#F9FAFB" }}>
+          <div style={{ padding: 14, overflowY: "auto", background: "#f5f5f5" }}>
             {thread.length === 0 ? (
               <div className="ui-empty-state" style={{ border: "none", padding: "32px 12px" }}>
                 <p className="ui-empty-state__title">No conversation yet</p>
@@ -266,7 +266,7 @@ export default function AdminSupportPage() {
                       style={{
                         marginLeft: isAdmin ? "auto" : 0,
                         maxWidth: "82%",
-                        background: isAdmin ? "#EFF6FF" : "#fff",
+                        background: isAdmin ? "#eaf3ff" : "#fff",
                         border: "1px solid #E5E7EB",
                         borderRadius: 10,
                         padding: "10px 12px",
@@ -296,7 +296,7 @@ export default function AdminSupportPage() {
               type="button"
               disabled={!selectedId || !reply.trim() || loading}
               onClick={sendReply}
-              style={{ width: "fit-content", display: "inline-flex", alignItems: "center", gap: 7, border: "none", borderRadius: 8, background: "#2563EB", color: "#fff", padding: "9px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: !selectedId || !reply.trim() ? 0.55 : 1 }}
+              style={{ width: "fit-content", display: "inline-flex", alignItems: "center", gap: 7, border: "none", borderRadius: 8, background: "#0d6ffd", color: "#fff", padding: "9px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: !selectedId || !reply.trim() ? 0.55 : 1 }}
             >
               <Send size={13} /> {loading ? "Sending..." : "Send Reply"}
             </button>
