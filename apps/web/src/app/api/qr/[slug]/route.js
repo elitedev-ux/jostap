@@ -1,5 +1,5 @@
 import { getSupabaseAdmin, hasSupabase } from "../../utils/supabase.js";
-import { absolutePublicUrl, cardProfilePath } from "../../../../utils/publicUrl.js";
+import { absolutePublicUrl, publicCardPath } from "../../../../utils/publicUrl.js";
 
 function redirectTo(path, request, status = 302) {
   return Response.redirect(absolutePublicUrl(path, { request }), status);
@@ -35,5 +35,5 @@ export async function GET(request, { params }) {
     .update({ qr_scans: Number(row.qr_scans || 0) + 1 })
     .eq("id", row.id);
 
-  return redirectTo(cardProfilePath(row.slug), request);
+  return redirectTo(publicCardPath(row.id), request);
 }

@@ -1,7 +1,7 @@
 import { json } from "../../utils/http.js";
 import { requireAdmin, fullName, money } from "../../utils/admin.js";
 import { getSupabaseAdmin } from "../../utils/supabase.js";
-import { cardProfileUrl, cardQrUrl } from "../../../../utils/publicUrl.js";
+import { publicCardUrl, cardQrUrl } from "../../../../utils/publicUrl.js";
 
 function dateLabel(value) {
   return value ? new Date(value).toLocaleDateString() : "";
@@ -226,8 +226,8 @@ export async function GET(request) {
         ownerEmail: owner?.email || "",
         assignmentStatus: assigned ? "assigned" : "unassigned",
         slug: card.slug,
-        publicUrl: card.slug ? cardProfileUrl(card.slug, { request }) : "",
-        qrUrl: card.slug ? cardQrUrl(card, { request }) : "",
+        publicUrl: card.id ? publicCardUrl(card, { request }) : "",
+        qrUrl: card.id ? cardQrUrl(card, { request }) : "",
         status: card.active ? "Published" : "Paused",
         active: Boolean(card.active),
         views: card.views || 0,

@@ -28,10 +28,12 @@ function requestOrigin(request) {
 export function publicOrigin(options = {}) {
   const env = typeof import.meta !== "undefined" ? import.meta.env || {} : {};
   const fromEnv =
+    env.NEXT_PUBLIC_APP_URL ||
     env.VITE_PUBLIC_SITE_URL ||
     env.VITE_APP_ORIGIN ||
     (typeof process !== "undefined" && process.env
-      ? process.env.PUBLIC_SITE_URL ||
+      ? process.env.NEXT_PUBLIC_APP_URL ||
+        process.env.PUBLIC_SITE_URL ||
         process.env.VITE_PUBLIC_SITE_URL ||
         process.env.APP_ORIGIN ||
         process.env.GOOGLE_REDIRECT_ORIGIN ||
@@ -42,8 +44,8 @@ export function publicOrigin(options = {}) {
   return (
     cleanOrigin(options.origin) ||
     cleanOrigin(fromEnv) ||
-    (typeof window !== "undefined" ? cleanOrigin(window.location.origin) : "") ||
     DEFAULT_PUBLIC_ORIGIN ||
+    (typeof window !== "undefined" ? cleanOrigin(window.location.origin) : "") ||
     requestOrigin(options.request)
   );
 }
@@ -59,20 +61,28 @@ export function cardProfilePath(slug) {
   return value ? `/${encodeURIComponent(value)}` : "/";
 }
 
-export function cardQrPath(slug) {
+export function publicCardPath(card) {
   const value =
-    typeof slug === "object" && slug !== null
-      ? trimSlashes(slug.id || slug.slug)
-      : trimSlashes(slug);
-  return value ? `/api/qr/${encodeURIComponent(value)}` : "/";
+    typeof card === "object" && card !== null
+      ? trimSlashes(card.id)
+      : trimSlashes(card);
+  return value ? `/public/card/${encodeURIComponent(value)}` : "/";
+}
+
+export function publicCardUrl(card, options = {}) {
+  return absolutePublicUrl(publicCardPath(card), options);
+}
+
+export function cardQrPath(card) {
+  return publicCardPath(card);
 }
 
 export function cardProfileUrl(slug, options = {}) {
   return absolutePublicUrl(cardProfilePath(slug), options);
 }
 
-export function cardQrUrl(slug, options = {}) {
-  return absolutePublicUrl(cardQrPath(slug), options);
+export function cardQrUrl(card, options = {}) {
+  return publicCardUrl(card, options);
 }
 
 export function displayCardUrl(slug, options = {}) {

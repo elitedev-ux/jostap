@@ -1,7 +1,22 @@
 import { cardFromRow } from "../../../utils/cards.js";
 import { json } from "../../../utils/http.js";
 import { getSupabaseAdmin, hasSupabase } from "../../../utils/supabase.js";
-import { cardProfileUrl, cardQrUrl } from "../../../../../utils/publicUrl.js";
+import { publicCardUrl, cardQrUrl } from "../../../../../utils/publicUrl.js";
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || ""));
+}
+
+function safePublicCard(row) {
+  const {
+    userId: _userId,
+    assignmentStatus: _assignmentStatus,
+    updatedAt: _updatedAt,
+    ...card
+  } = cardFromRow(row);
+
+  return card;
+}
 
 export async function GET(request, { params }) {
   if (!hasSupabase()) {
@@ -9,12 +24,15 @@ export async function GET(request, { params }) {
   }
 
   const supabase = getSupabaseAdmin();
-  const { data: row, error } = await supabase
+  const token = String(params.slug || "").trim();
+  let query = supabase
     .from("cards")
     .select("*")
-    .eq("slug", params.slug)
-    .eq("active", true)
-    .maybeSingle();
+    .eq("active", true);
+
+  query = isUuid(token) ? query.eq("id", token) : query.eq("slug", token);
+
+  const { data: row, error } = await query.maybeSingle();
 
   if (error) {
     throw error;
@@ -50,9 +68,9 @@ export async function GET(request, { params }) {
 
   return json({
     card: {
-      ...cardFromRow(row),
+      ...safePublicCard(row),
       plan: subscription?.plan || "free",
-      publicUrl: cardProfileUrl(row.slug, { request }),
+      publicUrl: publicCardUrl(row, { request }),
       qrUrl: cardQrUrl(row, { request }),
     },
   });
@@ -64,12 +82,15 @@ export async function POST(_request, { params }) {
   }
 
   const supabase = getSupabaseAdmin();
-  const { data: row, error } = await supabase
+  const token = String(params.slug || "").trim();
+  let query = supabase
     .from("cards")
     .select("id, contact_downloads")
-    .eq("slug", params.slug)
-    .eq("active", true)
-    .maybeSingle();
+    .eq("active", true);
+
+  query = isUuid(token) ? query.eq("id", token) : query.eq("slug", token);
+
+  const { data: row, error } = await query.maybeSingle();
 
   if (error) throw error;
 

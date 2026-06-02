@@ -28,6 +28,7 @@ import {
   cardProfileUrl,
   cardQrUrl,
   displayCardUrl,
+  publicCardUrl,
 } from "../../utils/publicUrl";
 
 const DEFAULT_COLOR = "#3657E8";
@@ -384,8 +385,8 @@ export default function CardPhonePreview({
   const directVideo = directVideoUrl(card?.videoUrl);
   const embeddedVideo = embedVideoUrl(card?.videoUrl);
   const showVideo = Boolean(visibleFields.has("videoUrl") && card?.videoUrl);
-  const resolvedPublicUrl = publicUrl || card?.publicUrl || cardProfileUrl(card?.slug);
-  const resolvedQrUrl = card?.qrUrl || (card?.slug ? cardQrUrl(card) : resolvedPublicUrl);
+  const resolvedPublicUrl = publicUrl || card?.publicUrl || (card?.id ? publicCardUrl(card) : cardProfileUrl(card?.slug));
+  const resolvedQrUrl = card?.qrUrl || (card?.id ? cardQrUrl(card) : resolvedPublicUrl);
   const resolvedDisplayUrl = displayCardUrl(card?.slug || "your-slug");
   const appointmentUrl = visibleFields.has("calendly")
     ? platformUrl("calendly", firstValue(card?.calendly))

@@ -2,12 +2,12 @@ import { badRequest, json } from "../../../utils/http.js";
 import { requireAdmin, logAdminAction, fullName } from "../../../utils/admin.js";
 import { cardFromRow } from "../../../utils/cards.js";
 import { getSupabaseAdmin } from "../../../utils/supabase.js";
-import { cardProfileUrl, cardQrUrl } from "../../../../../utils/publicUrl.js";
+import { publicCardUrl, cardQrUrl } from "../../../../../utils/publicUrl.js";
 
 function cardResponse(row, request) {
   return {
     ...cardFromRow(row),
-    publicUrl: cardProfileUrl(row.slug, { request }),
+    publicUrl: publicCardUrl(row, { request }),
     qrUrl: cardQrUrl(row, { request }),
   };
 }

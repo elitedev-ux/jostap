@@ -21,9 +21,9 @@ import {
   getCards,
 } from "../../../utils/cardsStore";
 import {
-  cardProfileUrl,
   cardQrUrl,
   displayCardUrl,
+  publicCardUrl,
 } from "../../../utils/publicUrl";
 
 const DOWNLOADABLE_QR_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
@@ -173,7 +173,7 @@ function CardRow({ card, onChange, qrLocked }) {
   const [copied, setCopied] = useState(false);
   const role = card.role || card.title || "No title";
   const company = card.company || "No company";
-  const publicUrl = cardProfileUrl(card.slug);
+  const publicUrl = publicCardUrl(card);
   const qrValue = card.qrUrl || cardQrUrl(card);
   const displayUrl = displayCardUrl(card.slug);
 

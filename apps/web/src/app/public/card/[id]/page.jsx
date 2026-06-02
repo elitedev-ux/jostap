@@ -4,9 +4,9 @@ import { Calendar, ExternalLink } from "lucide-react";
 import CardPhonePreview, {
   activeFieldsForCard,
   platformUrl,
-} from "../../components/card-preview/CardPhonePreview";
-import { getPublicCard } from "../../utils/cardsStore";
-import "./page.css";
+} from "../../../../components/card-preview/CardPhonePreview";
+import { getPublicCard } from "../../../../utils/cardsStore";
+import "../../../[username]/page.css";
 
 const PREMIUM_FEATURE_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
 const CUSTOM_BRANDING_PLANS = new Set(["custom_nfc"]);
@@ -19,9 +19,8 @@ function hasCustomBranding(plan) {
   return CUSTOM_BRANDING_PLANS.has(String(plan || "").toLowerCase());
 }
 
-export function PublicCardProfile({ token }) {
-  const { username } = useParams();
-  const cardToken = token || username;
+export default function PublicCardByIdPage() {
+  const { id } = useParams();
   const [card, setCard] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [booking, setBooking] = useState({
@@ -41,7 +40,7 @@ export function PublicCardProfile({ token }) {
 
     async function loadCard() {
       try {
-        const found = await getPublicCard(cardToken);
+        const found = await getPublicCard(id);
         if (active) {
           setCard(found || null);
           setLoaded(true);
@@ -58,7 +57,7 @@ export function PublicCardProfile({ token }) {
     return () => {
       active = false;
     };
-  }, [cardToken]);
+  }, [id]);
 
   if (!loaded) return null;
 
@@ -68,10 +67,10 @@ export function PublicCardProfile({ token }) {
         <div className="ui-empty-state public-profile__not-found">
           <p className="ui-empty-state__title">Card not found</p>
           <p className="ui-empty-state__copy">
-            This card has not been created yet, or its public slug was changed.
+            This card is unavailable, inactive, or has been removed.
           </p>
-          <a href="/create-card" className="ui-button ui-button--primary public-profile__empty-action">
-            Create Card
+          <a href="/" className="ui-button ui-button--primary public-profile__empty-action">
+            Back to JOSTAP
           </a>
         </div>
       </main>
@@ -124,7 +123,7 @@ export function PublicCardProfile({ token }) {
           activeFields={visibleFields}
           qrLocked={!includePremium}
           onSaveContact={async () => {
-            await fetch(`/api/cards/public/${card.slug}`, {
+            await fetch(`/api/cards/public/${card.id || card.slug}`, {
               method: "POST",
             }).catch(() => {});
           }}
@@ -196,8 +195,4 @@ export function PublicCardProfile({ token }) {
       </div>
     </main>
   );
-}
-
-export default function PublicProfilePage() {
-  return <PublicCardProfile />;
 }

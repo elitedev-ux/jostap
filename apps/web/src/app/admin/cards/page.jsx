@@ -11,9 +11,9 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { downloadQrSvg } from "../../../components/QRCode";
 import {
-  cardProfileUrl,
   cardQrUrl,
   displayCardUrl,
+  publicCardUrl,
 } from "../../../utils/publicUrl";
 
 const statusColors = {
@@ -182,8 +182,8 @@ export default function AdminCardsPage() {
         )}
         {filteredCards.map((card, index) => {
           const { name: title, owner, status, views, qrScans: scans, contactDownloads, slug, publicUrl, qrUrl } = card;
-          const cardLink = publicUrl || (slug ? cardProfileUrl(slug) : "");
-          const qrValue = qrUrl || (slug ? cardQrUrl(card) : "");
+          const cardLink = publicUrl || (card.id ? publicCardUrl(card) : "");
+          const qrValue = qrUrl || (card.id ? cardQrUrl(card) : "");
           const displayUrl = slug ? displayCardUrl(slug) : "";
           const [bg, color, border] = statusColors[status] || statusColors.Draft;
           const [assignmentBg, assignmentColor, assignmentBorder] = assignmentColors[card.assignmentStatus] || assignmentColors.unassigned;
