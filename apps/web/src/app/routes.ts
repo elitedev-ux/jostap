@@ -7,7 +7,7 @@ import {
 	route,
 } from '@react-router/dev/routes';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const appRoutesDirectory = fileURLToPath(new URL('.', import.meta.url));
 
 type Tree = {
 	path: string;
@@ -112,7 +112,7 @@ if (import.meta.env.DEV) {
 		});
 	}
 }
-const tree = buildRouteTree(__dirname);
+const tree = buildRouteTree(appRoutesDirectory);
 const notFound = route('*', './__create/not-found.tsx');
 const routes = [...generateRoutes(tree), notFound];
 
