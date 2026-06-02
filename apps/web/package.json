@@ -7,7 +7,7 @@
 	},
 	"scripts": {
 		"build": "react-router build",
-		"build:netlify": "react-router build",
+		"build:netlify": "node scripts/clean-netlify-artifacts.mjs && react-router build",
 		"check:supabase": "node scripts/check-supabase.js",
 		"dev": "react-router dev",
 		"start": "node ./build/server/index.js",
@@ -77,7 +77,6 @@
 		"@babel/preset-typescript": "^7.27.1",
 		"@babel/traverse": "^7.27.1",
 		"@babel/types": "^7.27.1",
-		"@netlify/vite-plugin-react-router": "^3.1.1",
 		"@react-router/dev": "^7.6.0",
 		"@tailwindcss/vite": "^4.1.4",
 		"@testing-library/jest-dom": "^6.6.4",
