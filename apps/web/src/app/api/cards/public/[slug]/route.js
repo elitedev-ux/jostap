@@ -59,11 +59,11 @@ export async function GET(request, { params }) {
     return json({ error: "Card not found." }, { status: 404 });
   }
 
-  await recordCardEngagement(supabase, { card: row, type: "profile_view", request });
-
   const source = new URL(request.url).searchParams.get("source");
   if (source === "qr") {
     await recordCardEngagement(supabase, { card: row, type: "qr_scan", request });
+  } else {
+    await recordCardEngagement(supabase, { card: row, type: "profile_view", request });
   }
 
   let subscription = null;

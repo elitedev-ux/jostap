@@ -24,8 +24,6 @@ import {
 
 const COLORS = ["#0d6ffd", "#ff9f0d", "#059669"];
 
-const LOCATIONS = [];
-
 const PREMIUM_FEATURE_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
 
 function hasPremiumFeatures(plan) {
@@ -579,90 +577,6 @@ export default function AnalyticsPage() {
         </div>
       </div>}
 
-      {/* Geo table */}
-      {!advancedLocked && <div
-        style={{
-          background: "#fff",
-          border: "1px solid #E5E7EB",
-          borderRadius: 12,
-          padding: "22px",
-        }}
-      >
-        <h2
-          style={{
-            fontSize: 15,
-            fontWeight: 600,
-            color: "#111827",
-            marginBottom: 16,
-          }}
-        >
-          Visitors by Country
-        </h2>
-        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          {LOCATIONS.length === 0 && (
-            <div className="ui-empty-state" style={{ border: "none" }}>
-              <p className="ui-empty-state__title">No location data yet</p>
-              <p className="ui-empty-state__copy">Visitor country data will appear here after backend tracking is connected.</p>
-            </div>
-          )}
-          {LOCATIONS.map((l, i) => (
-            <div
-              key={l.country}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 16,
-                padding: "12px 0",
-                borderBottom:
-                  i < LOCATIONS.length - 1 ? "1px solid #F3F4F6" : "none",
-              }}
-            >
-              <span style={{ fontSize: 14, flex: 1, color: "#374151" }}>
-                {l.country}
-              </span>
-              <span
-                style={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: "#111827",
-                  minWidth: 50,
-                  textAlign: "right",
-                }}
-              >
-                {l.visits.toLocaleString()}
-              </span>
-              <div
-                style={{
-                  width: 120,
-                  height: 5,
-                  background: "#F3F4F6",
-                  borderRadius: 999,
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: `${l.pct}%`,
-                    height: "100%",
-                    background: "#0d6ffd",
-                    borderRadius: 999,
-                  }}
-                />
-              </div>
-              <span
-                style={{
-                  fontSize: 12,
-                  color: "#9CA3AF",
-                  minWidth: 32,
-                  textAlign: "right",
-                }}
-              >
-                {l.pct}%
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>}
     </>
   );
 }
