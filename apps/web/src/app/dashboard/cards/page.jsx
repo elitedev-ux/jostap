@@ -342,7 +342,7 @@ function CardRow({ card, onChange, qrLocked }) {
             transition: "filter 0.2s, opacity 0.2s",
           }}
         >
-          <QRCode value={qrValue} size={58} />
+          <QRCode value={qrValue} size={112} />
         </div>
         <button
           type="button"
