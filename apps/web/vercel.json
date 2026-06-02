@@ -10,7 +10,7 @@
   },
   "rewrites": [
     {
-      "source": "^/(?!assets/)(.*)$",
+      "source": "/((?!assets/).*)",
       "destination": "/api/server?path=$1"
     }
   ]
