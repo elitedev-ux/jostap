@@ -47,12 +47,9 @@ export async function GET(request, { params }) {
   }
 
   const supabase = getSupabaseAdmin();
-  const token = String(params.slug || "").trim();
-  const { data: row, error } = await findPublicCard(supabase, token);
+  const { data: row, error } = await findPublicCard(supabase, params.id);
 
-  if (error) {
-    throw error;
-  }
+  if (error) throw error;
 
   if (!row) {
     return json({ error: "Card not found." }, { status: 404 });
@@ -75,10 +72,7 @@ export async function GET(request, { params }) {
       .limit(1)
       .maybeSingle();
 
-    if (subscriptionError) {
-      throw subscriptionError;
-    }
-
+    if (subscriptionError) throw subscriptionError;
     subscription = data;
   }
 
@@ -98,8 +92,7 @@ export async function POST(_request, { params }) {
   }
 
   const supabase = getSupabaseAdmin();
-  const token = String(params.slug || "").trim();
-  const { data: row, error } = await findPublicCard(supabase, token, "id, contact_downloads");
+  const { data: row, error } = await findPublicCard(supabase, params.id, "id, contact_downloads");
 
   if (error) throw error;
 

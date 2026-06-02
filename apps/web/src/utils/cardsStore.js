@@ -97,7 +97,7 @@ export async function getCard(id) {
 }
 
 export async function getPublicCard(slug) {
-  const data = await requestJson(`/api/cards/public/${slug}`);
+  const data = await requestJson(`/api/public/card/${slug}`);
   return data.card || null;
 }
 

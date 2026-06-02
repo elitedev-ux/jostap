@@ -124,7 +124,7 @@ export function PublicCardProfile({ token }) {
           activeFields={visibleFields}
           qrLocked={!includePremium}
           onSaveContact={async () => {
-            await fetch(`/api/cards/public/${card.slug}`, {
+            await fetch(`/api/public/card/${card.id || card.slug}`, {
               method: "POST",
             }).catch(() => {});
           }}

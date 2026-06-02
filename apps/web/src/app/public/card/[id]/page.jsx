@@ -123,7 +123,7 @@ export default function PublicCardByIdPage() {
           activeFields={visibleFields}
           qrLocked={!includePremium}
           onSaveContact={async () => {
-            await fetch(`/api/cards/public/${card.id || card.slug}`, {
+            await fetch(`/api/public/card/${card.id || card.slug}`, {
               method: "POST",
             }).catch(() => {});
           }}
