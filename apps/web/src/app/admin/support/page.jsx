@@ -46,14 +46,20 @@ export default function AdminSupportPage() {
       throw new Error(data.error || "Unable to load support tickets.");
     }
 
-    setTickets(data.tickets || []);
-    if (!selectedId && data.tickets?.[0]?.id) {
-      setSelectedId(data.tickets[0].id);
-    }
+    const rows = data.tickets || [];
+    setTickets(rows);
+    setSelectedId((currentId) => {
+      if (rows.some((ticket) => ticket.id === currentId)) return currentId;
+      return rows[0]?.id || "";
+    });
   };
 
   const loadThread = async (id) => {
-    if (!id) return;
+    if (!id) {
+      setThread([]);
+      setThreadTicket(null);
+      return;
+    }
     const response = await fetch(`/api/admin/support/${id}`, {
       credentials: "same-origin",
     });
@@ -68,7 +74,6 @@ export default function AdminSupportPage() {
   }, [filters.q, filters.status, filters.priority]);
 
   useEffect(() => {
-    if (!selectedId) return;
     loadThread(selectedId).catch((err) => setError(err.message));
   }, [selectedId]);
 
@@ -201,7 +206,10 @@ export default function AdminSupportPage() {
                   }}
                 >
                   <p style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>{ticket.subject}</p>
-                  <p style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>{ticket.account}</p>
+                  <p style={{ fontSize: 12, color: "#374151", marginTop: 3, fontWeight: 700 }}>{ticket.contactName || ticket.account}</p>
+                  {ticket.contactEmail && (
+                    <p style={{ fontSize: 12, color: "#0d6ffd", marginTop: 2 }}>{ticket.contactEmail}</p>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
                     <span style={{ fontSize: 11, fontWeight: 800, color: colors.fg, background: colors.bg, borderRadius: 999, padding: "3px 7px" }}>
                       {ticket.status}
@@ -222,8 +230,16 @@ export default function AdminSupportPage() {
                   {threadTicket?.subject || selectedTicket?.subject || "Select a ticket"}
                 </h2>
                 <p style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
-                  {threadTicket?.account || selectedTicket?.account || ""}
+                  {threadTicket?.contactName || selectedTicket?.contactName || threadTicket?.account || selectedTicket?.account || ""}
                 </p>
+                {(threadTicket?.contactEmail || selectedTicket?.contactEmail) && (
+                  <a
+                    href={`mailto:${threadTicket?.contactEmail || selectedTicket?.contactEmail}`}
+                    style={{ display: "inline-flex", marginTop: 5, color: "#0d6ffd", fontSize: 12, fontWeight: 800, textDecoration: "none" }}
+                  >
+                    {threadTicket?.contactEmail || selectedTicket?.contactEmail}
+                  </a>
+                )}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <Filter size={14} color="#6B7280" />
@@ -270,12 +286,13 @@ export default function AdminSupportPage() {
                         border: "1px solid #E5E7EB",
                         borderRadius: 10,
                         padding: "10px 12px",
+                        overflow: "hidden",
                       }}
                     >
                       <p style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>
                         {message.sender || message.sender_role}
                       </p>
-                      <p style={{ fontSize: 13, color: "#111827", lineHeight: 1.45 }}>{message.message}</p>
+                      <p style={{ fontSize: 13, color: "#111827", lineHeight: 1.45, margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word" }}>{message.message}</p>
                     </div>
                   );
                 })}

@@ -6,6 +6,22 @@ function boundedText(value, max) {
   return String(value || "").trim().slice(0, max);
 }
 
+function contactForTicket(ticket) {
+  const contactName =
+    [ticket.users?.first_name, ticket.users?.last_name].filter(Boolean).join(" ").trim() ||
+    ticket.guest_name ||
+    ticket.users?.email ||
+    ticket.guest_email ||
+    "Guest";
+  const contactEmail = ticket.users?.email || ticket.guest_email || "";
+
+  return {
+    contactName,
+    contactEmail,
+    account: contactEmail ? `${contactName} (${contactEmail})` : contactName,
+  };
+}
+
 export async function GET(request, { params }) {
   const { response } = await requireAdmin(request);
   if (response) return response;
@@ -30,12 +46,7 @@ export async function GET(request, { params }) {
   return json({
     ticket: {
       ...ticket,
-      account:
-        [ticket.users?.first_name, ticket.users?.last_name].filter(Boolean).join(" ").trim() ||
-        ticket.users?.email ||
-        ticket.guest_name ||
-        ticket.guest_email ||
-        "Guest",
+      ...contactForTicket(ticket),
     },
     messages:
       (messages || []).map((row) => ({

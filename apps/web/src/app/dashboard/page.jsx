@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Activity,
   CreditCard,
+  Calendar,
 } from "lucide-react";
 import {
   AreaChart,
@@ -196,10 +197,10 @@ export default function DashboardPage() {
       bg: "#F5F3FF",
     },
     {
-      label: "Cards",
-      value: cards.length.toLocaleString(),
-      note: `${totals.live} live`,
-      icon: CreditCard,
+      label: "Appointments",
+      value: Number(analytics?.totals?.appointments || 0).toLocaleString(),
+      note: `${Number(analytics?.totals?.pendingAppointments || 0)} pending`,
+      icon: Calendar,
       color: "#D97706",
       bg: "#FFFBEB",
     },
@@ -209,6 +210,7 @@ export default function DashboardPage() {
     day: item.date,
     views: item.views || 0,
     taps: item.taps || 0,
+    appointments: item.appointments || 0,
   }));
 
   const visibleCards = cards.slice(0, 3);
@@ -304,7 +306,7 @@ export default function DashboardPage() {
                 Engagement Overview
               </h2>
               <p style={{ fontSize: 13, color: "#6B7280" }}>
-                Views and NFC taps from cards you create
+                Views, NFC taps, and appointments from cards you create
               </p>
             </div>
             <div
@@ -354,6 +356,10 @@ export default function DashboardPage() {
                   <stop offset="5%" stopColor="#059669" stopOpacity={0.12} />
                   <stop offset="95%" stopColor="#059669" stopOpacity={0} />
                 </linearGradient>
+                <linearGradient id="gAppointments" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ff9f0d" stopOpacity={0.12} />
+                  <stop offset="95%" stopColor="#ff9f0d" stopOpacity={0} />
+                </linearGradient>
               </defs>
               <CartesianGrid
                 strokeDasharray="3 3"
@@ -394,6 +400,14 @@ export default function DashboardPage() {
                 strokeWidth={2}
                 fill="url(#gTaps)"
                 name="NFC Taps"
+              />
+              <Area
+                type="monotone"
+                dataKey="appointments"
+                stroke="#ff9f0d"
+                strokeWidth={2}
+                fill="url(#gAppointments)"
+                name="Appointments"
               />
             </AreaChart>
           </ResponsiveContainer>

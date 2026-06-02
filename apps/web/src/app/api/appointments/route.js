@@ -5,15 +5,22 @@ import { getSupabaseAdmin } from "../utils/supabase.js";
 function appointmentFromRow(row) {
   return {
     id: row.id,
-    guestName: row.guest_name || "",
-    guestEmail: row.guest_email || "",
+    visitorName: row.visitor_name || row.guest_name || "",
+    visitorEmail: row.visitor_email || row.guest_email || "",
+    visitorPhone: row.visitor_phone || "",
+    guestName: row.visitor_name || row.guest_name || "",
+    guestEmail: row.visitor_email || row.guest_email || "",
     cardName: row.cards?.name || row.card_name || "",
+    cardId: row.card_id || "",
+    appointmentDate: row.appointment_date || "",
+    appointmentTime: row.appointment_time || "",
+    appointmentMessage: row.appointment_message || row.notes || "",
     startsAt: row.starts_at || "",
     endsAt: row.ends_at || "",
-    status: row.status || "scheduled",
-    googleEventId: row.google_event_id || "",
+    status: row.status || "pending",
     notes: row.notes || "",
     createdAt: row.created_at || "",
+    updatedAt: row.updated_at || "",
   };
 }
 
@@ -28,7 +35,7 @@ export async function GET(request) {
   const { data: rows, error } = await supabase
     .from("appointments")
     .select("*, cards(name)")
-    .eq("user_id", user.id)
+    .eq("assigned_user_id", user.id)
     .order("starts_at", { ascending: true });
 
   if (error) {

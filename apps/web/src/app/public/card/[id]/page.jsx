@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router";
-import { Calendar, ExternalLink } from "lucide-react";
+import { Calendar } from "lucide-react";
 import CardPhonePreview, {
   activeFieldsForCard,
-  platformUrl,
 } from "../../../../components/card-preview/CardPhonePreview";
 import { getPublicCard } from "../../../../utils/cardsStore";
 import "../../../[username]/page.css";
@@ -25,10 +24,12 @@ export default function PublicCardByIdPage() {
   const [card, setCard] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [booking, setBooking] = useState({
-    guestName: "",
-    guestEmail: "",
-    startsAt: "",
-    notes: "",
+    visitorName: "",
+    visitorEmail: "",
+    visitorPhone: "",
+    appointmentDate: "",
+    appointmentTime: "",
+    appointmentMessage: "",
   });
   const [bookingState, setBookingState] = useState({
     submitting: false,
@@ -88,9 +89,7 @@ export default function PublicCardByIdPage() {
       ? card.activeFields
       : activeFieldsForCard(card, { includePremium });
   const brandColor = hasCustomBranding(card.plan) ? card.brandColor : "";
-  const calendlyRaw = Array.isArray(card.calendly) ? card.calendly.find(Boolean) || "" : card.calendly || "";
-  const calendarUrl = calendlyRaw ? platformUrl("calendly", calendlyRaw) : "";
-  const minDateTime = new Date(Date.now() + 60_000).toISOString().slice(0, 16);
+  const minDate = new Date(Date.now() + 60_000).toISOString().slice(0, 10);
 
   const submitBooking = async (event) => {
     event.preventDefault();
@@ -105,7 +104,14 @@ export default function PublicCardByIdPage() {
       if (!response.ok) {
         throw new Error(data.error || "Unable to submit your booking.");
       }
-      setBooking({ guestName: "", guestEmail: "", startsAt: "", notes: "" });
+      setBooking({
+        visitorName: "",
+        visitorEmail: "",
+        visitorPhone: "",
+        appointmentDate: "",
+        appointmentTime: "",
+        appointmentMessage: "",
+      });
       setBookingState({
         submitting: false,
         message: "Appointment request sent successfully.",
@@ -138,46 +144,51 @@ export default function PublicCardByIdPage() {
           <section className="booking-panel" aria-labelledby="booking-title">
             <div className="booking-panel__header">
               <h2 id="booking-title">Book Appointment</h2>
-              {calendarUrl && (
-                <a
-                  href={calendarUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="booking-panel__external"
-                >
-                  Open Calendar <ExternalLink size={12} />
-                </a>
-              )}
             </div>
 
             <form onSubmit={submitBooking} className="booking-form">
               <input
                 required
                 placeholder="Your name"
-                value={booking.guestName}
-                onChange={(event) => setBooking((current) => ({ ...current, guestName: event.target.value }))}
+                value={booking.visitorName}
+                onChange={(event) => setBooking((current) => ({ ...current, visitorName: event.target.value }))}
               />
               <input
                 required
                 type="email"
                 placeholder="Your email"
-                value={booking.guestEmail}
-                onChange={(event) => setBooking((current) => ({ ...current, guestEmail: event.target.value }))}
+                value={booking.visitorEmail}
+                onChange={(event) => setBooking((current) => ({ ...current, visitorEmail: event.target.value }))}
               />
+              <input
+                type="tel"
+                placeholder="Your phone number"
+                value={booking.visitorPhone}
+                onChange={(event) => setBooking((current) => ({ ...current, visitorPhone: event.target.value }))}
+              />
+              <label>
+                <span>Preferred date</span>
+                <input
+                  required
+                  type="date"
+                  min={minDate}
+                  value={booking.appointmentDate}
+                  onChange={(event) => setBooking((current) => ({ ...current, appointmentDate: event.target.value }))}
+                />
+              </label>
               <label>
                 <span>Preferred time</span>
                 <input
                   required
-                  type="datetime-local"
-                  min={minDateTime}
-                  value={booking.startsAt}
-                  onChange={(event) => setBooking((current) => ({ ...current, startsAt: event.target.value }))}
+                  type="time"
+                  value={booking.appointmentTime}
+                  onChange={(event) => setBooking((current) => ({ ...current, appointmentTime: event.target.value }))}
                 />
               </label>
               <textarea
                 placeholder="Optional note"
-                value={booking.notes}
-                onChange={(event) => setBooking((current) => ({ ...current, notes: event.target.value }))}
+                value={booking.appointmentMessage}
+                onChange={(event) => setBooking((current) => ({ ...current, appointmentMessage: event.target.value }))}
                 rows={3}
               />
               {bookingState.error && (

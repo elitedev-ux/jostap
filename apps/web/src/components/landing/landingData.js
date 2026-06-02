@@ -8,7 +8,7 @@ export const stats = [
 export const previewStats = [
   ["847", "Profile views this month"],
   ["124", "NFC taps"],
-  ["23", "Leads captured"],
+  ["23", "Contacts saved"],
   ["8", "Appointments booked"],
 ];
 
@@ -61,7 +61,7 @@ export const plans = [
       "Contact sharing",
       "Save contact (vCard)",
       "Social media links",
-      "Lead capture",
+      "Contact save tracking",
       "Appointment booking",
       "Visitor insights",
       "Advanced analytics",

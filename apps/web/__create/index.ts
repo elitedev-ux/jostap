@@ -33,7 +33,7 @@ const securityHeaders: Record<string, string> = {
     "style-src 'self' 'unsafe-inline' https:",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
     "connect-src 'self' https: wss:",
-    "frame-src 'self' https://www.youtube.com https://player.vimeo.com https://calendar.google.com https://calendly.com https://cal.com",
+    "frame-src 'self' https://www.youtube.com https://player.vimeo.com",
     "form-action 'self'",
     'upgrade-insecure-requests',
   ].join('; '),

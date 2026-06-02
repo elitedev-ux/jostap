@@ -170,6 +170,9 @@ export async function GET(request) {
       activeCards: cards.filter((card) => card.active).length,
       leads: leads.length,
       appointments: appointments.length,
+      pendingAppointments: appointments.filter((appointment) => appointment.status === "pending").length,
+      approvedAppointments: appointments.filter((appointment) => appointment.status === "approved").length,
+      completedAppointments: appointments.filter((appointment) => appointment.status === "completed").length,
       subscriptions: activeSubscriptions.length,
       premiumSubscriptions: premiumSubscriptions.length,
       revenueCents: sum(payments.filter((payment) => payment.status === "succeeded"), "amount_cents"),
@@ -278,11 +281,17 @@ export async function GET(request) {
       };
     }),
     appointments: appointments.map((appointment) => {
-      const owner = users.find((user) => user.id === appointment.user_id);
+      const owner = users.find((user) => user.id === appointment.assigned_user_id);
       return {
         ...appointment,
         owner: fullName(owner) || owner?.email || "Unknown",
         starts: dateLabel(appointment.starts_at),
+        visitorName: appointment.visitor_name || appointment.guest_name || "",
+        visitorEmail: appointment.visitor_email || appointment.guest_email || "",
+        visitorPhone: appointment.visitor_phone || "",
+        appointmentDate: appointment.appointment_date || "",
+        appointmentTime: appointment.appointment_time || "",
+        appointmentMessage: appointment.appointment_message || appointment.notes || "",
       };
     }),
     templates,
@@ -293,18 +302,25 @@ export async function GET(request) {
     pricingPlans,
     notifications,
     announcements,
-    supportTickets: supportTickets.map((ticket) => ({
-      id: ticket.id,
-      subject: ticket.subject,
-      message: ticket.message,
-      category: ticket.category,
-      priority: ticket.priority,
-      status: ticket.status,
-      adminNotes: ticket.admin_notes || "",
-      account: fullName(ticket.users) || ticket.users?.email || ticket.guest_name || ticket.guest_email || "Guest",
-      created: dateLabel(ticket.created_at),
-      created_at: ticket.created_at,
-    })),
+    supportTickets: supportTickets.map((ticket) => {
+      const contactName = fullName(ticket.users) || ticket.guest_name || ticket.users?.email || ticket.guest_email || "Guest";
+      const contactEmail = ticket.users?.email || ticket.guest_email || "";
+
+      return {
+        id: ticket.id,
+        subject: ticket.subject,
+        message: ticket.message,
+        category: ticket.category,
+        priority: ticket.priority,
+        status: ticket.status,
+        adminNotes: ticket.admin_notes || "",
+        account: contactEmail ? `${contactName} (${contactEmail})` : contactName,
+        contactName,
+        contactEmail,
+        created: dateLabel(ticket.created_at),
+        created_at: ticket.created_at,
+      };
+    }),
     roles,
     auditLogs: auditLogs.map((log) => ({
       id: log.id,

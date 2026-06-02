@@ -49,6 +49,14 @@ CREATE INDEX IF NOT EXISTS auth_challenges_user_id_idx ON auth_challenges (user_
 CREATE INDEX IF NOT EXISTS auth_challenges_purpose_idx ON auth_challenges (purpose);
 CREATE INDEX IF NOT EXISTS auth_challenges_expires_at_idx ON auth_challenges (expires_at);
 
+DO $$
+BEGIN
+  ALTER TABLE auth_challenges DROP CONSTRAINT IF EXISTS auth_challenges_purpose_check;
+  ALTER TABLE auth_challenges
+    ADD CONSTRAINT auth_challenges_purpose_check
+    CHECK (purpose IN ('email_verification', 'two_factor_login', 'password_reset'));
+END $$;
+
 CREATE TABLE IF NOT EXISTS kyc_profiles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
@@ -139,40 +147,68 @@ CREATE INDEX IF NOT EXISTS leads_card_id_idx ON leads (card_id);
 
 CREATE TABLE IF NOT EXISTS appointments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  assigned_user_id uuid REFERENCES users(id) ON DELETE CASCADE,
   card_id uuid REFERENCES cards(id) ON DELETE SET NULL,
   lead_id uuid REFERENCES leads(id) ON DELETE SET NULL,
   guest_name text NOT NULL,
   guest_email text,
+  visitor_name text,
+  visitor_email text,
+  visitor_phone text,
+  appointment_date date,
+  appointment_time text,
+  appointment_message text,
   starts_at timestamptz NOT NULL,
   ends_at timestamptz,
-  status text NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'completed', 'cancelled')),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled', 'completed')),
   notes text,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-ALTER TABLE appointments ADD COLUMN IF NOT EXISTS google_event_id text;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS assigned_user_id uuid REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS visitor_name text;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS visitor_email text;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS visitor_phone text;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS appointment_date date;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS appointment_time text;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS appointment_message text;
+ALTER TABLE appointments DROP CONSTRAINT IF EXISTS appointments_status_check;
+UPDATE appointments SET status = 'pending' WHERE status = 'scheduled';
+ALTER TABLE appointments ALTER COLUMN status SET DEFAULT 'pending';
+ALTER TABLE appointments ADD CONSTRAINT appointments_status_check CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled', 'completed'));
 
-CREATE INDEX IF NOT EXISTS appointments_user_id_idx ON appointments (user_id);
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'appointments' AND column_name = 'user_id'
+  ) THEN
+    UPDATE appointments SET assigned_user_id = COALESCE(assigned_user_id, user_id);
+    ALTER TABLE appointments DROP COLUMN user_id;
+  END IF;
+END $$;
+
+UPDATE appointments
+SET
+  visitor_name = COALESCE(visitor_name, guest_name),
+  visitor_email = COALESCE(visitor_email, guest_email),
+  appointment_date = COALESCE(appointment_date, starts_at::date),
+  appointment_time = COALESCE(appointment_time, to_char(starts_at, 'HH24:MI')),
+  appointment_message = COALESCE(appointment_message, notes)
+WHERE visitor_name IS NULL
+   OR visitor_email IS NULL
+   OR appointment_date IS NULL
+   OR appointment_time IS NULL
+   OR appointment_message IS NULL;
+
+DROP INDEX IF EXISTS appointments_user_id_idx;
+CREATE INDEX IF NOT EXISTS appointments_assigned_user_id_idx ON appointments (assigned_user_id);
 CREATE INDEX IF NOT EXISTS appointments_card_id_idx ON appointments (card_id);
 CREATE INDEX IF NOT EXISTS appointments_lead_id_idx ON appointments (lead_id);
 CREATE INDEX IF NOT EXISTS appointments_starts_at_idx ON appointments (starts_at);
-
-CREATE TABLE IF NOT EXISTS google_calendar_connections (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-  google_email text,
-  access_token text NOT NULL,
-  refresh_token text,
-  token_type text,
-  scope text,
-  expires_at timestamptz,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS google_calendar_connections_user_id_idx ON google_calendar_connections (user_id);
+CREATE INDEX IF NOT EXISTS appointments_status_idx ON appointments (status);
+CREATE INDEX IF NOT EXISTS appointments_appointment_date_idx ON appointments (appointment_date);
 
 CREATE TABLE IF NOT EXISTS subscriptions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -516,11 +552,6 @@ CREATE TRIGGER set_appointments_updated_at
 BEFORE UPDATE ON appointments
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
-DROP TRIGGER IF EXISTS set_google_calendar_connections_updated_at ON google_calendar_connections;
-CREATE TRIGGER set_google_calendar_connections_updated_at
-BEFORE UPDATE ON google_calendar_connections
-FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
 DROP TRIGGER IF EXISTS set_subscriptions_updated_at ON subscriptions;
 CREATE TRIGGER set_subscriptions_updated_at
 BEFORE UPDATE ON subscriptions
@@ -579,7 +610,6 @@ ALTER TABLE cards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE card_engagement_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE google_calendar_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
@@ -610,7 +640,6 @@ BEGIN
     'card_engagement_events',
     'leads',
     'appointments',
-    'google_calendar_connections',
     'subscriptions',
     'payments',
     'invoices',

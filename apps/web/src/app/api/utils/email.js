@@ -82,8 +82,13 @@ export async function sendOtpEmail({ to, code, purpose = "verify" }) {
   const subject =
     purpose === "signin"
       ? "Your JOSTAP sign-in code"
+      : purpose === "password_reset"
+        ? "Reset your JOSTAP password"
       : "Verify your JOSTAP email";
-  const text = `Your JOSTAP verification code is ${code}. It expires in 10 minutes.`;
+  const text =
+    purpose === "password_reset"
+      ? `Your JOSTAP password reset code is ${code}. It expires in 10 minutes.`
+      : `Your JOSTAP verification code is ${code}. It expires in 10 minutes.`;
 
   return sendEmail({
     to,
@@ -91,8 +96,8 @@ export async function sendOtpEmail({ to, code, purpose = "verify" }) {
     text,
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
-        <h2 style="margin:0 0 12px">JOSTAP verification</h2>
-        <p>Your verification code is:</p>
+        <h2 style="margin:0 0 12px">${purpose === "password_reset" ? "Reset your JOSTAP password" : "JOSTAP verification"}</h2>
+        <p>Your ${purpose === "password_reset" ? "password reset" : "verification"} code is:</p>
         <p style="font-size:28px;font-weight:800;letter-spacing:4px;margin:16px 0">${code}</p>
         <p>This code expires in 10 minutes. If you did not request it, you can ignore this email.</p>
       </div>

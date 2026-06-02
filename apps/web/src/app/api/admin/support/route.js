@@ -7,9 +7,37 @@ function applySearch(rows, query) {
   if (!value) return rows;
 
   return rows.filter((row) =>
-    [row.subject, row.message, row.category, row.priority, row.status, row.account, row.guest_name, row.guest_email]
+    [
+      row.subject,
+      row.message,
+      row.category,
+      row.priority,
+      row.status,
+      row.account,
+      row.contactName,
+      row.contactEmail,
+      row.guest_name,
+      row.guest_email,
+      row.users?.email,
+    ]
       .some((item) => String(item || "").toLowerCase().includes(value)),
   );
+}
+
+function contactForTicket(ticket) {
+  const contactName =
+    [ticket.users?.first_name, ticket.users?.last_name].filter(Boolean).join(" ").trim() ||
+    ticket.guest_name ||
+    ticket.users?.email ||
+    ticket.guest_email ||
+    "Guest";
+  const contactEmail = ticket.users?.email || ticket.guest_email || "";
+
+  return {
+    contactName,
+    contactEmail,
+    account: contactEmail ? `${contactName} (${contactEmail})` : contactName,
+  };
 }
 
 export async function GET(request) {
@@ -31,12 +59,7 @@ export async function GET(request) {
 
   let tickets = (data || []).map((ticket) => ({
     ...ticket,
-    account:
-      [ticket.users?.first_name, ticket.users?.last_name].filter(Boolean).join(" ").trim() ||
-      ticket.users?.email ||
-      ticket.guest_name ||
-      ticket.guest_email ||
-      "Guest",
+    ...contactForTicket(ticket),
   }));
 
   if (status) {

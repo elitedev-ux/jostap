@@ -1,10 +1,6 @@
 import { badRequest, json, readJson } from "../../../utils/http.js";
+import { isEmail } from "../../../utils/cards.js";
 import { getSupabaseAdmin, hasSupabase } from "../../../utils/supabase.js";
-import {
-  createGoogleCalendarEvent,
-  getValidGoogleAccessToken,
-  hasGoogleCalendarConfig,
-} from "../../../utils/googleCalendar.js";
 
 function toIso(value) {
   const date = new Date(value);
@@ -15,8 +11,14 @@ function truncate(value, max) {
   return String(value || "").trim().slice(0, max);
 }
 
-function isEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+function dateTimeFromBody(body) {
+  if (body.startsAt) return toIso(body.startsAt);
+
+  const date = truncate(body.appointmentDate, 20);
+  const time = truncate(body.appointmentTime, 20);
+  if (!date || !time) return "";
+
+  return toIso(`${date}T${time}`);
 }
 
 export async function POST(request, { params }) {
@@ -27,16 +29,19 @@ export async function POST(request, { params }) {
   const body = await readJson(request);
   if (!body) return badRequest("Invalid request body.");
 
-  const guestName = truncate(body.guestName, 120);
-  const guestEmail = truncate(body.guestEmail, 254).toLowerCase();
-  const startsAt = toIso(body.startsAt);
-  const notes = truncate(body.notes, 2000);
+  const visitorName = truncate(body.visitorName || body.guestName, 120);
+  const visitorEmail = truncate(body.visitorEmail || body.guestEmail, 254).toLowerCase();
+  const visitorPhone = truncate(body.visitorPhone, 60);
+  const appointmentDate = truncate(body.appointmentDate, 20);
+  const appointmentTime = truncate(body.appointmentTime, 20);
+  const startsAt = dateTimeFromBody(body);
+  const appointmentMessage = truncate(body.appointmentMessage || body.notes, 2000);
 
-  if (!guestName || !guestEmail || !startsAt) {
-    return badRequest("Name, email, and date/time are required.");
+  if (!visitorName || !visitorEmail || !startsAt) {
+    return badRequest("Name, email, and appointment date/time are required.");
   }
 
-  if (!isEmail(guestEmail)) {
+  if (!isEmail(visitorEmail)) {
     return badRequest("Enter a valid email address.");
   }
 
@@ -64,66 +69,49 @@ export async function POST(request, { params }) {
   const { data, error } = await supabase
     .from("appointments")
     .insert({
-      user_id: card.user_id,
+      assigned_user_id: card.user_id,
       card_id: card.id,
-      guest_name: guestName,
-      guest_email: guestEmail,
+      guest_name: visitorName,
+      guest_email: visitorEmail,
+      visitor_name: visitorName,
+      visitor_email: visitorEmail,
+      visitor_phone: visitorPhone || null,
+      appointment_date: appointmentDate || start.toISOString().slice(0, 10),
+      appointment_time: appointmentTime || start.toISOString().slice(11, 16),
+      appointment_message: appointmentMessage || null,
       starts_at: startsAt,
       ends_at: endsAt,
-      status: "scheduled",
-      notes: notes || null,
+      status: "pending",
+      notes: appointmentMessage || null,
     })
-    .select("id,guest_name,guest_email,starts_at,ends_at,status,created_at,google_event_id")
+    .select("id,visitor_name,visitor_email,visitor_phone,appointment_date,appointment_time,appointment_message,starts_at,ends_at,status,created_at")
     .single();
 
   if (error) throw error;
 
-  if (hasGoogleCalendarConfig()) {
-    try {
-      const tokenResult = await getValidGoogleAccessToken({
-        supabase,
-        userId: card.user_id,
-        request,
-      });
-
-      if (tokenResult?.accessToken) {
-        const event = await createGoogleCalendarEvent({
-          accessToken: tokenResult.accessToken,
-          summary: `JOSTAP Appointment: ${guestName}`,
-          description: [
-            `Booked via jostap.com/${card.slug}`,
-            `Guest: ${guestName}`,
-            guestEmail ? `Email: ${guestEmail}` : "",
-            notes ? `Note: ${notes}` : "",
-          ].filter(Boolean).join("\n"),
-          startsAt,
-          endsAt,
-          attendeeEmail: guestEmail || null,
-        });
-
-        if (event?.id) {
-          await supabase
-            .from("appointments")
-            .update({ google_event_id: event.id })
-            .eq("id", data.id);
-          data.google_event_id = event.id;
-        }
-      }
-    } catch {
-      // Booking should still succeed even if calendar sync fails.
-    }
-  }
+  await supabase.from("announcements").insert({
+    target_user_id: card.user_id,
+    title: "New appointment request",
+    message: `${visitorName} requested an appointment for ${data.appointment_date || appointmentDate} at ${data.appointment_time || appointmentTime}.`,
+    type: "info",
+    audience: "users",
+    status: "published",
+    published_at: new Date().toISOString(),
+  });
 
   return json(
     {
       booking: {
         id: data.id,
-        guestName: data.guest_name,
-        guestEmail: data.guest_email,
+        visitorName: data.visitor_name,
+        visitorEmail: data.visitor_email,
+        visitorPhone: data.visitor_phone || "",
+        appointmentDate: data.appointment_date,
+        appointmentTime: data.appointment_time,
+        appointmentMessage: data.appointment_message || "",
         startsAt: data.starts_at,
         endsAt: data.ends_at,
         status: data.status,
-        googleEventId: data.google_event_id || "",
       },
     },
     { status: 201 },

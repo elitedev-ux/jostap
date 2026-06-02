@@ -47,6 +47,7 @@ function buildEmptyTrend(period) {
       taps: 0,
       qr: 0,
       contactDownloads: 0,
+      appointments: 0,
     };
   });
 }
@@ -99,6 +100,16 @@ function buildTrend({ events, period }) {
   return buckets;
 }
 
+function addAppointmentsToTrend({ trend, appointments }) {
+  const bucketByKey = new Map(trend.map((bucket) => [bucket.key, bucket]));
+  for (const appointment of appointments || []) {
+    const key = dayKey(new Date(appointment.created_at));
+    const bucket = bucketByKey.get(key);
+    if (bucket) bucket.appointments += 1;
+  }
+  return trend;
+}
+
 export async function GET(request) {
   const user = await getSessionUser(request);
 
@@ -110,7 +121,11 @@ export async function GET(request) {
   const period = periodFromRequest(request);
   const start = periodStart(period);
 
-  const [{ data: cards, error: cardsError }, { data: events, error: eventsError }] =
+  const [
+    { data: cards, error: cardsError },
+    { data: events, error: eventsError },
+    { data: appointments, error: appointmentsError },
+  ] =
     await Promise.all([
       supabase.from("cards").select("*").eq("user_id", user.id),
       supabase
@@ -118,19 +133,29 @@ export async function GET(request) {
         .select("event_type, referrer, user_agent, created_at")
         .eq("user_id", user.id)
         .gte("created_at", start.toISOString()),
+      supabase
+        .from("appointments")
+        .select("status, created_at")
+        .eq("assigned_user_id", user.id)
+        .gte("created_at", start.toISOString()),
     ]);
 
-  if (cardsError || eventsError) {
-    throw cardsError || eventsError;
+  if (cardsError || eventsError || appointmentsError) {
+    throw cardsError || eventsError || appointmentsError;
   }
 
   const cardRows = cards || [];
   const eventRows = events || [];
+  const appointmentRows = appointments || [];
   const totals = {
     views: total(cardRows, "views"),
     taps: total(cardRows, "taps"),
     qrScans: total(cardRows, "qr_scans"),
     contactDownloads: total(cardRows, "contact_downloads"),
+    appointments: appointmentRows.length,
+    pendingAppointments: appointmentRows.filter((appointment) => appointment.status === "pending").length,
+    approvedAppointments: appointmentRows.filter((appointment) => appointment.status === "approved").length,
+    completedAppointments: appointmentRows.filter((appointment) => appointment.status === "completed").length,
   };
 
   const sourceEvents = eventRows.filter((event) => event.event_type === "profile_view" || event.event_type === "qr_scan");
@@ -140,7 +165,7 @@ export async function GET(request) {
   return json({
     totals,
     period,
-    trend: buildTrend({ events: eventRows, period }),
+    trend: addAppointmentsToTrend({ trend: buildTrend({ events: eventRows, period }), appointments: appointmentRows }),
     cards: cardRows.map((card) => ({
       id: card.id,
       name: card.name,

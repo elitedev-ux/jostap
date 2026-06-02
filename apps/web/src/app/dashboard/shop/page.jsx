@@ -1,47 +1,80 @@
-import { ShoppingBag } from "lucide-react";
+import { Bell, CreditCard, QrCode, ShoppingBag, Sparkles, Wifi } from "lucide-react";
+import "./shop.css";
+
+const products = [
+  {
+    title: "Premium NFC Cards",
+    copy: "Order branded JOSTAP cards for yourself or your team.",
+    icon: CreditCard,
+  },
+  {
+    title: "QR Accessories",
+    copy: "Stickers, table stands, and printed touchpoints for easy sharing.",
+    icon: QrCode,
+  },
+  {
+    title: "Smart Tap Add-ons",
+    copy: "Tools and upgrades built around faster in-person networking.",
+    icon: Wifi,
+  },
+];
 
 export default function ShopPage() {
   return (
-    <div
-      style={{
-        minHeight: "calc(100vh - 140px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <section
-        style={{
-          width: "100%",
-          maxWidth: 520,
-          background: "#fff",
-          border: "1px solid #E5E7EB",
-          borderRadius: 12,
-          padding: 32,
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 12,
-            background: "#eaf3ff",
-            color: "#0d6ffd",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 16,
-          }}
-        >
-          <ShoppingBag size={22} />
+    <div className="shop-coming-soon">
+      <section className="shop-coming-soon__hero">
+        <div className="shop-coming-soon__content">
+          <span className="shop-coming-soon__eyebrow">
+            <ShoppingBag size={15} />
+            JOSTAP Shop
+          </span>
+
+          <h1>Smart card essentials are on the way.</h1>
+          <p>
+            The shop will bring NFC cards, QR accessories, replacement cards,
+            and premium profile add-ons into one simple checkout experience.
+          </p>
+
+          <div className="shop-coming-soon__actions">
+            <button type="button" disabled>
+              <Bell size={16} />
+              Coming Soon
+            </button>
+            <span>Launch updates will appear in your dashboard.</span>
+          </div>
         </div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", marginBottom: 8 }}>
-          Shop
-        </h1>
-        <p style={{ fontSize: 15, color: "#6B7280", lineHeight: 1.6 }}>
-          Coming Soon
-        </p>
+
+        <div className="shop-coming-soon__showcase" aria-hidden="true">
+          <div className="shop-card-stack">
+            <div className="shop-card-stack__card shop-card-stack__card--back" />
+            <div className="shop-card-stack__card shop-card-stack__card--front">
+              <div className="shop-card-stack__brand">
+                <Sparkles size={15} />
+                JOSTAP
+              </div>
+              <div className="shop-card-stack__chip" />
+              <div className="shop-card-stack__lines">
+                <span />
+                <span />
+              </div>
+              <div className="shop-card-stack__tap">
+                <Wifi size={18} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="shop-coming-soon__grid" aria-label="Upcoming shop categories">
+        {products.map(({ title, copy, icon: Icon }) => (
+          <article className="shop-coming-soon__tile" key={title}>
+            <span>
+              <Icon size={18} />
+            </span>
+            <h2>{title}</h2>
+            <p>{copy}</p>
+          </article>
+        ))}
       </section>
     </div>
   );

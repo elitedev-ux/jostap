@@ -106,7 +106,7 @@ const FIELD_GROUPS = [
       ["github", "GitHub", Github, "github.com/name"],
       ["behance", "Behance", Globe, "behance.net/name"],
       ["dribbble", "Dribbble", Globe, "dribbble.com/name"],
-      ["calendly", "Calendar Link", Calendar, "cal.com/name or calendly.com/name"],
+      ["calendly", "Appointment Booking", Calendar, "Enable booking form on public profile"],
       ["videoUrl", "Video", Video, "https://youtube.com/watch?v=..."],
     ],
   },
@@ -558,6 +558,10 @@ export default function CardBuilderPage({ mode = "user" }) {
                                 <Plus size={12} /> Add {label}
                               </button>
                             </div>
+                          ) : key === "calendly" ? (
+                            <p className="card-builder-appointment-note">
+                              Visitors will book from the public profile form. Requests are saved in your dashboard.
+                            </p>
                           ) : (
                             <input
                               value={card[key] || ""}
@@ -830,6 +834,18 @@ export default function CardBuilderPage({ mode = "user" }) {
         }
         .card-builder-appointment:hover {
           border-color: #fff;
+        }
+        .card-builder-appointment-note {
+          margin: 0;
+          border: 1px solid #bfdbfe;
+          border-top: 1px solid #bfdbfe;
+          border-radius: 0 0 10px 10px;
+          background: #eaf3ff;
+          color: #1e3a8a;
+          padding: 10px 12px;
+          font-size: 12px;
+          line-height: 1.5;
+          font-weight: 700;
         }
         .card-builder-qr { display: grid; justify-items: center; gap: 8px; margin: 0 22px 28px; padding: 18px; border: 1px solid var(--card-brand-ring); border-radius: 18px; background: #fff; color: #0f172a; font-size: 13px; font-weight: 500; }
         .card-builder-qr-code { display: flex; align-items: center; justify-content: center; transition: filter .2s ease, opacity .2s ease; }

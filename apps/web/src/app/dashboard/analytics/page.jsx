@@ -226,6 +226,7 @@ export default function AnalyticsPage() {
           ["NFC Taps", totals.taps || 0, "live", "#059669", "#ECFDF5"],
           ["QR Scans", totals.qrScans || 0, "live", "#ff9f0d", "#F5F3FF"],
           ["Contact Saves", totals.contactDownloads || 0, "live", "#D97706", "#FFFBEB"],
+          ["Appointments", totals.appointments || 0, `${totals.pendingAppointments || 0} pending`, "#0f172a", "#f5f5f5"],
         ].map(([label, val, change, color, bg]) => (
           <div
             key={label}
@@ -290,7 +291,7 @@ export default function AnalyticsPage() {
           Engagement Trends
         </h2>
         <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 20 }}>
-          Views, NFC taps, and QR scans over time
+          Views, NFC taps, QR scans, and appointment bookings over time
         </p>
         <ResponsiveContainer width="100%" height={220}>
           <AreaChart
@@ -302,6 +303,7 @@ export default function AnalyticsPage() {
                 ["gV", "#0d6ffd"],
                 ["gT", "#059669"],
                 ["gQ", "#ff9f0d"],
+                ["gA", "#0f172a"],
               ].map(([id, c]) => (
                 <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={c} stopOpacity={0.1} />
@@ -356,6 +358,14 @@ export default function AnalyticsPage() {
               strokeWidth={2}
               fill="url(#gQ)"
               name="QR Scans"
+            />
+            <Area
+              type="monotone"
+              dataKey="appointments"
+              stroke="#0f172a"
+              strokeWidth={2}
+              fill="url(#gA)"
+              name="Appointments"
             />
           </AreaChart>
         </ResponsiveContainer>

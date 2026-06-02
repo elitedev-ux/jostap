@@ -1,7 +1,6 @@
 import { Building2, Calendar, Globe, Mail, MapPin, Phone, User } from "lucide-react";
 import { FaLinkedinIn, FaSkype } from "react-icons/fa";
 import {
-  SiCalendly,
   SiDiscord,
   SiFacebook,
   SiGithub,
@@ -67,7 +66,6 @@ export const BRAND_META = {
   github: { color: "#181717", icon: SiGithub },
   behance: { color: "#1769FF", icon: SiBehance },
   dribbble: { color: "#EA4C89", icon: SiDribbble },
-  calendly: { color: "#006BFF", icon: SiCalendly },
   spotify: { color: "#1DB954", icon: SiSpotify },
   appleMusic: { color: "#FA243C", icon: SiApplemusic },
   boomplay: { color: "#F97316", glyph: "B" },
@@ -183,11 +181,6 @@ export function platformUrl(field, value) {
     github: normalizedUrl(raw.includes("github.com") ? raw : `github.com/${handle}`),
     behance: normalizedUrl(raw.includes("behance.net") ? raw : `behance.net/${handle}`),
     dribbble: normalizedUrl(raw.includes("dribbble.com") ? raw : `dribbble.com/${handle}`),
-    calendly: normalizedUrl(
-      raw.includes("calendly.com") || raw.includes("cal.com")
-        ? raw
-        : `calendly.com/${handle}`,
-    ),
     spotify: normalizedUrl(raw),
     appleMusic: normalizedUrl(raw),
     boomplay: normalizedUrl(raw),
@@ -216,7 +209,6 @@ export function buildVcard(card) {
     socialFirst("twitter") && ["X", platformUrl("twitter", socialFirst("twitter"))],
     socialFirst("facebook") && ["Facebook", platformUrl("facebook", socialFirst("facebook"))],
     socialFirst("youtube") && ["YouTube", platformUrl("youtube", socialFirst("youtube"))],
-    firstValue(card.calendly) && ["Appointment", platformUrl("calendly", firstValue(card.calendly))],
   ].filter(Boolean);
 
   return [
@@ -388,9 +380,7 @@ export default function CardPhonePreview({
   const resolvedPublicUrl = publicUrl || card?.publicUrl || (card?.id ? publicCardUrl(card) : cardProfileUrl(card?.slug));
   const resolvedQrUrl = card?.qrUrl || (card?.id ? cardQrUrl(card) : resolvedPublicUrl);
   const resolvedDisplayUrl = displayCardUrl(card?.slug || "your-slug");
-  const appointmentUrl = visibleFields.has("calendly")
-    ? platformUrl("calendly", firstValue(card?.calendly))
-    : "";
+  const appointmentUrl = visibleFields.has("calendly") ? "#book-appointment" : "";
   const hasVcardInfo = Boolean(card?.name || card?.company || card?.title || card?.email || card?.phone || card?.website || card?.portfolio);
   const Root = framed ? "div" : "section";
 
@@ -483,12 +473,12 @@ export default function CardPhonePreview({
             .card-preview-avatar img { width: 100%; height: 100%; object-fit: cover; }
             .card-preview-copy { padding: 12px 22px 16px; }
             .card-preview-wrap.is-compact .card-preview-copy { padding: 8px 12px 12px; }
-            .card-preview-copy h2 { font-size: 27px; line-height: 1.08; margin: 0 0 8px; font-weight: 900; letter-spacing: 0; color: #0f172a; }
-            .card-preview-wrap.is-compact .card-preview-copy h2 { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .card-preview-copy h2 { font-size: 22px; line-height: 1.12; margin: 0 0 8px; font-weight: 900; letter-spacing: 0; color: #0f172a; }
+            .card-preview-wrap.is-compact .card-preview-copy h2 { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
             .card-preview-copy p { font-size: 14px; color: #475569; margin: 4px 0; overflow-wrap: anywhere; }
             .card-preview-wrap.is-compact .card-preview-copy p { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
             .card-preview-company { display: inline-flex; align-items: center; gap: 6px; color: #0f172a !important; font-size: 13px !important; font-weight: 800; }
-            .card-preview-headline { color: #475569 !important; line-height: 1.35; margin-top: 10px !important; font-size: 13px !important; font-weight: 800; }
+            .card-preview-headline { color: #0f172a !important; line-height: 1.35; margin-top: 9px !important; font-size: 12px !important; font-weight: 700; }
           `}</style>
         )}
       </Root>
@@ -593,7 +583,7 @@ export default function CardPhonePreview({
             </div>
           )}
           {appointmentUrl && (
-            <a className="card-preview-appointment" href={appointmentUrl}>
+            <a className="card-preview-appointment" href={appointmentUrl} onClick={(event) => event.preventDefault()}>
               <Calendar size={16} /> Book Appointment
             </a>
           )}
@@ -664,12 +654,12 @@ export default function CardPhonePreview({
         .card-preview-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .card-preview-copy { padding: 12px 22px 16px; }
         .card-preview-wrap.is-compact .card-preview-copy { padding: 8px 12px 12px; }
-        .card-preview-copy h2 { font-size: 27px; line-height: 1.08; margin: 0 0 8px; font-weight: 900; letter-spacing: 0; color: #0f172a; }
-        .card-preview-wrap.is-compact .card-preview-copy h2 { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-preview-copy h2 { font-size: 22px; line-height: 1.12; margin: 0 0 8px; font-weight: 900; letter-spacing: 0; color: #0f172a; }
+        .card-preview-wrap.is-compact .card-preview-copy h2 { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .card-preview-copy p { font-size: 14px; color: #475569; margin: 4px 0; overflow-wrap: anywhere; }
         .card-preview-wrap.is-compact .card-preview-copy p { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .card-preview-company { display: inline-flex; align-items: center; gap: 6px; color: #0f172a !important; font-size: 13px !important; font-weight: 800; }
-        .card-preview-headline { color: #475569 !important; line-height: 1.35; margin-top: 10px !important; font-size: 13px !important; font-weight: 800; }
+        .card-preview-headline { color: #0f172a !important; line-height: 1.35; margin-top: 9px !important; font-size: 12px !important; font-weight: 700; }
         .card-preview-quick-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; padding: 2px 22px 16px; }
         .card-preview-wrap.is-compact .card-preview-quick-actions,
         .card-preview-wrap.is-compact .card-preview-info-list,
@@ -718,7 +708,7 @@ export default function CardPhonePreview({
         .card-preview-qr em { margin-top: 2px; font-style: normal; color: #0d6ffd; background: #eaf3ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 800; text-align: center; }
         .card-preview-brand-mark { width: 30px; height: 30px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 950; font-family: Archivo, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
         @media (max-width: 640px) {
-          .card-preview-wrap:not(.is-compact) .card-preview-copy h2 { font-size: 22px; line-height: 1.15; }
+          .card-preview-wrap:not(.is-compact) .card-preview-copy h2 { font-size: 20px; line-height: 1.15; }
         }
       `}</style>
       )}

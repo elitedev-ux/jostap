@@ -7,15 +7,14 @@ export default function HeroSection() {
     <section className="landing-hero">
       <div className="landing-hero__copy">
         <h1 className="landing-hero__title">
-          Your entire professional
+          Your smart digital
           <br />
           identity, <span>one tap away.</span>
         </h1>
 
         <p className="landing-hero__text">
-          JOSTAP NFC gives you a polished digital business card, real-time
-          analytics, appointment booking, and lead capture, all from one smart
-          card.
+          JOSTAP gives you a polished digital business card, real-time
+          analytics, appointment booking, and contact sharing, all from one smart card.
         </p>
 
         <div className="landing-actions">
@@ -29,10 +28,6 @@ export default function HeroSection() {
             View Pricing
           </a>
         </div>
-
-        <p className="landing-trust-note">
-          No credit card required - 14-day free trial
-        </p>
       </div>
 
       <div className="landing-hero__preview">

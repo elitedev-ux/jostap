@@ -66,7 +66,7 @@ export async function GET(request) {
       .eq("user_id", user.id)
       .order("issued_at", { ascending: false }),
     supabase.from("cards").select("id, views, taps, qr_scans").eq("user_id", user.id),
-    supabase.from("appointments").select("id").eq("user_id", user.id),
+    supabase.from("appointments").select("id").eq("assigned_user_id", user.id),
   ]);
 
   const error =
