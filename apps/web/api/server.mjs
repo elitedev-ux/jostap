@@ -79,13 +79,35 @@ function toFetchRequest(request) {
   return new Request(url, init);
 }
 
+function splitSetCookieHeader(value) {
+  if (!value) return [];
+  return String(value).split(/,\s*(?=[^=;,]+=)/);
+}
+
+function getSetCookieHeaders(headers) {
+  if (typeof headers.getSetCookie === 'function') {
+    return headers.getSetCookie();
+  }
+
+  return splitSetCookieHeader(headers.get('set-cookie'));
+}
+
 async function writeNodeResponse(response, nodeResponse) {
   nodeResponse.statusCode = response.status;
   nodeResponse.statusMessage = response.statusText;
 
   response.headers.forEach((value, key) => {
+    if (key.toLowerCase() === 'set-cookie') {
+      return;
+    }
+
     nodeResponse.setHeader(key, value);
   });
+
+  const setCookies = getSetCookieHeaders(response.headers);
+  if (setCookies.length > 0) {
+    nodeResponse.setHeader('Set-Cookie', setCookies);
+  }
 
   if (!response.body) {
     nodeResponse.end();
