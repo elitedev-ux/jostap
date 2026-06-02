@@ -1,8 +1,9 @@
 import { cardFromRow } from "../../../utils/cards.js";
 import { json } from "../../../utils/http.js";
 import { getSupabaseAdmin, hasSupabase } from "../../../utils/supabase.js";
+import { cardProfileUrl, cardQrUrl } from "../../../../../utils/publicUrl.js";
 
-export async function GET(_request, { params }) {
+export async function GET(request, { params }) {
   if (!hasSupabase()) {
     return json({ error: "Card not found." }, { status: 404 });
   }
@@ -28,20 +29,33 @@ export async function GET(_request, { params }) {
     .update({ views: Number(row.views || 0) + 1 })
     .eq("id", row.id);
 
-  const { data: subscription, error: subscriptionError } = await supabase
-    .from("subscriptions")
-    .select("plan,status")
-    .eq("user_id", row.user_id)
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  let subscription = null;
 
-  if (subscriptionError) {
-    throw subscriptionError;
+  if (row.user_id) {
+    const { data, error: subscriptionError } = await supabase
+      .from("subscriptions")
+      .select("plan,status")
+      .eq("user_id", row.user_id)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (subscriptionError) {
+      throw subscriptionError;
+    }
+
+    subscription = data;
   }
 
-  return json({ card: { ...cardFromRow(row), plan: subscription?.plan || "free" } });
+  return json({
+    card: {
+      ...cardFromRow(row),
+      plan: subscription?.plan || "free",
+      publicUrl: cardProfileUrl(row.slug, { request }),
+      qrUrl: cardQrUrl(row, { request }),
+    },
+  });
 }
 
 export async function POST(_request, { params }) {

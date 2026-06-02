@@ -24,6 +24,11 @@ import {
   SiYoutubemusic,
 } from "react-icons/si";
 import QRCode from "../QRCode";
+import {
+  cardProfileUrl,
+  cardQrUrl,
+  displayCardUrl,
+} from "../../utils/publicUrl";
 
 const DEFAULT_COLOR = "#3657E8";
 const PREMIUM_ONLY_FIELDS = new Set(["calendly", "videoUrl"]);
@@ -379,8 +384,9 @@ export default function CardPhonePreview({
   const directVideo = directVideoUrl(card?.videoUrl);
   const embeddedVideo = embedVideoUrl(card?.videoUrl);
   const showVideo = Boolean(visibleFields.has("videoUrl") && card?.videoUrl);
-  const origin = typeof window !== "undefined" ? window.location.origin : "https://jostap.com";
-  const resolvedPublicUrl = publicUrl || (card?.slug ? `${origin}/${card.slug}` : origin);
+  const resolvedPublicUrl = publicUrl || card?.publicUrl || cardProfileUrl(card?.slug);
+  const resolvedQrUrl = card?.qrUrl || (card?.slug ? cardQrUrl(card) : resolvedPublicUrl);
+  const resolvedDisplayUrl = displayCardUrl(card?.slug || "your-slug");
   const appointmentUrl = visibleFields.has("calendly")
     ? platformUrl("calendly", firstValue(card?.calendly))
     : "";
@@ -592,9 +598,9 @@ export default function CardPhonePreview({
           )}
           <div className={`card-preview-qr ${qrLocked ? "is-locked" : ""}`}>
             <div className="card-preview-qr-code">
-              <QRCode value={resolvedPublicUrl} size={144} />
+              <QRCode value={resolvedQrUrl} size={144} />
             </div>
-            <span>{`jostap.com/${card?.slug || "your-slug"}`}</span>
+            <span>{resolvedDisplayUrl}</span>
             {qrLocked && <em>Upgrade to unlock downloadable QR</em>}
           </div>
         </div>

@@ -24,6 +24,7 @@ import {
 import { useParams } from "react-router";
 import logo from "../../assets/jostap logo.png3.png";
 import { EMPTY_CARD, createCard, getCard, updateCard } from "../../utils/cardsStore";
+import { displayCardUrl } from "../../utils/publicUrl";
 import CardPhonePreview, {
   BrandMark,
 } from "../card-preview/CardPhonePreview";
@@ -543,7 +544,7 @@ export default function CardBuilderPage() {
           <section className="card-builder-section">
             <h2>Public profile</h2>
             <div className="card-builder-slug">
-              <span>jostap.com/</span>
+              <span>{displayCardUrl("")}/</span>
               <input value={card.slug || ""} onChange={(event) => update("slug", slugFromName(event.target.value))} placeholder="your-name" />
             </div>
           </section>

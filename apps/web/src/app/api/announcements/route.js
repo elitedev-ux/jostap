@@ -16,6 +16,7 @@ export async function GET(request) {
       .eq("status", "published")
       .lte("published_at", now)
       .or(`expires_at.is.null,expires_at.gt.${now}`)
+      .or(`target_user_id.is.null,target_user_id.eq.${user.id}`)
       .in("audience", user.role === "admin" ? ["all", "admins"] : ["all", "users"])
       .order("published_at", { ascending: false }),
     supabase

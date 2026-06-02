@@ -76,7 +76,7 @@ CREATE INDEX IF NOT EXISTS kyc_profiles_user_id_idx ON kyc_profiles (user_id);
 
 CREATE TABLE IF NOT EXISTS cards (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   name text NOT NULL,
   title text,
   company text,
@@ -97,6 +97,9 @@ CREATE TABLE IF NOT EXISTS cards (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+ALTER TABLE cards ALTER COLUMN user_id DROP NOT NULL;
+ALTER TABLE cards DROP CONSTRAINT IF EXISTS cards_user_id_fkey;
+ALTER TABLE cards ADD CONSTRAINT cards_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE cards ADD COLUMN IF NOT EXISTS contact_downloads integer NOT NULL DEFAULT 0;
 
 CREATE UNIQUE INDEX IF NOT EXISTS cards_slug_idx ON cards (slug);
@@ -296,6 +299,7 @@ CREATE TABLE IF NOT EXISTS admin_notifications (
 CREATE TABLE IF NOT EXISTS announcements (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   admin_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  target_user_id uuid REFERENCES users(id) ON DELETE CASCADE,
   title text NOT NULL,
   message text NOT NULL,
   type text NOT NULL DEFAULT 'info' CHECK (type IN ('info', 'warning', 'success', 'error')),
@@ -307,9 +311,11 @@ CREATE TABLE IF NOT EXISTS announcements (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+ALTER TABLE announcements ADD COLUMN IF NOT EXISTS target_user_id uuid REFERENCES users(id) ON DELETE CASCADE;
 CREATE INDEX IF NOT EXISTS announcements_status_idx ON announcements (status);
 CREATE INDEX IF NOT EXISTS announcements_published_at_idx ON announcements (published_at);
 CREATE INDEX IF NOT EXISTS announcements_admin_user_id_idx ON announcements (admin_user_id);
+CREATE INDEX IF NOT EXISTS announcements_target_user_id_idx ON announcements (target_user_id);
 
 CREATE TABLE IF NOT EXISTS announcement_reads (
   announcement_id uuid NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,

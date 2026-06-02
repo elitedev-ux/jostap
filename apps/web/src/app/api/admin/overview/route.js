@@ -1,6 +1,7 @@
 import { json } from "../../utils/http.js";
 import { requireAdmin, fullName, money } from "../../utils/admin.js";
 import { getSupabaseAdmin } from "../../utils/supabase.js";
+import { cardProfileUrl, cardQrUrl } from "../../../../utils/publicUrl.js";
 
 function dateLabel(value) {
   return value ? new Date(value).toLocaleDateString() : "";
@@ -134,6 +135,7 @@ export async function GET(request) {
     { free: 0, jostap_nfc: 0, custom_nfc: 0, basic_renewal: 0, premium_renewal: 0 },
   );
   const cardsByUser = cards.reduce((map, card) => {
+    if (!card.user_id) return map;
     map.set(card.user_id, (map.get(card.user_id) || 0) + 1);
     return map;
   }, new Map());
@@ -163,6 +165,8 @@ export async function GET(request) {
       kycComplete: profiles.length,
       kycPending: Math.max(users.length - profiles.length, 0),
       cards: cards.length,
+      assignedCards: cards.filter((card) => Boolean(card.user_id)).length,
+      unassignedCards: cards.filter((card) => !card.user_id).length,
       activeCards: cards.filter((card) => card.active).length,
       leads: leads.length,
       appointments: appointments.length,
@@ -212,13 +216,18 @@ export async function GET(request) {
     }),
     cards: cards.map((card) => {
       const owner = users.find((user) => user.id === card.user_id);
+      const assigned = Boolean(card.user_id);
 
       return {
         id: card.id,
         name: card.name,
-        owner: fullName(owner) || owner?.email || "Unknown",
+        userId: card.user_id || null,
+        owner: assigned ? fullName(owner) || owner?.email || "Unknown user" : "Unassigned",
+        ownerEmail: owner?.email || "",
+        assignmentStatus: assigned ? "assigned" : "unassigned",
         slug: card.slug,
-        publicUrl: card.slug ? `/${card.slug}` : "",
+        publicUrl: card.slug ? cardProfileUrl(card.slug, { request }) : "",
+        qrUrl: card.slug ? cardQrUrl(card, { request }) : "",
         status: card.active ? "Published" : "Paused",
         active: Boolean(card.active),
         views: card.views || 0,

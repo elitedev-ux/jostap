@@ -1,6 +1,21 @@
-import { CheckCircle2, CreditCard, Download, Eye, Flag, QrCode, Search } from "lucide-react";
+import {
+  CheckCircle2,
+  CreditCard,
+  Download,
+  Eye,
+  Flag,
+  QrCode,
+  Search,
+  UserMinus,
+  UserRoundCheck,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { downloadQrSvg } from "../../../components/QRCode";
+import {
+  cardProfileUrl,
+  cardQrUrl,
+  displayCardUrl,
+} from "../../../utils/publicUrl";
 
 const statusColors = {
   Published: ["#ECFDF5", "#047857", "#A7F3D0"],
@@ -8,12 +23,36 @@ const statusColors = {
   Paused: ["#FFFBEB", "#B45309", "#FDE68A"],
 };
 
+const assignmentColors = {
+  assigned: ["#eaf3ff", "#0d6ffd", "#BFDBFE"],
+  unassigned: ["#FFF7ED", "#C2410C", "#FED7AA"],
+};
+
+const emptyForm = {
+  name: "",
+  title: "",
+  company: "",
+  email: "",
+  slug: "",
+  userId: "",
+  active: true,
+};
+
+function userLabel(user) {
+  return `${user.name || user.email}${user.email && user.name !== user.email ? ` (${user.email})` : ""}`;
+}
+
 export default function AdminCardsPage() {
   const [cards, setCards] = useState([]);
+  const [users, setUsers] = useState([]);
   const [stats, setStats] = useState({});
   const [query, setQuery] = useState("");
+  const [assignmentFilter, setAssignmentFilter] = useState("all");
+  const [userFilter, setUserFilter] = useState("");
   const [loadError, setLoadError] = useState("");
   const [busyId, setBusyId] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [form, setForm] = useState(emptyForm);
 
   async function loadCards(active = true) {
     setLoadError("");
@@ -24,6 +63,7 @@ export default function AdminCardsPage() {
       if (!response.ok) throw new Error(data.error || "Unable to load cards.");
       if (active) {
         setCards(data.cards || []);
+        setUsers(data.users || []);
         setStats(data.stats || {});
       }
     } catch (error) {
@@ -50,6 +90,47 @@ export default function AdminCardsPage() {
     }
   }
 
+  async function updateAssignment(card, userId) {
+    setBusyId(card.id);
+    setLoadError("");
+    try {
+      const response = await fetch(`/api/admin/cards/${card.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: userId || null }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to update card assignment.");
+      await loadCards();
+    } catch (error) {
+      setLoadError(error.message || "Unable to update card assignment.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function createCard(event) {
+    event.preventDefault();
+    setBusyId("create");
+    setLoadError("");
+    try {
+      const response = await fetch("/api/admin/cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to create card.");
+      setForm(emptyForm);
+      setCreateOpen(false);
+      await loadCards();
+    } catch (error) {
+      setLoadError(error.message || "Unable to create card.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
   useEffect(() => {
     let active = true;
     loadCards(active);
@@ -59,27 +140,96 @@ export default function AdminCardsPage() {
     };
   }, []);
 
-  const filteredCards = useMemo(
-    () =>
-      cards.filter((card) =>
-        [card.name, card.owner, card.slug, card.status]
-          .filter(Boolean)
-          .some((value) => value.toLowerCase().includes(query.toLowerCase())),
-      ),
-    [cards, query],
-  );
+  const filteredCards = useMemo(() => {
+    const text = query.trim().toLowerCase();
+    return cards.filter((card) => {
+      if (assignmentFilter !== "all" && card.assignmentStatus !== assignmentFilter) return false;
+      if (userFilter && card.userId !== userFilter) return false;
+      if (!text) return true;
+
+      return [card.name, card.owner, card.ownerEmail, card.slug, card.status, card.assignmentStatus]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(text));
+    });
+  }, [assignmentFilter, cards, query, userFilter]);
 
   return (
     <>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", marginBottom: 4 }}>Cards</h1>
-        <p style={{ fontSize: 14, color: "#6B7280" }}>Review digital profiles, QR activity, publication state, and moderation flags.</p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", marginBottom: 4 }}>Cards</h1>
+          <p style={{ fontSize: 14, color: "#6B7280" }}>
+            Create, assign, reassign, publish, and monitor digital card records.
+          </p>
+        </div>
+        <button
+          onClick={() => setCreateOpen((value) => !value)}
+          style={{ border: "none", background: "#0d6ffd", color: "#fff", borderRadius: 9, padding: "10px 15px", fontSize: 13, fontWeight: 800, cursor: "pointer" }}
+        >
+          {createOpen ? "Close form" : "Create card"}
+        </button>
       </div>
+
+      {createOpen && (
+        <form onSubmit={createCard} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 18, marginBottom: 20 }}>
+          <div style={{ marginBottom: 14 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 4 }}>Create card</h2>
+            <p style={{ fontSize: 13, color: "#6B7280" }}>Leave user assignment empty to create an unassigned card.</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 12 }}>
+            {[
+              ["name", "Card name", true],
+              ["title", "Title", false],
+              ["company", "Company", false],
+              ["email", "Contact email", false],
+              ["slug", "Public slug", true],
+            ].map(([key, label, required]) => (
+              <label key={key} className="ui-field">
+                <span>{label}</span>
+                <input
+                  value={form[key]}
+                  required={required}
+                  onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}
+                />
+              </label>
+            ))}
+            <label className="ui-field">
+              <span>Assign to user</span>
+              <select value={form.userId} onChange={(event) => setForm((current) => ({ ...current, userId: event.target.value }))}>
+                <option value="">Unassigned</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {userLabel(user)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 14, fontSize: 13, color: "#374151", fontWeight: 700 }}>
+            <input
+              type="checkbox"
+              checked={form.active}
+              onChange={(event) => setForm((current) => ({ ...current, active: event.target.checked }))}
+            />
+            Publish card immediately
+          </label>
+          <div style={{ marginTop: 16 }}>
+            <button
+              type="submit"
+              disabled={busyId === "create"}
+              style={{ border: "none", background: "#0d6ffd", color: "#fff", borderRadius: 9, padding: "10px 15px", fontSize: 13, fontWeight: 800, cursor: busyId === "create" ? "wait" : "pointer" }}
+            >
+              {busyId === "create" ? "Creating..." : "Create card"}
+            </button>
+          </div>
+        </form>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 14, marginBottom: 20 }}>
         {[
           ["Total Cards", stats.cards || 0, CreditCard, "#0d6ffd", "#eaf3ff"],
-          ["Published", stats.activeCards || 0, CheckCircle2, "#059669", "#ECFDF5"],
+          ["Assigned", stats.assignedCards || 0, UserRoundCheck, "#047857", "#ECFDF5"],
+          ["Unassigned", stats.unassignedCards || 0, UserMinus, "#C2410C", "#FFF7ED"],
           ["QR Scans", stats.qrScans || 0, QrCode, "#ff9f0d", "#F5F3FF"],
           ["Contact Downloads", stats.contactDownloads || 0, Flag, "#D97706", "#FFFBEB"],
         ].map(([label, value, Icon, color, bg]) => (
@@ -94,43 +244,86 @@ export default function AdminCardsPage() {
       </div>
 
       <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ padding: 16, borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", gap: 10 }}>
-          <Search size={15} color="#9CA3AF" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search cards by owner, title, or status..." style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 13 }} />
+        <div style={{ padding: 16, borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 240px", minWidth: 220 }}>
+            <Search size={15} color="#9CA3AF" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search cards by owner, title, slug, or status..." style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 13 }} />
+          </div>
+          <select value={assignmentFilter} onChange={(event) => setAssignmentFilter(event.target.value)} style={{ border: "1px solid #E5E7EB", borderRadius: 9, padding: "8px 10px", fontSize: 13, color: "#374151", background: "#fff" }}>
+            <option value="all">All assignments</option>
+            <option value="assigned">Assigned</option>
+            <option value="unassigned">Unassigned</option>
+          </select>
+          <select value={userFilter} onChange={(event) => setUserFilter(event.target.value)} style={{ border: "1px solid #E5E7EB", borderRadius: 9, padding: "8px 10px", fontSize: 13, color: "#374151", background: "#fff", minWidth: 210 }}>
+            <option value="">All user-owned cards</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {userLabel(user)}
+              </option>
+            ))}
+          </select>
         </div>
         {loadError && <div style={{ background: "#FEF2F2", color: "#B91C1C", padding: 16, fontSize: 13, fontWeight: 700 }}>{loadError}</div>}
         {!loadError && filteredCards.length === 0 && (
           <div className="ui-empty-state" style={{ border: "none" }}>
-            <p className="ui-empty-state__title">No cards yet</p>
-            <p className="ui-empty-state__copy">Card records will appear here when users publish digital cards.</p>
+            <p className="ui-empty-state__title">No cards found</p>
+            <p className="ui-empty-state__copy">Adjust search or assignment filters to find cards.</p>
           </div>
         )}
         {filteredCards.map((card, index) => {
-          const { name: title, owner, status, views, qrScans: scans, contactDownloads, slug, publicUrl } = card;
-          const cardLink = publicUrl || (slug ? `/${slug}` : "");
-          const qrValue =
-            cardLink && typeof window !== "undefined" && cardLink.startsWith("/")
-              ? `${window.location.origin}${cardLink}`
-              : cardLink;
-          const [bg, color, border] = statusColors[status];
+          const { name: title, owner, status, views, qrScans: scans, contactDownloads, slug, publicUrl, qrUrl } = card;
+          const cardLink = publicUrl || (slug ? cardProfileUrl(slug) : "");
+          const qrValue = qrUrl || (slug ? cardQrUrl(card) : "");
+          const displayUrl = slug ? displayCardUrl(slug) : "";
+          const [bg, color, border] = statusColors[status] || statusColors.Draft;
+          const [assignmentBg, assignmentColor, assignmentBorder] = assignmentColors[card.assignmentStatus] || assignmentColors.unassigned;
           return (
-            <div key={card.id} style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr .8fr .7fr .7fr .7fr auto", gap: 16, alignItems: "center", padding: "15px 18px", borderTop: index ? "1px solid #F3F4F6" : "none" }}>
+            <div key={card.id} style={{ display: "grid", gridTemplateColumns: "1.3fr 1.1fr .8fr .7fr .7fr .7fr minmax(260px,auto)", gap: 16, alignItems: "center", padding: "15px 18px", borderTop: index ? "1px solid #F3F4F6" : "none" }}>
               <div>
                 <p style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>{title}</p>
                 {cardLink ? (
                   <a href={cardLink} title={cardLink} style={{ fontSize: 12, color: "#0d6ffd", fontWeight: 700, textDecoration: "none" }}>
-                    jostap.com/{slug}
+                    {displayUrl}
                   </a>
                 ) : (
                   <p style={{ fontSize: 12, color: "#6B7280" }}>No public link yet</p>
                 )}
               </div>
-              <p style={{ fontSize: 13, color: "#374151", fontWeight: 600 }}>{owner}</p>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: 13, color: "#374151", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{owner}</p>
+                <span style={{ display: "inline-flex", marginTop: 5, background: assignmentBg, color: assignmentColor, border: `1px solid ${assignmentBorder}`, borderRadius: 999, padding: "3px 8px", fontSize: 11, fontWeight: 800, textTransform: "capitalize" }}>
+                  {card.assignmentStatus}
+                </span>
+              </div>
               <span style={{ justifySelf: "start", background: bg, color, border: `1px solid ${border}`, borderRadius: 999, padding: "3px 9px", fontSize: 12, fontWeight: 700 }}>{status}</span>
               <span style={{ fontSize: 13, color: "#111827", fontWeight: 700 }}>{views}</span>
               <span style={{ fontSize: 13, color: "#111827", fontWeight: 700 }}>{scans}</span>
               <span style={{ fontSize: 13, color: "#111827", fontWeight: 700 }}>{contactDownloads}</span>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                <select
+                  value={card.userId || ""}
+                  disabled={busyId === card.id}
+                  onChange={(event) => updateAssignment(card, event.target.value)}
+                  title="Assign or reassign card"
+                  style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, height: 30, padding: "0 8px", fontSize: 12, fontWeight: 700, color: "#374151", maxWidth: 210 }}
+                >
+                  <option value="">Unassigned</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {userLabel(user)}
+                    </option>
+                  ))}
+                </select>
+                {card.userId && (
+                  <button
+                    title="Remove assignment"
+                    onClick={() => updateAssignment(card, "")}
+                    disabled={busyId === card.id}
+                    style={{ border: "1px solid #FED7AA", background: "#FFF7ED", borderRadius: 8, height: 30, padding: "0 9px", display: "inline-flex", alignItems: "center", gap: 5, color: "#C2410C", cursor: busyId === card.id ? "wait" : "pointer", fontSize: 12, fontWeight: 800 }}
+                  >
+                    <UserMinus size={13} /> Unassign
+                  </button>
+                )}
                 {cardLink && <a href={cardLink} title="Preview" style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, width: 30, height: 30, display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#374151" }}><Eye size={14} /></a>}
                 {qrValue && (
                   <button

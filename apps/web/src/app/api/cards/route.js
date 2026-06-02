@@ -2,6 +2,15 @@ import { badRequest, json, readJson, unauthorized } from "../utils/http.js";
 import { activePlanForUser, applyPlanLimits, cardFromRow, cardPayload } from "../utils/cards.js";
 import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin, isUniqueViolation } from "../utils/supabase.js";
+import { cardProfileUrl, cardQrUrl } from "../../../utils/publicUrl.js";
+
+function cardResponse(row, request) {
+  return {
+    ...cardFromRow(row),
+    publicUrl: cardProfileUrl(row.slug, { request }),
+    qrUrl: cardQrUrl(row, { request }),
+  };
+}
 
 export async function GET(request) {
   const user = await getSessionUser(request);
@@ -21,7 +30,7 @@ export async function GET(request) {
     throw error;
   }
 
-  return json({ cards: (rows || []).map(cardFromRow) });
+  return json({ cards: (rows || []).map((row) => cardResponse(row, request)) });
 }
 
 export async function POST(request) {
@@ -70,7 +79,7 @@ export async function POST(request) {
       throw error;
     }
 
-    return json({ card: cardFromRow(row) }, { status: 201 });
+    return json({ card: cardResponse(row, request) }, { status: 201 });
   } catch (error) {
     if (isUniqueViolation(error)) {
       return badRequest("This public slug is already in use.");

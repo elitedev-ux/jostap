@@ -158,6 +158,8 @@ export function cardFromRow(row) {
 
   return {
     id: row.id,
+    userId: row.user_id || null,
+    assignmentStatus: row.user_id ? "assigned" : "unassigned",
     name: row.name || "",
     title: row.title || "",
     role: row.title || "",

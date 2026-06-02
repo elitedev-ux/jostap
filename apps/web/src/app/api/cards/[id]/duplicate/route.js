@@ -2,6 +2,15 @@ import { json, unauthorized } from "../../../utils/http.js";
 import { cardFromRow } from "../../../utils/cards.js";
 import { getSessionUser } from "../../../utils/session.js";
 import { getSupabaseAdmin } from "../../../utils/supabase.js";
+import { cardProfileUrl, cardQrUrl } from "../../../../../utils/publicUrl.js";
+
+function cardResponse(row, request) {
+  return {
+    ...cardFromRow(row),
+    publicUrl: cardProfileUrl(row.slug, { request }),
+    qrUrl: cardQrUrl(row, { request }),
+  };
+}
 
 export async function POST(request, { params }) {
   const user = await getSessionUser(request);
@@ -49,5 +58,5 @@ export async function POST(request, { params }) {
     throw error;
   }
 
-  return json({ card: cardFromRow(row) }, { status: 201 });
+  return json({ card: cardResponse(row, request) }, { status: 201 });
 }

@@ -15,6 +15,7 @@ import {
   PROFILE_IMAGE_RULES,
   isAllowedProfileImage,
 } from "../../../utils/uploadRules";
+import { displayCardUrl } from "../../../utils/publicUrl";
 
 const TABS = ["Profile", "Notifications", "Security", "Integrations"];
 
@@ -803,7 +804,7 @@ export default function SettingsPage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  jostap.com/
+                  {displayCardUrl("")}/
                 </span>
                 <input
                   value={profile.slug}

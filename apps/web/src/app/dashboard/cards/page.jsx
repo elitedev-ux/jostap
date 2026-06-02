@@ -20,17 +20,16 @@ import {
   duplicateCard,
   getCards,
 } from "../../../utils/cardsStore";
+import {
+  cardProfileUrl,
+  cardQrUrl,
+  displayCardUrl,
+} from "../../../utils/publicUrl";
 
 const DOWNLOADABLE_QR_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
 
 function hasDownloadableQr(plan) {
   return DOWNLOADABLE_QR_PLANS.has(String(plan || "").toLowerCase());
-}
-
-function cardUrl(slug) {
-  const path = `/${slug || ""}`;
-  if (typeof window === "undefined") return `https://jostap.com${path}`;
-  return `${window.location.origin}${path}`;
 }
 
 function CardPreview({ card }) {
@@ -174,7 +173,9 @@ function CardRow({ card, onChange, qrLocked }) {
   const [copied, setCopied] = useState(false);
   const role = card.role || card.title || "No title";
   const company = card.company || "No company";
-  const publicUrl = cardUrl(card.slug);
+  const publicUrl = cardProfileUrl(card.slug);
+  const qrValue = card.qrUrl || cardQrUrl(card);
+  const displayUrl = displayCardUrl(card.slug);
 
   const copyPublicUrl = async () => {
     await navigator.clipboard?.writeText(publicUrl);
@@ -188,7 +189,7 @@ function CardRow({ card, onChange, qrLocked }) {
       return;
     }
 
-    downloadQrSvg(publicUrl, `${card.slug || "card"}-qr-code`);
+    downloadQrSvg(qrValue, `${card.slug || "card"}-qr-code`);
   };
 
   const runAction = async (action) => {
@@ -341,12 +342,12 @@ function CardRow({ card, onChange, qrLocked }) {
             transition: "filter 0.2s, opacity 0.2s",
           }}
         >
-          <QRCode value={publicUrl} size={58} />
+          <QRCode value={qrValue} size={58} />
         </div>
         <button
           type="button"
           onClick={copyPublicUrl}
-          title={`jostap.com/${card.slug}`}
+          title={publicUrl}
           style={{
             maxWidth: "100%",
             fontSize: 11,
@@ -361,7 +362,7 @@ function CardRow({ card, onChange, qrLocked }) {
             cursor: "pointer",
           }}
         >
-          {copied ? "Copied" : `jostap.com/${card.slug}`}
+          {copied ? "Copied" : displayUrl}
         </button>
         <button
           onClick={handleDownloadQr}
@@ -387,7 +388,7 @@ function CardRow({ card, onChange, qrLocked }) {
 
       <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
         <a
-          href={`/${card.slug}`}
+          href={publicUrl}
           target="_blank"
           rel="noreferrer"
           style={{
