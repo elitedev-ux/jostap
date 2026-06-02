@@ -1,5 +1,6 @@
 import { badRequest, json, readJson } from "../../utils/http.js";
 import { createPasswordResetChallenge, normalizeEmail } from "../../utils/authSecurity.js";
+import { hasEmailDelivery } from "../../utils/email.js";
 import { getSupabaseAdmin, hasSupabase } from "../../utils/supabase.js";
 
 const GENERIC_MESSAGE = "If an account exists for that email, a reset code has been sent.";
@@ -18,6 +19,13 @@ export async function POST(request) {
   const email = normalizeEmail(body.email);
   if (!email) return badRequest("Email is required.");
 
+  if (!hasEmailDelivery()) {
+    return json(
+      { error: "Password reset email is not configured. Add RESEND_API_KEY or POSTMARK_SERVER_TOKEN in your hosting environment." },
+      { status: 503 },
+    );
+  }
+
   const supabase = getSupabaseAdmin();
   const { data: user, error } = await supabase
     .from("users")
@@ -28,7 +36,19 @@ export async function POST(request) {
   if (error) throw error;
 
   if (user?.status === "active") {
-    await createPasswordResetChallenge(supabase, user);
+    try {
+      await createPasswordResetChallenge(supabase, user);
+    } catch (error) {
+      if (/email failed|email is not configured/i.test(error?.message || "")) {
+        console.error("[forgot-password:email]", error);
+        return json(
+          { error: "Password reset email could not be sent. Check your RESEND_API_KEY or POSTMARK_SERVER_TOKEN settings." },
+          { status: 502 },
+        );
+      }
+
+      throw error;
+    }
   }
 
   return json({ message: GENERIC_MESSAGE });

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Headphones, MessageSquare, Search, Send, TicketCheck } from "lucide-react";
+import { Headphones, MessageSquare, Send, TicketCheck } from "lucide-react";
 
 const inputStyle = {
   width: "100%",
@@ -16,7 +16,6 @@ const inputStyle = {
 export default function UserSupportPage() {
   const [tickets, setTickets] = useState([]);
   const [selectedId, setSelectedId] = useState("");
-  const [search, setSearch] = useState("");
   const [form, setForm] = useState({
     subject: "",
     category: "General",
@@ -32,22 +31,6 @@ export default function UserSupportPage() {
     () => tickets.find((ticket) => ticket.id === selectedId) || null,
     [tickets, selectedId],
   );
-
-  const filteredTickets = useMemo(() => {
-    const value = search.trim().toLowerCase();
-    if (!value) return tickets;
-
-    return tickets.filter((ticket) =>
-      [
-        ticket.subject,
-        ticket.message,
-        ticket.category,
-        ticket.priority,
-        ticket.status,
-        ...(ticket.messages || []).map((message) => message.message),
-      ].some((item) => String(item || "").toLowerCase().includes(value)),
-    );
-  }, [tickets, search]);
 
   async function loadTickets() {
     const response = await fetch("/api/support", { credentials: "same-origin" });
@@ -81,13 +64,6 @@ export default function UserSupportPage() {
 
     return () => window.clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    setSelectedId((currentId) => {
-      if (filteredTickets.some((ticket) => ticket.id === currentId)) return currentId;
-      return filteredTickets[0]?.id || "";
-    });
-  }, [filteredTickets]);
 
   const submitTicket = async (event) => {
     event.preventDefault();
@@ -222,31 +198,15 @@ export default function UserSupportPage() {
             <TicketCheck size={17} color="#059669" />
             <h2 style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>Your Tickets</h2>
           </div>
-          <div style={{ padding: 12, borderBottom: "1px solid #E5E7EB" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid #E5E7EB", borderRadius: 8, padding: "8px 10px" }}>
-              <Search size={14} color="#9CA3AF" />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search tickets"
-                style={{ border: "none", outline: "none", flex: 1, fontSize: 13 }}
-              />
-            </label>
-          </div>
           {tickets.length === 0 ? (
             <div className="ui-empty-state" style={{ border: "none", padding: "30px 10px" }}>
               <p className="ui-empty-state__title">No tickets yet</p>
               <p className="ui-empty-state__copy">Submitted tickets will appear here.</p>
             </div>
-          ) : filteredTickets.length === 0 ? (
-            <div className="ui-empty-state" style={{ border: "none", padding: "30px 10px" }}>
-              <p className="ui-empty-state__title">No tickets found</p>
-              <p className="ui-empty-state__copy">Try a different search term.</p>
-            </div>
           ) : (
             <>
               <div style={{ maxHeight: 200, overflowY: "auto", borderBottom: "1px solid #E5E7EB" }}>
-                {filteredTickets.map((ticket) => (
+                {tickets.map((ticket) => (
                   <button
                     key={ticket.id}
                     type="button"

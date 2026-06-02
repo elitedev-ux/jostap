@@ -4,6 +4,10 @@ function configuredFrom() {
   return process.env.EMAIL_FROM || process.env.POSTMARK_FROM_EMAIL || DEFAULT_FROM;
 }
 
+export function hasEmailDelivery() {
+  return Boolean(process.env.POSTMARK_SERVER_TOKEN || process.env.RESEND_API_KEY) || process.env.NODE_ENV !== "production";
+}
+
 async function sendWithPostmark({ to, subject, html, text }) {
   const token = process.env.POSTMARK_SERVER_TOKEN;
 

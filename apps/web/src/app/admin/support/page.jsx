@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Filter, MessageSquare, Search, Send } from "lucide-react";
+import { Filter, MessageSquare, Send } from "lucide-react";
 
 const panelStyle = {
   background: "#fff",
@@ -19,7 +19,7 @@ export default function AdminSupportPage() {
   const [selectedId, setSelectedId] = useState("");
   const [thread, setThread] = useState([]);
   const [threadTicket, setThreadTicket] = useState(null);
-  const [filters, setFilters] = useState({ q: "", status: "", priority: "" });
+  const [filters, setFilters] = useState({ status: "", priority: "" });
   const [reply, setReply] = useState("");
   const [nextStatus, setNextStatus] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,7 +33,6 @@ export default function AdminSupportPage() {
   const loadTickets = async () => {
     setError("");
     const params = new URLSearchParams();
-    if (filters.q) params.set("q", filters.q);
     if (filters.status) params.set("status", filters.status);
     if (filters.priority) params.set("priority", filters.priority);
 
@@ -71,7 +70,7 @@ export default function AdminSupportPage() {
 
   useEffect(() => {
     loadTickets().catch((err) => setError(err.message));
-  }, [filters.q, filters.status, filters.priority]);
+  }, [filters.status, filters.priority]);
 
   useEffect(() => {
     loadThread(selectedId).catch((err) => setError(err.message));
@@ -86,7 +85,7 @@ export default function AdminSupportPage() {
     }, 15000);
 
     return () => window.clearInterval(timer);
-  }, [selectedId, filters.q, filters.status, filters.priority]);
+  }, [selectedId, filters.status, filters.priority]);
 
   const patchStatus = async (id, status) => {
     const response = await fetch(`/api/admin/support/${id}`, {
@@ -132,7 +131,7 @@ export default function AdminSupportPage() {
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", marginBottom: 4 }}>Support Tickets</h1>
         <p style={{ fontSize: 14, color: "#6B7280" }}>
-          View, search, reply, and update ticket statuses across all users.
+          View, reply, and update ticket statuses across all users.
         </p>
       </div>
 
@@ -145,15 +144,6 @@ export default function AdminSupportPage() {
       <div style={{ display: "grid", gridTemplateColumns: "340px minmax(0,1fr)", gap: 18 }}>
         <section style={{ ...panelStyle, overflow: "hidden" }}>
           <div style={{ padding: 14, borderBottom: "1px solid #E5E7EB", display: "grid", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid #E5E7EB", borderRadius: 8, padding: "8px 10px" }}>
-              <Search size={14} color="#9CA3AF" />
-              <input
-                value={filters.q}
-                onChange={(event) => setFilters((current) => ({ ...current, q: event.target.value }))}
-                placeholder="Search tickets"
-                style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 13 }}
-              />
-            </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <select
                 value={filters.status}
@@ -184,7 +174,7 @@ export default function AdminSupportPage() {
             {tickets.length === 0 && (
               <div className="ui-empty-state" style={{ border: "none", padding: "32px 12px" }}>
                 <p className="ui-empty-state__title">No tickets found</p>
-                <p className="ui-empty-state__copy">Try a broader search or reset filters.</p>
+                <p className="ui-empty-state__copy">Try resetting the status or priority filters.</p>
               </div>
             )}
             {tickets.map((ticket) => {
