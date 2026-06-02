@@ -13,6 +13,10 @@ async function getApp() {
 export default async function handler(request, context) {
   const app = await getApp();
 
+  if (typeof app === 'function') {
+    return app(request, context?.env, context);
+  }
+
   if (!app || typeof app.fetch !== 'function') {
     return new Response('App handler is unavailable.', { status: 500 });
   }

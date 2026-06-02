@@ -95,8 +95,8 @@ app.all('/integrations/:path{.+}', async (c, next) => {
 
 app.route(API_BASENAME, api);
 
-const shouldBootNodeServer = !process.env.NETLIFY;
-const netlifyBasename = '/';
+const shouldBootNodeServer = !process.env.NETLIFY && !process.env.VERCEL;
+const serverlessBasename = '/';
 
 if (!shouldBootNodeServer) {
   const build = await import('virtual:react-router/server-build');
@@ -108,8 +108,8 @@ if (!shouldBootNodeServer) {
     })(c, next);
   });
 
-  app.route(netlifyBasename, reactRouterApp);
-  app.route(`${netlifyBasename}.data`, reactRouterApp);
+  app.route(serverlessBasename, reactRouterApp);
+  app.route(`${serverlessBasename}.data`, reactRouterApp);
 }
 
 export default shouldBootNodeServer
@@ -117,4 +117,4 @@ export default shouldBootNodeServer
       app,
       defaultLogger: false,
     })
-  : app;
+  : app.fetch;
