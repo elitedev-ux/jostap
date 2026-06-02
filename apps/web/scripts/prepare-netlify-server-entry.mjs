@@ -6,12 +6,15 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const webRoot = dirname(scriptDir);
 const outputFile = join(webRoot, 'build', 'server', 'server.js');
 
-const source = `import { createRequestHandler } from "@netlify/vite-plugin-react-router/serverless";
-import * as build from "./assets/server-build.js";
+const source = `import app from "./index.js";
 
-export default createRequestHandler({
-  build,
-});
+export default async function handler(request, context) {
+  if (!app || typeof app.fetch !== "function") {
+    return new Response("App handler is unavailable.", { status: 500 });
+  }
+
+  return app.fetch(request, context?.env, context);
+}
 `;
 
 await mkdir(dirname(outputFile), { recursive: true });

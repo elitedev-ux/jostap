@@ -6,7 +6,9 @@ import { cors } from 'hono/cors';
 import { proxy } from 'hono/proxy';
 import { bodyLimit } from 'hono/body-limit';
 import { requestId } from 'hono/request-id';
+import { createMiddleware } from 'hono/factory';
 import { createHonoServer } from 'react-router-hono-server/node';
+import { createRequestHandler } from 'react-router';
 import { serializeError } from 'serialize-error';
 import { getHTMLForErrorPage } from './get-html-for-error-page';
 import { API_BASENAME, api } from './route-builder';
@@ -93,7 +95,26 @@ app.all('/integrations/:path{.+}', async (c, next) => {
 
 app.route(API_BASENAME, api);
 
-export default await createHonoServer({
-  app,
-  defaultLogger: false,
-});
+const shouldBootNodeServer = !process.env.NETLIFY;
+const netlifyBasename = '/';
+
+if (!shouldBootNodeServer) {
+  const build = await import('virtual:react-router/server-build');
+  const reactRouterApp = new Hono({ strict: false });
+  reactRouterApp.use((c, next) => {
+    return createMiddleware(async (routerContext) => {
+      const requestHandler = createRequestHandler(build, 'production');
+      return requestHandler(routerContext.req.raw, undefined);
+    })(c, next);
+  });
+
+  app.route(netlifyBasename, reactRouterApp);
+  app.route(`${netlifyBasename}.data`, reactRouterApp);
+}
+
+export default shouldBootNodeServer
+  ? await createHonoServer({
+      app,
+      defaultLogger: false,
+    })
+  : app;
