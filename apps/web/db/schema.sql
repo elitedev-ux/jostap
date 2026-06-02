@@ -342,7 +342,9 @@ CREATE INDEX IF NOT EXISTS announcement_reads_user_id_idx ON announcement_reads 
 
 CREATE TABLE IF NOT EXISTS support_tickets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  guest_name text,
+  guest_email text,
   subject text NOT NULL,
   message text NOT NULL,
   category text NOT NULL DEFAULT 'General',
@@ -352,6 +354,12 @@ CREATE TABLE IF NOT EXISTS support_tickets (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE support_tickets ALTER COLUMN user_id DROP NOT NULL;
+ALTER TABLE support_tickets DROP CONSTRAINT IF EXISTS support_tickets_user_id_fkey;
+ALTER TABLE support_tickets ADD CONSTRAINT support_tickets_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS guest_name text;
+ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS guest_email text;
 
 CREATE INDEX IF NOT EXISTS support_tickets_user_id_idx ON support_tickets (user_id);
 CREATE INDEX IF NOT EXISTS support_tickets_status_idx ON support_tickets (status);

@@ -33,7 +33,9 @@ export async function GET(request, { params }) {
       account:
         [ticket.users?.first_name, ticket.users?.last_name].filter(Boolean).join(" ").trim() ||
         ticket.users?.email ||
-        "Unknown",
+        ticket.guest_name ||
+        ticket.guest_email ||
+        "Guest",
     },
     messages:
       (messages || []).map((row) => ({
@@ -41,6 +43,7 @@ export async function GET(request, { params }) {
         sender:
           [row.users?.first_name, row.users?.last_name].filter(Boolean).join(" ").trim() ||
           row.users?.email ||
+          (row.sender_role === "user" ? ticket.guest_name || ticket.guest_email : "") ||
           row.sender_role,
       })) || [],
   });

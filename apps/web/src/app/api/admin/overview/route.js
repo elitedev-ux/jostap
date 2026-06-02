@@ -301,7 +301,7 @@ export async function GET(request) {
       priority: ticket.priority,
       status: ticket.status,
       adminNotes: ticket.admin_notes || "",
-      account: fullName(ticket.users) || ticket.users?.email || "Unknown",
+      account: fullName(ticket.users) || ticket.users?.email || ticket.guest_name || ticket.guest_email || "Guest",
       created: dateLabel(ticket.created_at),
       created_at: ticket.created_at,
     })),

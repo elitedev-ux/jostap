@@ -7,7 +7,7 @@ function applySearch(rows, query) {
   if (!value) return rows;
 
   return rows.filter((row) =>
-    [row.subject, row.message, row.category, row.priority, row.status, row.account]
+    [row.subject, row.message, row.category, row.priority, row.status, row.account, row.guest_name, row.guest_email]
       .some((item) => String(item || "").toLowerCase().includes(value)),
   );
 }
@@ -34,7 +34,9 @@ export async function GET(request) {
     account:
       [ticket.users?.first_name, ticket.users?.last_name].filter(Boolean).join(" ").trim() ||
       ticket.users?.email ||
-      "Unknown",
+      ticket.guest_name ||
+      ticket.guest_email ||
+      "Guest",
   }));
 
   if (status) {
