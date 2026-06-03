@@ -3,7 +3,7 @@ import { requireAdmin, logAdminAction } from "../../utils/admin.js";
 import { getSupabaseAdmin } from "../../utils/supabase.js";
 
 export async function POST(request) {
-  const { user: adminUser, response } = await requireAdmin(request);
+  const { user: adminUser, response } = await requireAdmin(request, "announcements:manage");
 
   if (response) return response;
 

@@ -26,7 +26,7 @@ function estimatedMonthlyValue(subscription) {
 }
 
 export async function GET(request) {
-  const { response } = await requireAdmin(request);
+  const { response } = await requireAdmin(request, "reports:export");
 
   if (response) {
     return response;
@@ -119,6 +119,7 @@ export async function GET(request) {
   const supportTickets = supportTicketsResult.data || [];
   const roles = rolesResult.data || [];
   const auditLogs = auditLogsResult.data || [];
+  const userById = new Map(users.map((user) => [user.id, user]));
   const profileByUser = new Map(profiles.map((profile) => [profile.user_id, profile]));
   const subscriptionsByUser = new Map(subscriptions.map((item) => [item.user_id, item]));
   const activeSubscriptions = subscriptions.filter((item) => item.status === "active");
@@ -218,7 +219,7 @@ export async function GET(request) {
       };
     }),
     cards: cards.map((card) => {
-      const owner = users.find((user) => user.id === card.user_id);
+      const owner = userById.get(card.user_id);
       const assigned = Boolean(card.user_id);
 
       return {
@@ -241,7 +242,7 @@ export async function GET(request) {
       };
     }),
     subscriptions: subscriptions.map((subscription) => {
-      const owner = users.find((user) => user.id === subscription.user_id);
+      const owner = userById.get(subscription.user_id);
 
       return {
         id: subscription.id,
@@ -253,7 +254,7 @@ export async function GET(request) {
       };
     }),
     invoices: invoices.map((invoice) => {
-      const owner = users.find((user) => user.id === invoice.user_id);
+      const owner = userById.get(invoice.user_id);
 
       return {
         id: invoice.id,
@@ -267,13 +268,13 @@ export async function GET(request) {
     payments: payments.map((payment) => ({
       id: payment.id,
       userId: payment.user_id,
-      account: fullName(users.find((user) => user.id === payment.user_id)) || users.find((user) => user.id === payment.user_id)?.email || "Unknown",
+      account: fullName(userById.get(payment.user_id)) || userById.get(payment.user_id)?.email || "Unknown",
       amount: money(payment.amount_cents, payment.currency),
       status: payment.status,
       created: dateLabel(payment.created_at),
     })),
     leads: leads.map((lead) => {
-      const owner = users.find((user) => user.id === lead.user_id);
+      const owner = userById.get(lead.user_id);
       return {
         ...lead,
         owner: fullName(owner) || owner?.email || "Unknown",
@@ -281,7 +282,7 @@ export async function GET(request) {
       };
     }),
     appointments: appointments.map((appointment) => {
-      const owner = users.find((user) => user.id === appointment.assigned_user_id);
+      const owner = userById.get(appointment.assigned_user_id);
       return {
         ...appointment,
         owner: fullName(owner) || owner?.email || "Unknown",

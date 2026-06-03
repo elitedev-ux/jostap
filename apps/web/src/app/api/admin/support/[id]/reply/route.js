@@ -7,7 +7,7 @@ function boundedText(value, max) {
 }
 
 export async function POST(request, { params }) {
-  const { user: adminUser, response } = await requireAdmin(request);
+  const { user: adminUser, response } = await requireAdmin(request, "support:manage");
   if (response) return response;
 
   const body = await readJson(request);

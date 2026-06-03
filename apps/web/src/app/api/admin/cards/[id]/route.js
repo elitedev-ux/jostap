@@ -52,7 +52,7 @@ async function notifyAssignedUser(supabase, { adminUser, card, assignee }) {
 }
 
 export async function PATCH(request, { params }) {
-  const { user: adminUser, response } = await requireAdmin(request);
+  const { user: adminUser, response } = await requireAdmin(request, "cards:manage");
 
   if (response) return response;
 

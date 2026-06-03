@@ -3,7 +3,7 @@ import { requireAdmin, logAdminAction } from "../../../utils/admin.js";
 import { getSupabaseAdmin } from "../../../utils/supabase.js";
 
 export async function PATCH(request, { params }) {
-  const { user: adminUser, response } = await requireAdmin(request);
+  const { user: adminUser, response } = await requireAdmin(request, "billing:manage");
 
   if (response) return response;
 

@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from "../../../utils/supabase.js";
 const STATUSES = new Set(["pending", "approved", "rejected", "cancelled", "completed"]);
 
 export async function PATCH(request, { params }) {
-  const { user: adminUser, response } = await requireAdmin(request);
+  const { user: adminUser, response } = await requireAdmin(request, "appointments:manage");
   if (response) return response;
 
   const body = await readJson(request);

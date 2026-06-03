@@ -13,6 +13,17 @@ const TABLES = {
   roles: "role_permissions",
 };
 
+const PERMISSIONS = {
+  templates: "content:manage",
+  features: "content:manage",
+  emails: "content:manage",
+  pages: "content:manage",
+  faqs: "content:manage",
+  pricing: "billing:manage",
+  notifications: "notifications:manage",
+  roles: "roles:manage",
+};
+
 function pickAllowed(resource, body) {
   const allowed = {
     templates: ["name", "description", "color_primary", "color_secondary", "is_premium", "is_active"],
@@ -33,7 +44,8 @@ function pickAllowed(resource, body) {
 }
 
 export async function PATCH(request, { params }) {
-  const { user: adminUser, response } = await requireAdmin(request);
+  const requiredPermission = PERMISSIONS[params.resource];
+  const { user: adminUser, response } = await requireAdmin(request, requiredPermission);
 
   if (response) return response;
 

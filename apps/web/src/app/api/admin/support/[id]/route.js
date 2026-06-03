@@ -23,7 +23,7 @@ function contactForTicket(ticket) {
 }
 
 export async function GET(request, { params }) {
-  const { response } = await requireAdmin(request);
+  const { response } = await requireAdmin(request, "support:manage");
   if (response) return response;
 
   const supabase = getSupabaseAdmin();
@@ -61,7 +61,7 @@ export async function GET(request, { params }) {
 }
 
 export async function PATCH(request, { params }) {
-  const { user: adminUser, response } = await requireAdmin(request);
+  const { user: adminUser, response } = await requireAdmin(request, "support:manage");
 
   if (response) return response;
 

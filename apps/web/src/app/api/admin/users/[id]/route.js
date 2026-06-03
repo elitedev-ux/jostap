@@ -3,13 +3,14 @@ import { requireAdmin, logAdminAction } from "../../../utils/admin.js";
 import { getSupabaseAdmin } from "../../../utils/supabase.js";
 
 export async function PATCH(request, { params }) {
-  const { user: adminUser, response } = await requireAdmin(request);
-
-  if (response) return response;
-
   const body = await request.json().catch(() => null);
   const status = String(body?.status || "").toLowerCase();
   const role = String(body?.role || "").toLowerCase();
+  const requiredPermissions = role ? ["users:manage", "roles:manage"] : "users:manage";
+  const { user: adminUser, response } = await requireAdmin(request, requiredPermissions);
+
+  if (response) return response;
+
   const updates = {};
 
   if (status) {
@@ -28,6 +29,10 @@ export async function PATCH(request, { params }) {
 
   if (!Object.keys(updates).length) {
     return badRequest("No valid user updates provided.");
+  }
+
+  if (params.id === adminUser.id && (updates.status === "suspended" || updates.role === "user")) {
+    return badRequest("Admins cannot remove their own admin access.");
   }
 
   const supabase = getSupabaseAdmin();

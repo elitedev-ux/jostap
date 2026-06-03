@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import logo from "../../assets/jostap logo.png3.png";
 import faviconMark from "../../assets/jostap favicon bg.png";
-import { getCards } from "../../utils/cardsStore";
 import cn from "classnames";
 import "./dashboard-layout.css";
 
@@ -35,7 +34,6 @@ const NAV = [
 export default function DashboardLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [cards, setCards] = useState([]);
   const [account, setAccount] = useState(null);
   const [billing, setBilling] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
@@ -50,20 +48,6 @@ export default function DashboardLayout({ children }) {
 
     window.location.href = "/auth/signin";
   };
-
-  useEffect(() => {
-    const refreshCards = async () => {
-      try {
-        setCards(await getCards());
-      } catch {
-        setCards([]);
-      }
-    };
-
-    refreshCards();
-    window.addEventListener("jostap-cards-change", refreshCards);
-    return () => window.removeEventListener("jostap-cards-change", refreshCards);
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -120,9 +104,11 @@ export default function DashboardLayout({ children }) {
     }
 
     loadBilling();
+    window.addEventListener("jostap-cards-change", loadBilling);
 
     return () => {
       active = false;
+      window.removeEventListener("jostap-cards-change", loadBilling);
     };
   }, []);
 
@@ -174,7 +160,7 @@ export default function DashboardLayout({ children }) {
           ? "Premium Renewal"
           : "Free";
   const cardLimit = billing?.subscription?.cardLimit ?? 5;
-  const cardsUsed = cards.length;
+  const cardsUsed = billing?.usage?.cards ?? 0;
   const cardLimitLabel = cardLimit ? `${cardsUsed} / ${cardLimit}` : `${cardsUsed}`;
   const accountInitials =
     accountName

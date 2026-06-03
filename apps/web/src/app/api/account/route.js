@@ -1,7 +1,7 @@
 import { badRequest, json, readJson, unauthorized } from "../utils/http.js";
 import { normalizeSlug } from "../utils/cards.js";
 import { getSessionUser } from "../utils/session.js";
-import { getSupabaseAdmin } from "../utils/supabase.js";
+import { getSupabaseAdmin, isUniqueViolation } from "../utils/supabase.js";
 import { accountFromUserAndKyc, splitFullName } from "../utils/profile.js";
 
 function clean(value) {
@@ -57,6 +57,10 @@ export async function PATCH(request) {
     .eq("id", user.id)
     .select("id, first_name, last_name, company, email, role, created_at")
     .single();
+
+  if (isUniqueViolation(userError)) {
+    return badRequest("An account with this email already exists.");
+  }
 
   if (userError) {
     throw userError;

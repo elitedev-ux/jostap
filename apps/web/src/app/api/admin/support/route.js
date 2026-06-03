@@ -41,7 +41,7 @@ function contactForTicket(ticket) {
 }
 
 export async function GET(request) {
-  const { response } = await requireAdmin(request);
+  const { response } = await requireAdmin(request, "support:manage");
   if (response) return response;
 
   const url = new URL(request.url);
@@ -50,10 +50,21 @@ export async function GET(request) {
   const query = String(url.searchParams.get("q") || "");
 
   const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
+  let queryBuilder = supabase
     .from("support_tickets")
     .select("*, users(first_name,last_name,email)")
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .limit(500);
+
+  if (status) {
+    queryBuilder = queryBuilder.eq("status", status);
+  }
+
+  if (priority) {
+    queryBuilder = queryBuilder.eq("priority", priority);
+  }
+
+  const { data, error } = await queryBuilder;
 
   if (error) throw error;
 
@@ -61,14 +72,6 @@ export async function GET(request) {
     ...ticket,
     ...contactForTicket(ticket),
   }));
-
-  if (status) {
-    tickets = tickets.filter((ticket) => ticket.status === status);
-  }
-
-  if (priority) {
-    tickets = tickets.filter((ticket) => ticket.priority === priority);
-  }
 
   tickets = applySearch(tickets, query);
 

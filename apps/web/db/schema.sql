@@ -22,6 +22,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_prefs jsonb NOT NULL DEF
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at timestamptz;
 
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_idx ON users (lower(email));
+CREATE INDEX IF NOT EXISTS users_role_status_idx ON users (role, status);
 
 CREATE TABLE IF NOT EXISTS sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -112,6 +113,8 @@ ALTER TABLE cards ADD COLUMN IF NOT EXISTS contact_downloads integer NOT NULL DE
 
 CREATE UNIQUE INDEX IF NOT EXISTS cards_slug_idx ON cards (slug);
 CREATE INDEX IF NOT EXISTS cards_user_id_idx ON cards (user_id);
+CREATE INDEX IF NOT EXISTS cards_user_created_idx ON cards (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS cards_active_slug_idx ON cards (slug) WHERE active = true;
 
 CREATE TABLE IF NOT EXISTS card_engagement_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -125,6 +128,7 @@ CREATE TABLE IF NOT EXISTS card_engagement_events (
 );
 
 CREATE INDEX IF NOT EXISTS card_engagement_events_card_id_idx ON card_engagement_events (card_id);
+CREATE INDEX IF NOT EXISTS card_engagement_events_card_created_idx ON card_engagement_events (card_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS card_engagement_events_user_created_idx ON card_engagement_events (user_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS leads (
@@ -143,6 +147,7 @@ CREATE TABLE IF NOT EXISTS leads (
 );
 
 CREATE INDEX IF NOT EXISTS leads_user_id_idx ON leads (user_id);
+CREATE INDEX IF NOT EXISTS leads_user_created_idx ON leads (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS leads_card_id_idx ON leads (card_id);
 
 CREATE TABLE IF NOT EXISTS appointments (
@@ -204,6 +209,7 @@ WHERE visitor_name IS NULL
 
 DROP INDEX IF EXISTS appointments_user_id_idx;
 CREATE INDEX IF NOT EXISTS appointments_assigned_user_id_idx ON appointments (assigned_user_id);
+CREATE INDEX IF NOT EXISTS appointments_assigned_starts_idx ON appointments (assigned_user_id, starts_at);
 CREATE INDEX IF NOT EXISTS appointments_card_id_idx ON appointments (card_id);
 CREATE INDEX IF NOT EXISTS appointments_lead_id_idx ON appointments (lead_id);
 CREATE INDEX IF NOT EXISTS appointments_starts_at_idx ON appointments (starts_at);
@@ -225,6 +231,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 );
 
 CREATE INDEX IF NOT EXISTS subscriptions_user_id_idx ON subscriptions (user_id);
+CREATE INDEX IF NOT EXISTS subscriptions_user_created_idx ON subscriptions (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS subscriptions_status_idx ON subscriptions (status);
 CREATE UNIQUE INDEX IF NOT EXISTS subscriptions_user_active_idx
 ON subscriptions (user_id)
@@ -243,6 +250,7 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 
 CREATE INDEX IF NOT EXISTS payments_user_id_idx ON payments (user_id);
+CREATE INDEX IF NOT EXISTS payments_user_created_idx ON payments (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS payments_subscription_id_idx ON payments (subscription_id);
 
 CREATE TABLE IF NOT EXISTS invoices (
@@ -260,6 +268,7 @@ CREATE TABLE IF NOT EXISTS invoices (
 );
 
 CREATE INDEX IF NOT EXISTS invoices_user_id_idx ON invoices (user_id);
+CREATE INDEX IF NOT EXISTS invoices_user_issued_idx ON invoices (user_id, issued_at DESC);
 CREATE INDEX IF NOT EXISTS invoices_subscription_id_idx ON invoices (subscription_id);
 
 CREATE TABLE IF NOT EXISTS card_templates (
@@ -366,6 +375,8 @@ CREATE INDEX IF NOT EXISTS announcements_status_idx ON announcements (status);
 CREATE INDEX IF NOT EXISTS announcements_published_at_idx ON announcements (published_at);
 CREATE INDEX IF NOT EXISTS announcements_admin_user_id_idx ON announcements (admin_user_id);
 CREATE INDEX IF NOT EXISTS announcements_target_user_id_idx ON announcements (target_user_id);
+CREATE INDEX IF NOT EXISTS announcements_user_inbox_idx
+ON announcements (target_user_id, status, published_at DESC);
 
 CREATE TABLE IF NOT EXISTS announcement_reads (
   announcement_id uuid NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
@@ -399,6 +410,8 @@ ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS guest_email text;
 
 CREATE INDEX IF NOT EXISTS support_tickets_user_id_idx ON support_tickets (user_id);
 CREATE INDEX IF NOT EXISTS support_tickets_status_idx ON support_tickets (status);
+CREATE INDEX IF NOT EXISTS support_tickets_user_created_idx ON support_tickets (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS support_tickets_admin_queue_idx ON support_tickets (status, priority, updated_at DESC);
 
 CREATE TABLE IF NOT EXISTS support_ticket_messages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -515,9 +528,12 @@ ON CONFLICT (slug) DO UPDATE SET
 
 INSERT INTO role_permissions (role, description, permissions)
 VALUES
-  ('admin', 'Full super admin access.', '["users:manage", "cards:manage", "billing:manage", "content:manage", "reports:export", "roles:manage"]'::jsonb),
+  ('admin', 'Full super admin access.', '["users:manage", "cards:manage", "billing:manage", "content:manage", "reports:export", "roles:manage", "appointments:manage", "support:manage", "announcements:manage", "notifications:manage"]'::jsonb),
   ('user', 'Standard dashboard access.', '["cards:own", "billing:own", "profile:own"]'::jsonb)
-ON CONFLICT (role) DO NOTHING;
+ON CONFLICT (role) DO UPDATE SET
+  description = EXCLUDED.description,
+  permissions = EXCLUDED.permissions,
+  updated_at = now();
 
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS trigger AS $$
@@ -626,6 +642,120 @@ ALTER TABLE announcement_reads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE support_ticket_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_audit_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS users_own_select ON users;
+CREATE POLICY users_own_select ON users
+FOR SELECT TO authenticated
+USING ((select auth.uid()) = id);
+
+DROP POLICY IF EXISTS sessions_own_select ON sessions;
+CREATE POLICY sessions_own_select ON sessions
+FOR SELECT TO authenticated
+USING ((select auth.uid()) = user_id);
+
+DROP POLICY IF EXISTS sessions_own_delete ON sessions;
+CREATE POLICY sessions_own_delete ON sessions
+FOR DELETE TO authenticated
+USING ((select auth.uid()) = user_id);
+
+DROP POLICY IF EXISTS auth_challenges_own_select ON auth_challenges;
+CREATE POLICY auth_challenges_own_select ON auth_challenges
+FOR SELECT TO authenticated
+USING ((select auth.uid()) = user_id);
+
+DROP POLICY IF EXISTS kyc_profiles_own_all ON kyc_profiles;
+CREATE POLICY kyc_profiles_own_all ON kyc_profiles
+FOR ALL TO authenticated
+USING ((select auth.uid()) = user_id)
+WITH CHECK ((select auth.uid()) = user_id);
+
+DROP POLICY IF EXISTS cards_own_all ON cards;
+CREATE POLICY cards_own_all ON cards
+FOR ALL TO authenticated
+USING ((select auth.uid()) = user_id)
+WITH CHECK ((select auth.uid()) = user_id);
+
+DROP POLICY IF EXISTS card_engagement_events_own_select ON card_engagement_events;
+CREATE POLICY card_engagement_events_own_select ON card_engagement_events
+FOR SELECT TO authenticated
+USING ((select auth.uid()) = user_id);
+
+DROP POLICY IF EXISTS leads_own_all ON leads;
+CREATE POLICY leads_own_all ON leads
+FOR ALL TO authenticated
+USING ((select auth.uid()) = user_id)
+WITH CHECK ((select auth.uid()) = user_id);
+
+DROP POLICY IF EXISTS appointments_own_all ON appointments;
+CREATE POLICY appointments_own_all ON appointments
+FOR ALL TO authenticated
+USING ((select auth.uid()) = assigned_user_id)
+WITH CHECK ((select auth.uid()) = assigned_user_id);
+
+DROP POLICY IF EXISTS subscriptions_own_select ON subscriptions;
+CREATE POLICY subscriptions_own_select ON subscriptions
+FOR SELECT TO authenticated
+USING ((select auth.uid()) = user_id);
+
+DROP POLICY IF EXISTS payments_own_select ON payments;
+CREATE POLICY payments_own_select ON payments
+FOR SELECT TO authenticated
+USING ((select auth.uid()) = user_id);
+
+DROP POLICY IF EXISTS invoices_own_select ON invoices;
+CREATE POLICY invoices_own_select ON invoices
+FOR SELECT TO authenticated
+USING ((select auth.uid()) = user_id);
+
+DROP POLICY IF EXISTS announcements_visible_to_user ON announcements;
+CREATE POLICY announcements_visible_to_user ON announcements
+FOR SELECT TO authenticated
+USING (
+  status = 'published'
+  AND (expires_at IS NULL OR expires_at > now())
+  AND (
+    target_user_id = (select auth.uid())
+    OR (target_user_id IS NULL AND audience IN ('all', 'users'))
+  )
+);
+
+DROP POLICY IF EXISTS announcement_reads_own_all ON announcement_reads;
+CREATE POLICY announcement_reads_own_all ON announcement_reads
+FOR ALL TO authenticated
+USING ((select auth.uid()) = user_id)
+WITH CHECK ((select auth.uid()) = user_id);
+
+DROP POLICY IF EXISTS support_tickets_own_all ON support_tickets;
+CREATE POLICY support_tickets_own_all ON support_tickets
+FOR ALL TO authenticated
+USING ((select auth.uid()) = user_id)
+WITH CHECK ((select auth.uid()) = user_id);
+
+DROP POLICY IF EXISTS support_ticket_messages_own_select ON support_ticket_messages;
+CREATE POLICY support_ticket_messages_own_select ON support_ticket_messages
+FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1
+    FROM support_tickets
+    WHERE support_tickets.id = support_ticket_messages.ticket_id
+      AND support_tickets.user_id = (select auth.uid())
+  )
+);
+
+DROP POLICY IF EXISTS support_ticket_messages_own_insert ON support_ticket_messages;
+CREATE POLICY support_ticket_messages_own_insert ON support_ticket_messages
+FOR INSERT TO authenticated
+WITH CHECK (
+  sender_user_id = (select auth.uid())
+  AND sender_role = 'user'
+  AND EXISTS (
+    SELECT 1
+    FROM support_tickets
+    WHERE support_tickets.id = support_ticket_messages.ticket_id
+      AND support_tickets.user_id = (select auth.uid())
+  )
+);
 
 DO $$
 DECLARE
