@@ -89,7 +89,7 @@ export async function POST(request) {
     .from(BUCKET)
     .upload(path, buffer, {
       contentType: detectedType,
-      cacheControl: "3600",
+      cacheControl: "31536000",
       upsert: true,
     });
 

@@ -141,7 +141,7 @@ export default function AdminUsersPage() {
                     <td style={{ padding: 16 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#eaf3ff", color: "#0d6ffd", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, overflow: "hidden" }}>
-                          {user.avatarUrl ? <img src={user.avatarUrl} alt={user.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : user.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}
+                          {user.avatarUrl ? <img src={user.avatarUrl} alt={user.name} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : user.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}
                         </div>
                         <div>
                           <p style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>{user.name}</p>

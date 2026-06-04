@@ -24,6 +24,7 @@ import {
 import { useParams } from "react-router";
 import logo from "../../assets/jostap logo.png3.png";
 import { EMPTY_CARD, createCard, getCard, updateCard } from "../../utils/cardsStore";
+import { IMAGE_UPLOAD_TARGETS, prepareImageForUpload } from "../../utils/imageCompression";
 import { displayCardUrl } from "../../utils/publicUrl";
 import CardPhonePreview, {
   BrandMark,
@@ -161,15 +162,6 @@ function suggestedCardSlug(name, suffix) {
   return `${base}-${suffix}`.slice(0, 80);
 }
 
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 function valuesForFieldInput(value) {
   if (Array.isArray(value)) {
     return value.length ? value : [""];
@@ -195,7 +187,7 @@ function UploadTile({ label, icon: Icon, onUpload, preview, onRemove }) {
           onChange={(event) => event.target.files?.[0] && onUpload(event.target.files[0])}
           style={{ display: "none" }}
         />
-        {preview ? <img src={preview} alt="" /> : <Icon size={17} />}
+        {preview ? <img src={preview} alt="" loading="lazy" decoding="async" /> : <Icon size={17} />}
         <span>{label}</span>
       </button>
       {preview && (
@@ -337,19 +329,14 @@ export default function CardBuilderPage({ mode = "user" }) {
     };
   }, [editing, id, isAdminMode]);
 
-  const uploadCardImage = async (key, file, label) => {
+  const uploadCardImage = async (key, file, label, target) => {
     setImageMessage("");
-    if (file.size > 2 * 1024 * 1024) {
-      setImageMessage(`Use a ${label.toLowerCase()} that is 2MB or smaller.`);
-      return;
-    }
-
-    const preview = await fileToDataUrl(file);
-    update(key, preview);
 
     try {
+      const prepared = await prepareImageForUpload(file, target);
+      update(key, prepared.previewUrl);
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", prepared.file);
       const response = await fetch("/api/cards/media", {
         method: "POST",
         credentials: "same-origin",
@@ -363,10 +350,10 @@ export default function CardBuilderPage({ mode = "user" }) {
     }
   };
 
-  const uploadProfile = (file) => uploadCardImage("avatarUrl", file, "profile picture");
+  const uploadProfile = (file) => uploadCardImage("avatarUrl", file, "profile picture", IMAGE_UPLOAD_TARGETS.cardProfile);
 
   const uploadCover = async (file) => {
-    await uploadCardImage("coverUrl", file, "cover photo");
+    await uploadCardImage("coverUrl", file, "cover photo", IMAGE_UPLOAD_TARGETS.cover);
   };
 
   const toggleField = (key) => {
@@ -412,7 +399,7 @@ export default function CardBuilderPage({ mode = "user" }) {
       setMessage(isAdminMode ? "Add at least the card name before continuing." : "Add at least your name and email before continuing.");
       return;
     }
-    if (/^data:image\//i.test(card.avatarUrl || "") || /^data:image\//i.test(card.coverUrl || "")) {
+    if (/^(data:image\/|blob:)/i.test(card.avatarUrl || "") || /^(data:image\/|blob:)/i.test(card.coverUrl || "")) {
       setMessage("Please wait for image uploads to finish before saving.");
       return;
     }
@@ -467,7 +454,7 @@ export default function CardBuilderPage({ mode = "user" }) {
     <div className="card-builder-page">
       <aside className="card-builder-left">
         <a href="/dashboard" className="card-builder-brand">
-          <img src={logo} alt="JOSTAP" />
+          <img src={logo} alt="JOSTAP" decoding="async" />
         </a>
         <CardPhonePreview
           card={{ ...card, brandColor: canCustomizeBrand ? card.brandColor : "" }}

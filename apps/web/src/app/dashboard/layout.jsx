@@ -178,6 +178,7 @@ export default function DashboardLayout({ children }) {
             <img
               src={logo}
               alt="JOSTAP"
+              decoding="async"
               className="block w-24 h-10 object-contain"
             />
           </a>
@@ -186,6 +187,7 @@ export default function DashboardLayout({ children }) {
           <img
             src={faviconMark}
             alt="JOSTAP"
+            decoding="async"
             className="block w-7 h-7 object-contain"
           />
         )}
@@ -382,6 +384,8 @@ export default function DashboardLayout({ children }) {
                   <img
                     src={accountAvatar}
                     alt={accountName}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 ) : (

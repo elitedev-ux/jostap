@@ -364,9 +364,8 @@ export default function CardPhonePreview({
 }) {
   const visibleFields = activeSetFrom(activeFields);
   const color = card?.brandColor || DEFAULT_COLOR;
-  const coverBackground = card?.coverUrl
-    ? `url(${card.coverUrl}) center/cover`
-    : `linear-gradient(135deg, ${color} 0%, #0b5ed7 58%, #0f172a 100%)`;
+  const hasCoverImage = Boolean(card?.coverUrl);
+  const coverBackground = `linear-gradient(135deg, ${color} 0%, #0b5ed7 58%, #0f172a 100%)`;
   const contactButtons = [
     ["phone", Phone, "Call", card?.phone ? `tel:${card.phone}` : ""],
     ["email", Mail, "Email", card?.email ? `mailto:${card.email}` : ""],
@@ -397,10 +396,20 @@ export default function CardPhonePreview({
         >
           <div className="card-preview-screen">
             <div className="card-preview-notch" />
-            <div className="card-preview-cover" style={{ background: coverBackground }} />
+            <div className="card-preview-cover" style={{ background: coverBackground }}>
+              {hasCoverImage && (
+                <img
+                  className="card-preview-cover-img"
+                  src={card.coverUrl}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
+              )}
+            </div>
             <div className="card-preview-profile-row">
               <div className="card-preview-avatar">
-                {card?.avatarUrl ? <img src={card.avatarUrl} alt="" /> : initials(card?.name)}
+                {card?.avatarUrl ? <img src={card.avatarUrl} alt="" loading="lazy" decoding="async" /> : initials(card?.name)}
               </div>
             </div>
             <div className="card-preview-copy">
@@ -445,6 +454,7 @@ export default function CardPhonePreview({
             .card-preview-wrap.is-compact .card-preview-notch { width: 60px; height: 10px; border-bottom-left-radius: 7px; border-bottom-right-radius: 7px; }
             .card-preview-screen { border-radius: 28px; background: #fff; overflow: visible; position: relative; }
             .card-preview-cover { height: 160px; width: 100%; border-radius: 0; color: #fff; position: relative; overflow: hidden; }
+            .card-preview-cover-img { width: 100%; height: 100%; object-fit: cover; display: block; }
             .card-preview-wrap.is-compact .card-preview-cover { height: 78px; }
             .card-preview-cover::after {
               content: "";
@@ -502,10 +512,20 @@ export default function CardPhonePreview({
       >
         <div className="card-preview-screen">
           <div className="card-preview-notch" />
-          <div className="card-preview-cover" style={{ background: coverBackground }} />
+          <div className="card-preview-cover" style={{ background: coverBackground }}>
+            {hasCoverImage && (
+              <img
+                className="card-preview-cover-img"
+                src={card.coverUrl}
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+            )}
+          </div>
           <div className="card-preview-profile-row">
             <div className="card-preview-avatar">
-              {card?.avatarUrl ? <img src={card.avatarUrl} alt="" /> : initials(card?.name)}
+              {card?.avatarUrl ? <img src={card.avatarUrl} alt="" loading="lazy" decoding="async" /> : initials(card?.name)}
             </div>
           </div>
           <div className="card-preview-copy">
@@ -626,6 +646,7 @@ export default function CardPhonePreview({
         .card-preview-wrap.is-compact .card-preview-notch { width: 60px; height: 10px; border-bottom-left-radius: 7px; border-bottom-right-radius: 7px; }
         .card-preview-screen { border-radius: 28px; background: #fff; overflow: visible; position: relative; }
         .card-preview-cover { height: 160px; width: 100%; border-radius: 0; color: #fff; position: relative; overflow: hidden; }
+        .card-preview-cover-img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .card-preview-wrap.is-compact .card-preview-cover { height: 78px; }
         .card-preview-cover::after {
           content: "";

@@ -15,6 +15,7 @@ import {
   PROFILE_IMAGE_RULES,
   isAllowedProfileImage,
 } from "../../../utils/uploadRules";
+import { IMAGE_UPLOAD_TARGETS, prepareImageForUpload } from "../../../utils/imageCompression";
 import { displayCardUrl } from "../../../utils/publicUrl";
 
 const TABS = ["Profile", "Notifications", "Security", "Integrations"];
@@ -269,8 +270,9 @@ export default function SettingsPage() {
     setUploadingAvatar(true);
 
     try {
+      const prepared = await prepareImageForUpload(file, IMAGE_UPLOAD_TARGETS.avatar);
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", prepared.file);
 
       const response = await fetch("/api/account/avatar", {
         method: "POST",
@@ -469,6 +471,8 @@ export default function SettingsPage() {
                     <img
                       src={profile.avatarUrl}
                       alt={profile.name || "Profile photo"}
+                      loading="lazy"
+                      decoding="async"
                       style={{
                         width: "100%",
                         height: "100%",
