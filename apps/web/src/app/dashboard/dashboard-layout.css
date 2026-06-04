@@ -109,6 +109,19 @@
 .duration-500 { transition-duration: 500ms; }
 .backdrop-blur-sm { backdrop-filter: blur(4px); }
 .dashboard-menu-button { display: none; }
+.dashboard-announcements-menu {
+  position: absolute;
+  right: 0;
+  top: 38px;
+  width: 320px;
+  max-width: 80vw;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+  z-index: 80;
+  overflow: hidden;
+}
 
 .hover\:text-slate-600:hover { color: #475569; }
 .hover\:bg-slate-50:hover { background: #f8fafc; }
@@ -130,6 +143,16 @@
     background: transparent;
   }
   .dashboard-user-name { display: none; }
+  .dashboard-announcements-menu {
+    position: fixed;
+    top: 4.25rem;
+    left: 0;
+    right: 0;
+    width: 100vw;
+    max-width: none;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.1);
+  }
   header .w-56 { width: min(13rem, 46vw); }
   main.p-7 { padding: 1rem; }
 }

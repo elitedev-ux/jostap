@@ -336,19 +336,7 @@ export default function DashboardLayout({ children }) {
             </button>
             {announcementOpen && (
               <div
-                style={{
-                  position: "absolute",
-                  right: 0,
-                  top: 38,
-                  width: 320,
-                  maxWidth: "80vw",
-                  background: "#fff",
-                  border: "1px solid #E5E7EB",
-                  borderRadius: 10,
-                  boxShadow: "0 12px 30px rgba(15,23,42,0.12)",
-                  zIndex: 80,
-                  overflow: "hidden",
-                }}
+                className="dashboard-announcements-menu"
               >
                 <div style={{ padding: "12px 14px", borderBottom: "1px solid #F3F4F6" }}>
                   <p style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>Announcements</p>

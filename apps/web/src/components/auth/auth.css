@@ -188,12 +188,20 @@
 
 .auth-password-row {
   margin-top: 16px;
+  margin-bottom: 18px;
 }
 
 .auth-password-label {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 12px;
+}
+
+.auth-password-label a {
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 750;
 }
 
 .auth-password-input {
