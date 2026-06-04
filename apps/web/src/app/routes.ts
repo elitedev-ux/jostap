@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import {
 	type RouteConfigEntry,
 	index,
+	layout,
 	route,
 } from '@react-router/dev/routes';
 
@@ -109,6 +110,11 @@ function generateRoutes(node: Tree, parentPath = ''): RouteConfigEntry[] {
 
 		for (const child of node.children) {
 			children.push(...generateRoutes(child, node.path));
+		}
+
+		if (node.path === '') {
+			routes.push(layout(componentPathFor(node, 'layout.jsx'), children));
+			return routes;
 		}
 
 		routes.push(route(routePatternFor(routePathFor(node.path, parentPath)), componentPathFor(node, 'layout.jsx'), children));
