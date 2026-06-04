@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import QR from "qrcode";
 
-const DEFAULT_VALUE = "https://jostap.vercel.app";
+const DEFAULT_VALUE = "https://jostap.com";
 const DEFAULT_DARK = "#000000";
 const DEFAULT_LIGHT = "#ffffff";
 const DEFAULT_MARGIN = 4;

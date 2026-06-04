@@ -1,4 +1,4 @@
-const DEFAULT_PUBLIC_ORIGIN = "https://jostap.vercel.app";
+const DEFAULT_PUBLIC_ORIGIN = "https://jostap.com";
 
 function trimSlashes(value) {
   return String(value || "").replace(/^\/+|\/+$/g, "");
@@ -35,9 +35,7 @@ export function publicOrigin(options = {}) {
       ? process.env.NEXT_PUBLIC_APP_URL ||
         process.env.PUBLIC_SITE_URL ||
         process.env.VITE_PUBLIC_SITE_URL ||
-        process.env.APP_ORIGIN ||
-        process.env.VERCEL_PROJECT_PRODUCTION_URL ||
-        process.env.VERCEL_URL
+        process.env.APP_ORIGIN
       : "");
 
   return (

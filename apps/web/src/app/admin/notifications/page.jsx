@@ -2,6 +2,11 @@ import { useState } from "react";
 import AdminResourcePage from "../AdminResourcePage";
 
 async function updateNotification(row) {
+  if (row.source === "support_ticket" && row.ticketId) {
+    window.location.href = `/admin/support?ticket=${encodeURIComponent(row.ticketId)}`;
+    return;
+  }
+
   const response = await fetch(`/api/admin/platform/notifications/${row.id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -117,8 +122,8 @@ export default function AdminNotificationsPage() {
         ["Unread", (data) => data?.notifications?.filter((item) => !item.is_read).length || 0, "#B45309", "#FEF3C7"],
       ]}
       rowAction={{
-        label: (row) => (row.is_read ? "Mark unread" : "Mark read"),
-        color: (row) => (row.is_read ? "#B45309" : "#047857"),
+        label: (row) => (row.source === "support_ticket" ? "View ticket" : row.is_read ? "Mark unread" : "Mark read"),
+        color: (row) => (row.source === "support_ticket" ? "#0d6ffd" : row.is_read ? "#B45309" : "#047857"),
         run: updateNotification,
       }}
     />

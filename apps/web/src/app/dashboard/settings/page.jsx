@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   User,
-  Bell,
   Shield,
   Globe,
   Trash2,
@@ -109,14 +108,6 @@ export default function SettingsPage() {
     marketing: false,
   });
   const [showPass, setShowPass] = useState(false);
-  const [twoFactor, setTwoFactor] = useState({
-    enabled: false,
-    loading: true,
-    setup: null,
-    code: "",
-    disableCode: "",
-    message: "",
-  });
 
   const update = (k, v) => setProfile((p) => ({ ...p, [k]: v }));
 
@@ -173,37 +164,6 @@ export default function SettingsPage() {
     }
 
     loadProfile();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadTwoFactor() {
-      try {
-        const response = await fetch("/api/auth/2fa/status", {
-          credentials: "same-origin",
-        });
-        const data = await response.json().catch(() => ({}));
-
-        if (active && response.ok) {
-          setTwoFactor((current) => ({
-            ...current,
-            enabled: Boolean(data.enabled),
-            loading: false,
-          }));
-        }
-      } catch {
-        if (active) {
-          setTwoFactor((current) => ({ ...current, loading: false }));
-        }
-      }
-    }
-
-    loadTwoFactor();
 
     return () => {
       active = false;
@@ -296,83 +256,6 @@ export default function SettingsPage() {
     } finally {
       setUploadingAvatar(false);
       event.target.value = "";
-    }
-  };
-
-  const startTwoFactorSetup = async () => {
-    setSaveError("");
-    setTwoFactor((current) => ({ ...current, message: "" }));
-
-    try {
-      const response = await fetch("/api/auth/2fa/setup", {
-        method: "POST",
-        credentials: "same-origin",
-      });
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.error || "Unable to start two-factor setup.");
-      }
-
-      setTwoFactor((current) => ({ ...current, setup: data, code: "" }));
-    } catch (error) {
-      setSaveError(error.message || "Unable to start two-factor setup.");
-    }
-  };
-
-  const verifyTwoFactorSetup = async () => {
-    setSaveError("");
-
-    try {
-      const response = await fetch("/api/auth/2fa/verify", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: twoFactor.code }),
-      });
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.error || "Unable to verify two-factor code.");
-      }
-
-      setTwoFactor((current) => ({
-        ...current,
-        enabled: Boolean(data.enabled),
-        setup: null,
-        code: "",
-        message: "Two-factor authentication is enabled.",
-      }));
-    } catch (error) {
-      setSaveError(error.message || "Unable to verify two-factor code.");
-    }
-  };
-
-  const disableTwoFactor = async () => {
-    setSaveError("");
-
-    try {
-      const response = await fetch("/api/auth/2fa/disable", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: twoFactor.disableCode }),
-      });
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.error || "Unable to disable two-factor authentication.");
-      }
-
-      setTwoFactor((current) => ({
-        ...current,
-        enabled: Boolean(data.enabled),
-        setup: null,
-        disableCode: "",
-        message: "Two-factor authentication is disabled.",
-      }));
-    } catch (error) {
-      setSaveError(error.message || "Unable to disable two-factor authentication.");
     }
   };
 
@@ -945,121 +828,6 @@ export default function SettingsPage() {
 
       {activeTab === "Security" && (
         <>
-        <Section
-          title="Two-Factor Authentication"
-          desc="Use an authenticator app to add a second verification step at sign-in."
-        >
-          {saveError && (
-            <div
-              style={{
-                background: "#FEF2F2",
-                border: "1px solid #FECACA",
-                color: "#B91C1C",
-                borderRadius: 10,
-                padding: "11px 14px",
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 16,
-              }}
-            >
-              {saveError}
-            </div>
-          )}
-          {twoFactor.message && (
-            <div
-              style={{
-                background: "#ECFDF5",
-                border: "1px solid #A7F3D0",
-                color: "#047857",
-                borderRadius: 10,
-                padding: "11px 14px",
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 16,
-              }}
-            >
-              {twoFactor.message}
-            </div>
-          )}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-            <div>
-              <p style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
-                Status: {twoFactor.enabled ? "Enabled" : "Disabled"}
-              </p>
-              <p style={{ fontSize: 13, color: "#6B7280", marginTop: 4 }}>
-                Scan the setup URL with an authenticator app, or enter the secret manually.
-              </p>
-            </div>
-            {!twoFactor.enabled && (
-              <button
-                type="button"
-                onClick={startTwoFactorSetup}
-                disabled={twoFactor.loading}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: "#fff",
-                  background: "#0d6ffd",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "9px 16px",
-                  cursor: "pointer",
-                }}
-              >
-                <Shield size={14} /> Set Up 2FA
-              </button>
-            )}
-          </div>
-
-          {twoFactor.setup && (
-            <div style={{ marginTop: 18, display: "grid", gap: 12, maxWidth: 560 }}>
-              <div style={{ background: "#f5f5f5", border: "1px solid #E5E7EB", borderRadius: 10, padding: 14 }}>
-                <p style={{ fontSize: 12, color: "#6B7280", marginBottom: 6 }}>Authenticator setup URL</p>
-                <p style={{ fontSize: 12, color: "#111827", wordBreak: "break-all" }}>{twoFactor.setup.otpauthUrl}</p>
-                <p style={{ fontSize: 12, color: "#6B7280", marginTop: 10 }}>Manual secret: <strong>{twoFactor.setup.secret}</strong></p>
-              </div>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <input
-                  inputMode="numeric"
-                  value={twoFactor.code}
-                  onChange={(event) => setTwoFactor((current) => ({ ...current, code: event.target.value }))}
-                  placeholder="6-digit code"
-                  style={{ ...inputStyle, maxWidth: 180 }}
-                />
-                <button
-                  type="button"
-                  onClick={verifyTwoFactorSetup}
-                  style={{ border: "none", background: "#059669", color: "#fff", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-                >
-                  Verify and Enable
-                </button>
-              </div>
-            </div>
-          )}
-
-          {twoFactor.enabled && (
-            <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <input
-                inputMode="numeric"
-                value={twoFactor.disableCode}
-                onChange={(event) => setTwoFactor((current) => ({ ...current, disableCode: event.target.value }))}
-                placeholder="Current 2FA code"
-                style={{ ...inputStyle, maxWidth: 190 }}
-              />
-              <button
-                type="button"
-                onClick={disableTwoFactor}
-                style={{ border: "1px solid #FECACA", background: "#FEF2F2", color: "#DC2626", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-              >
-                Disable 2FA
-              </button>
-            </div>
-          )}
-        </Section>
-
         <Section
           title="Change Password"
           desc="We recommend using a strong, unique password."

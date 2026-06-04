@@ -26,6 +26,20 @@ function estimatedMonthlyValue(subscription) {
   return PLAN_PRICES[subscription.plan]?.[subscription.billing_cycle] || 0;
 }
 
+function ticketContact(ticket) {
+  return (
+    fullName(ticket.users) ||
+    ticket.guest_name ||
+    ticket.users?.email ||
+    ticket.guest_email ||
+    "Guest"
+  );
+}
+
+function notificationTypeForTicket(ticket) {
+  return ticket.priority === "urgent" || ticket.priority === "high" ? "warning" : "info";
+}
+
 export async function GET(request) {
   const { response } = await requireAdmin(request, "reports:export");
 
@@ -118,6 +132,32 @@ export async function GET(request) {
   const notifications = notificationsResult.data || [];
   const announcements = announcementsResult.data || [];
   const supportTickets = supportTicketsResult.data || [];
+  const unreadNewTicketSubjects = new Set(
+    notifications
+      .filter((item) =>
+        !item.is_read &&
+        ["New support ticket", "New help center ticket"].includes(item.title),
+      )
+      .map((item) => String(item.message || "").split(" submitted: ").pop())
+      .filter(Boolean),
+  );
+  const activeSupportTicketNotifications = supportTickets
+    .filter((ticket) => ticket.status !== "closed" && !unreadNewTicketSubjects.has(ticket.subject))
+    .map((ticket) => ({
+      id: `support-ticket-${ticket.id}`,
+      title: "Support ticket requires attention",
+      message: `${ticketContact(ticket)}: ${ticket.subject}`,
+      type: notificationTypeForTicket(ticket),
+      is_read: false,
+      created_at: ticket.created_at,
+      source: "support_ticket",
+      ticketId: ticket.id,
+      locked: true,
+    }));
+  const adminNotifications = [
+    ...activeSupportTicketNotifications,
+    ...notifications,
+  ].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
   const roles = rolesResult.data || [];
   const auditLogs = auditLogsResult.data || [];
   const userById = new Map(users.map((user) => [user.id, user]));
@@ -193,7 +233,7 @@ export async function GET(request) {
       staticPages: staticPages.length,
       faqs: faqs.length,
       pricingPlans: pricingPlans.length,
-      unreadNotifications: notifications.filter((item) => !item.is_read).length,
+      unreadNotifications: adminNotifications.filter((item) => !item.is_read).length,
       announcements: announcements.length,
       supportTickets: supportTickets.length,
       openSupportTickets: supportTickets.filter((ticket) => ["open", "pending"].includes(ticket.status)).length,
@@ -302,10 +342,10 @@ export async function GET(request) {
     staticPages,
     faqs,
     pricingPlans,
-    notifications,
+    notifications: adminNotifications,
     announcements,
     supportTickets: supportTickets.map((ticket) => {
-      const contactName = fullName(ticket.users) || ticket.guest_name || ticket.users?.email || ticket.guest_email || "Guest";
+      const contactName = ticketContact(ticket);
       const contactEmail = ticket.users?.email || ticket.guest_email || "";
 
       return {

@@ -16,8 +16,11 @@ function statusColor(status) {
 }
 
 export default function AdminSupportPage() {
+  const [linkedTicketId] = useState(() =>
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("ticket") || "" : "",
+  );
   const [tickets, setTickets] = useState([]);
-  const [selectedId, setSelectedId] = useState("");
+  const [selectedId, setSelectedId] = useState(linkedTicketId);
   const [thread, setThread] = useState([]);
   const [threadTicket, setThreadTicket] = useState(null);
   const [filters, setFilters] = useState({ status: "", priority: "" });
@@ -56,6 +59,7 @@ export default function AdminSupportPage() {
     setTickets(nextRows);
     setSelectedId((currentId) => {
       if (nextRows.some((ticket) => ticket.id === currentId)) return currentId;
+      if (currentId === linkedTicketId) return currentId;
       return nextRows[0]?.id || "";
     });
     setPageInfo(data.pagination || { limit: ADMIN_SUPPORT_PAGE_SIZE, offset, total: 0, hasMore: false });
