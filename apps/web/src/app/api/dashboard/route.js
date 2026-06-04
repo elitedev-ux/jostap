@@ -66,14 +66,22 @@ function deviceName(userAgent = "") {
 
 function sourceName(referrer = "") {
   const value = String(referrer || "").trim();
-  if (!value) return "Direct";
+  if (!value) return null;
 
   try {
     const url = new URL(value);
-    if (url.hostname.includes("jostap.vercel.app")) return "JOSTAP";
-    return url.hostname.replace(/^www\./, "");
+    const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
+    if (
+      hostname === "jostap.com" ||
+      hostname.endsWith(".jostap.com") ||
+      hostname === "jostap.vercel.app" ||
+      hostname.endsWith(".jostap.vercel.app")
+    ) {
+      return null;
+    }
+    return hostname;
   } catch {
-    return value.slice(0, 80);
+    return null;
   }
 }
 
@@ -81,6 +89,7 @@ function countBy(items, keyFn, valueName) {
   const counts = new Map();
   for (const item of items || []) {
     const key = keyFn(item);
+    if (!key) continue;
     counts.set(key, (counts.get(key) || 0) + 1);
   }
   return Array.from(counts.entries()).map(([name, count]) => ({

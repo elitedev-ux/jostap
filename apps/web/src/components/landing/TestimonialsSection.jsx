@@ -21,6 +21,7 @@ export default function TestimonialsSection() {
                     color="#F59E0B"
                   />
                 ))}
+                <span>{testimonial.score}</span>
               </div>
               <p>"{testimonial.body}"</p>
               <div className="landing-testimonial-card__person">

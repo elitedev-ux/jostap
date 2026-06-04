@@ -475,8 +475,16 @@
 
 .landing-testimonial-card__stars {
   display: flex;
+  align-items: center;
   gap: 2px;
   margin-bottom: 16px;
+}
+
+.landing-testimonial-card__stars span {
+  margin-left: 6px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .landing-testimonial-card > p {

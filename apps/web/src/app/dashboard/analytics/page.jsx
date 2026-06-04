@@ -539,7 +539,7 @@ export default function AnalyticsPage() {
             {referrers.length === 0 && (
               <div className="ui-empty-state" style={{ border: "none", padding: "24px 12px" }}>
                 <p className="ui-empty-state__title">No referrers yet</p>
-                <p className="ui-empty-state__copy">Traffic sources will appear here after visitors open your public card.</p>
+                <p className="ui-empty-state__copy">External traffic sources will appear here after visitors open your public card from another website.</p>
               </div>
             )}
             {referrers.map((r) => (
