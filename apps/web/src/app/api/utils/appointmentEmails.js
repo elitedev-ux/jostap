@@ -1,4 +1,4 @@
-import { sendEmail } from "./email.js";
+import { brandedEmailHtml, sendEmail } from "./email.js";
 
 function clean(value) {
   return String(value || "").trim();
@@ -30,16 +30,6 @@ function appointmentDateTime(appointment) {
   }
 }
 
-function shell({ title, body }) {
-  return `
-    <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
-      <h2 style="margin:0 0 12px">${title}</h2>
-      ${body}
-      <p style="margin-top:22px;color:#6b7280;font-size:13px">JOSTAP</p>
-    </div>
-  `;
-}
-
 async function sendAppointmentEmail(message) {
   const to = clean(message.to);
   if (!to) return;
@@ -69,12 +59,14 @@ export async function sendAppointmentCreatedEmail({ appointment, cardName }) {
     to: appointment.visitor_email || appointment.guest_email,
     subject: "Your appointment request was received",
     text: `Hi ${visitorName}, your appointment request for ${card}${when ? ` on ${when}` : ""} has been received. You will get another email when it is approved or rejected.`,
-    html: shell({
+    html: brandedEmailHtml({
       title: "Appointment request received",
+      eyebrow: "Booking",
+      preheader: `Your appointment request for ${card} has been received.`,
       body: `
-        <p>Hi ${htmlVisitorName},</p>
-        <p>Your appointment request for <strong>${htmlCard}</strong>${htmlWhen ? ` on <strong>${htmlWhen}</strong>` : ""} has been received.</p>
-        <p>You will get another email when it is approved or rejected.</p>
+        <p style="margin:0 0 14px;">Hi ${htmlVisitorName},</p>
+        <p style="margin:0 0 14px;">Your appointment request for <strong>${htmlCard}</strong>${htmlWhen ? ` on <strong>${htmlWhen}</strong>` : ""} has been received.</p>
+        <p style="margin:0;">You will get another email when it is approved or rejected.</p>
       `,
     }),
   });
@@ -98,11 +90,13 @@ export async function sendAppointmentStatusEmail({ appointment, status }) {
     to: appointment.visitor_email || appointment.guest_email,
     subject,
     text: `Hi ${visitorName}, your appointment request${when ? ` for ${when}` : ""} has been ${statusText}.`,
-    html: shell({
+    html: brandedEmailHtml({
       title: subject,
+      eyebrow: "Booking update",
+      preheader: `Your appointment request has been ${statusText}.`,
       body: `
-        <p>Hi ${htmlVisitorName},</p>
-        <p>Your appointment request${htmlWhen ? ` for <strong>${htmlWhen}</strong>` : ""} has been <strong>${statusText}</strong>.</p>
+        <p style="margin:0 0 14px;">Hi ${htmlVisitorName},</p>
+        <p style="margin:0;">Your appointment request${htmlWhen ? ` for <strong>${htmlWhen}</strong>` : ""} has been <strong>${statusText}</strong>.</p>
       `,
     }),
   });
