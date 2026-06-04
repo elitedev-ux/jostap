@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Outlet } from "react-router";
 import {
   LayoutDashboard,
   CreditCard,
@@ -17,7 +18,7 @@ import {
 } from "lucide-react";
 import logo from "../../assets/jostap logo.png3.png";
 import faviconMark from "../../assets/jostap favicon bg.png";
-import { getDashboardData } from "../../utils/dashboardDataStore";
+import { clearDashboardDataCache, getDashboardData } from "../../utils/dashboardDataStore";
 import cn from "classnames";
 import "./dashboard-layout.css";
 
@@ -50,6 +51,7 @@ export default function DashboardLayout({ children }) {
   const path = typeof window !== "undefined" ? window.location.pathname : "";
 
   const handleSignOut = async () => {
+    clearDashboardDataCache();
     await fetch("/api/auth/logout", {
       method: "POST",
       credentials: "same-origin",
@@ -102,7 +104,7 @@ export default function DashboardLayout({ children }) {
       }
     }
 
-    loadDashboardShell();
+    loadDashboardShell(true);
     const reloadDashboardShell = () => loadDashboardShell(true);
     window.addEventListener("jostap-cards-change", reloadDashboardShell);
 
@@ -283,6 +285,8 @@ export default function DashboardLayout({ children }) {
     );
   };
 
+  const content = children ?? <Outlet />;
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       {/* Desktop sidebar */}
@@ -391,7 +395,7 @@ export default function DashboardLayout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 p-7">{children}</main>
+        <main className="flex-1 p-7">{content}</main>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import {
   PASSWORD_PATTERN,
   PASSWORD_RULES,
 } from "../../../utils/passwordPolicy";
+import { clearDashboardDataCache } from "../../../utils/dashboardDataStore";
 
 function GoogleIcon() {
   return (
@@ -105,6 +106,7 @@ export default function SignInPage() {
         return;
       }
 
+      clearDashboardDataCache();
       window.location.href = destinationForUser(data.user, callbackUrl);
     } catch (error) {
       setError(error.message || "Invalid email or password. Please try again.");
@@ -131,6 +133,7 @@ export default function SignInPage() {
         throw new Error(data.error || "Unable to verify your account.");
       }
 
+      clearDashboardDataCache();
       window.location.href = destinationForUser(data.user, callbackUrl);
     } catch (error) {
       setError(error.message || "Unable to verify your account.");
@@ -160,6 +163,7 @@ export default function SignInPage() {
         throw new Error(data.error || "Unable to verify two-factor code.");
       }
 
+      clearDashboardDataCache();
       window.location.href = destinationForUser(data.user, callbackUrl);
     } catch (error) {
       setError(error.message || "Unable to verify two-factor code.");

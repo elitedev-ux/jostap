@@ -13,6 +13,7 @@ type Tree = {
 	path: string;
 	children: Tree[];
 	hasPage: boolean;
+	hasLayout: boolean;
 	isParam: boolean;
 	paramName: string;
 	isCatchAll: boolean;
@@ -24,6 +25,7 @@ function buildRouteTree(dir: string, basePath = ''): Tree {
 		path: basePath,
 		children: [],
 		hasPage: false,
+		hasLayout: false,
 		isParam: false,
 		isCatchAll: false,
 		paramName: '',
@@ -54,52 +56,77 @@ function buildRouteTree(dir: string, basePath = ''): Tree {
 			node.children.push(childNode);
 		} else if (file === 'page.jsx') {
 			node.hasPage = true;
+    } else if (file === 'layout.jsx') {
+			node.hasLayout = true;
     }
 	}
 
 	return node;
 }
 
-function generateRoutes(node: Tree): RouteConfigEntry[] {
+function componentPathFor(node: Tree, file: 'page.jsx' | 'layout.jsx'): string {
+	return node.path === '' ? `./${file}` : `./${node.path}/${file}`;
+}
+
+function routePathFor(path: string, parentPath = '') {
+	if (!parentPath) return path;
+	if (path === parentPath) return '';
+	if (path.startsWith(`${parentPath}/`)) {
+		return path.slice(parentPath.length + 1);
+	}
+	return path;
+}
+
+function routePatternFor(path: string) {
+	const segments = path.split('/');
+	const processedSegments = segments.map((segment) => {
+		if (segment.startsWith('[') && segment.endsWith(']')) {
+			const paramName = segment.slice(1, -1);
+
+			if (paramName.startsWith('...')) {
+				return '*';
+			}
+			if (paramName.startsWith('[') && paramName.endsWith(']')) {
+				return `:${paramName.slice(1, -1)}?`;
+			}
+			return `:${paramName}`;
+		}
+		return segment;
+	});
+
+	return processedSegments.join('/');
+}
+
+function generateRoutes(node: Tree, parentPath = ''): RouteConfigEntry[] {
 	const routes: RouteConfigEntry[] = [];
 
+	if (node.hasLayout) {
+		const children: RouteConfigEntry[] = [];
+
+		if (node.hasPage) {
+			children.push(index(componentPathFor(node, 'page.jsx')));
+		}
+
+		for (const child of node.children) {
+			children.push(...generateRoutes(child, node.path));
+		}
+
+		routes.push(route(routePatternFor(routePathFor(node.path, parentPath)), componentPathFor(node, 'layout.jsx'), children));
+		return routes;
+	}
+
 	if (node.hasPage) {
-		const componentPath =
-			node.path === '' ? `./${node.path}page.jsx` : `./${node.path}/page.jsx`;
+		const componentPath = componentPathFor(node, 'page.jsx');
 
 		if (node.path === '') {
 			routes.push(index(componentPath));
 		} else {
-			// Handle parameter routes
-			let routePath = node.path;
-
-			// Replace all parameter segments in the path
-			const segments = routePath.split('/');
-			const processedSegments = segments.map((segment) => {
-				if (segment.startsWith('[') && segment.endsWith(']')) {
-					const paramName = segment.slice(1, -1);
-
-					// Handle catch-all parameters (e.g., [...ids] becomes *)
-					if (paramName.startsWith('...')) {
-						return '*'; // React Router's catch-all syntax
-					}
-					// Handle optional parameters (e.g., [[id]] becomes :id?)
-					if (paramName.startsWith('[') && paramName.endsWith(']')) {
-						return `:${paramName.slice(1, -1)}?`;
-					}
-					// Handle regular parameters (e.g., [id] becomes :id)
-					return `:${paramName}`;
-				}
-				return segment;
-			});
-
-			routePath = processedSegments.join('/');
-			routes.push(route(routePath, componentPath));
+			routes.push(route(routePatternFor(routePathFor(node.path, parentPath)), componentPath));
 		}
 	}
 
 	for (const child of node.children) {
-		routes.push(...generateRoutes(child));
+		routes.push(...generateRoutes(child, parentPath));
 	}
 
 	return routes;

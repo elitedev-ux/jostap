@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Outlet } from "react-router";
 import {
   BarChart3,
   Bell,
@@ -175,6 +176,8 @@ export default function AdminLayout({ children }) {
     </div>
   );
 
+  const content = children ?? <Outlet />;
+
   return (
     <div style={{ minHeight: "100vh", display: "flex", background: "#f5f5f5" }}>
       <aside
@@ -260,7 +263,7 @@ export default function AdminLayout({ children }) {
             </a>
           </div>
         </header>
-        <main style={{ flex: 1, padding: "28px 24px" }}>{children}</main>
+        <main style={{ flex: 1, padding: "28px 24px" }}>{content}</main>
       </div>
 
       <style jsx global>{`
