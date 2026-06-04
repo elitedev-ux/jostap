@@ -1,6 +1,7 @@
 import { badRequest, json, readJson } from "../../../utils/http.js";
 import { activePlanForUser, isEmail, planCapabilities } from "../../../utils/cards.js";
 import { getSupabaseAdmin, hasSupabase } from "../../../utils/supabase.js";
+import { sendAppointmentCreatedEmail } from "../../../utils/appointmentEmails.js";
 
 function toIso(value) {
   const date = new Date(value);
@@ -103,6 +104,8 @@ export async function POST(request, { params }) {
     status: "published",
     published_at: new Date().toISOString(),
   });
+
+  await sendAppointmentCreatedEmail({ appointment: data, cardName: card.name });
 
   return json(
     {

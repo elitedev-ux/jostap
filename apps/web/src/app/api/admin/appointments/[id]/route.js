@@ -1,6 +1,7 @@
 import { badRequest, json, readJson } from "../../../utils/http.js";
 import { requireAdmin, logAdminAction } from "../../../utils/admin.js";
 import { getSupabaseAdmin } from "../../../utils/supabase.js";
+import { sendAppointmentStatusEmail } from "../../../utils/appointmentEmails.js";
 
 const STATUSES = new Set(["pending", "approved", "rejected", "cancelled", "completed"]);
 
@@ -19,13 +20,25 @@ export async function PATCH(request, { params }) {
     .from("appointments")
     .update({ status })
     .eq("id", params.id)
+    .neq("status", status)
     .select("*")
     .maybeSingle();
 
   if (error) throw error;
-  if (!data) return json({ error: "Appointment not found." }, { status: 404 });
+  if (!data) {
+    const { data: existing, error: existingError } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("id", params.id)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+    if (!existing) return json({ error: "Appointment not found." }, { status: 404 });
+    return json({ appointment: existing, unchanged: true });
+  }
 
   await logAdminAction(supabase, adminUser, "appointment.status_updated", "appointment", params.id, { status });
+  await sendAppointmentStatusEmail({ appointment: data, status });
 
   return json({ appointment: data });
 }

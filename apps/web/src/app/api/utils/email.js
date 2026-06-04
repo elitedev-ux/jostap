@@ -38,17 +38,23 @@ async function sendWithPostmark({ to, subject, html, text }) {
   return true;
 }
 
-async function sendWithResend({ to, subject, html, text }) {
+async function sendWithResend({ to, subject, html, text, idempotencyKey }) {
   const token = process.env.RESEND_API_KEY;
 
   if (!token) return false;
 
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+
+  if (idempotencyKey) {
+    headers["Idempotency-Key"] = idempotencyKey;
+  }
+
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
     body: JSON.stringify({
       from: configuredFrom(),
       to,
@@ -67,8 +73,8 @@ async function sendWithResend({ to, subject, html, text }) {
 }
 
 export async function sendEmail(message) {
-  if (await sendWithPostmark(message)) return { delivered: true, provider: "postmark" };
   if (await sendWithResend(message)) return { delivered: true, provider: "resend" };
+  if (await sendWithPostmark(message)) return { delivered: true, provider: "postmark" };
 
   if (process.env.NODE_ENV !== "production") {
     console.info("[email:fallback]", {
@@ -83,6 +89,7 @@ export async function sendEmail(message) {
 }
 
 export async function sendOtpEmail({ to, code, purpose = "verify" }) {
+  const expiryMinutes = purpose === "password_reset" ? 15 : 10;
   const subject =
     purpose === "signin"
       ? "Your JOSTAP sign-in code"
@@ -91,8 +98,8 @@ export async function sendOtpEmail({ to, code, purpose = "verify" }) {
       : "Verify your JOSTAP email";
   const text =
     purpose === "password_reset"
-      ? `Your JOSTAP password reset code is ${code}. It expires in 10 minutes.`
-      : `Your JOSTAP verification code is ${code}. It expires in 10 minutes.`;
+      ? `Your JOSTAP password reset code is ${code}. It expires in ${expiryMinutes} minutes.`
+      : `Your JOSTAP verification code is ${code}. It expires in ${expiryMinutes} minutes.`;
 
   return sendEmail({
     to,
@@ -103,7 +110,7 @@ export async function sendOtpEmail({ to, code, purpose = "verify" }) {
         <h2 style="margin:0 0 12px">${purpose === "password_reset" ? "Reset your JOSTAP password" : "JOSTAP verification"}</h2>
         <p>Your ${purpose === "password_reset" ? "password reset" : "verification"} code is:</p>
         <p style="font-size:28px;font-weight:800;letter-spacing:4px;margin:16px 0">${code}</p>
-        <p>This code expires in 10 minutes. If you did not request it, you can ignore this email.</p>
+        <p>This code expires in ${expiryMinutes} minutes. If you did not request it, you can ignore this email.</p>
       </div>
     `,
   });
