@@ -71,7 +71,7 @@ export async function POST(request) {
   }
 
   if (file.size > MAX_BYTES) {
-    return json({ error: "Cover photo must be 2MB or smaller." }, { status: 400 });
+    return json({ error: "Card image must be 2MB or smaller." }, { status: 400 });
   }
 
   const supabase = getSupabaseAdmin();
@@ -84,7 +84,7 @@ export async function POST(request) {
     return json({ error: "The uploaded file content does not match the image type." }, { status: 400 });
   }
 
-  const path = `${user.id}/cover-${Date.now()}.${extensionFor(detectedType)}`;
+  const path = `${user.id}/card-image-${Date.now()}.${extensionFor(detectedType)}`;
   const { error: uploadError } = await supabase.storage
     .from(BUCKET)
     .upload(path, buffer, {

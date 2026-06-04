@@ -320,7 +320,7 @@ export default function CardBuilderPage({ mode = "user" }) {
           phone: current.phone || kyc.phone || "",
           email: current.email || user.email || "",
           website: current.website || kyc.website || "",
-          avatarUrl: current.avatarUrl || kyc.avatarUrl || "",
+          avatarUrl: current.avatarUrl || "",
           slug: current.slug || suggestedCardSlug(user.name || user.email?.split("@")[0] || "card", newCardSlugSuffix.current),
         }));
       } catch (error) {
@@ -337,35 +337,15 @@ export default function CardBuilderPage({ mode = "user" }) {
     };
   }, [editing, id, isAdminMode]);
 
-  const uploadProfile = async (file) => {
-    setImageMessage("");
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      const response = await fetch("/api/account/avatar", {
-        method: "POST",
-        credentials: "same-origin",
-        body: form,
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "Unable to upload profile picture.");
-      update("avatarUrl", data.avatarUrl);
-    } catch (error) {
-      const preview = await fileToDataUrl(file);
-      update("avatarUrl", preview);
-      setImageMessage(error.message || "Using local preview for this image.");
-    }
-  };
-
-  const uploadCover = async (file) => {
+  const uploadCardImage = async (key, file, label) => {
     setImageMessage("");
     if (file.size > 2 * 1024 * 1024) {
-      setImageMessage("Use a cover photo that is 2MB or smaller.");
+      setImageMessage(`Use a ${label.toLowerCase()} that is 2MB or smaller.`);
       return;
     }
 
     const preview = await fileToDataUrl(file);
-    update("coverUrl", preview);
+    update(key, preview);
 
     try {
       const form = new FormData();
@@ -376,11 +356,17 @@ export default function CardBuilderPage({ mode = "user" }) {
         body: form,
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "Unable to upload cover photo.");
-      update("coverUrl", data.url);
+      if (!response.ok) throw new Error(data.error || `Unable to upload ${label.toLowerCase()}.`);
+      update(key, data.url);
     } catch (error) {
-      setImageMessage(error.message || "Unable to upload cover photo.");
+      setImageMessage(error.message || `Unable to upload ${label.toLowerCase()}.`);
     }
+  };
+
+  const uploadProfile = (file) => uploadCardImage("avatarUrl", file, "profile picture");
+
+  const uploadCover = async (file) => {
+    await uploadCardImage("coverUrl", file, "cover photo");
   };
 
   const toggleField = (key) => {
@@ -426,8 +412,8 @@ export default function CardBuilderPage({ mode = "user" }) {
       setMessage(isAdminMode ? "Add at least the card name before continuing." : "Add at least your name and email before continuing.");
       return;
     }
-    if (/^data:image\//i.test(card.coverUrl || "")) {
-      setMessage("Please wait for the cover photo upload to finish before saving.");
+    if (/^data:image\//i.test(card.avatarUrl || "") || /^data:image\//i.test(card.coverUrl || "")) {
+      setMessage("Please wait for image uploads to finish before saving.");
       return;
     }
     const slug = card.slug || slugFromName(card.name);
