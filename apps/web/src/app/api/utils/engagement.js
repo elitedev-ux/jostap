@@ -10,11 +10,39 @@ function cleanHeader(value, max = 500) {
 }
 
 function referrerFromRequest(request) {
-  return cleanHeader(
+  const referrer = cleanHeader(
     request?.headers?.get?.("x-jostap-referrer") ||
       request?.headers?.get?.("referer") ||
       request?.headers?.get?.("referrer"),
     1000,
+  );
+
+  return isIgnoredReferrer(referrer) ? null : referrer;
+}
+
+function referrerHost(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (raw.toLowerCase() === "jostap") return "jostap";
+
+  try {
+    return new URL(raw).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return raw.replace(/^www\./, "").toLowerCase();
+  }
+}
+
+function isIgnoredReferrer(value) {
+  const host = referrerHost(value);
+  return (
+    !host ||
+    host === "jostap" ||
+    host === "jostap.com" ||
+    host.endsWith(".jostap.com") ||
+    host === "jostap.vercel.app" ||
+    host.endsWith(".jostap.vercel.app") ||
+    host === "example.com" ||
+    host.endsWith(".example.com")
   );
 }
 

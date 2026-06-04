@@ -71,7 +71,9 @@ function sourceName(referrer = "") {
       hostname === "jostap.com" ||
       hostname.endsWith(".jostap.com") ||
       hostname === "jostap.vercel.app" ||
-      hostname.endsWith(".jostap.vercel.app")
+      hostname.endsWith(".jostap.vercel.app") ||
+      hostname === "example.com" ||
+      hostname.endsWith(".example.com")
     ) {
       return null;
     }
