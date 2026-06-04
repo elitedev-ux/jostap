@@ -161,16 +161,19 @@ export default function DashboardLayout({ children }) {
     : announcements;
   const unreadAnnouncements = visibleAnnouncements.filter((item) => !item.isRead).length;
 
-  const SidebarContent = () => (
+  const SidebarContent = ({ mobile = false } = {}) => {
+    const sidebarCollapsed = mobile ? false : collapsed;
+
+    return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Logo */}
       <div
         className={cn(
           "flex items-center border-b border-slate-200",
-          collapsed ? "px-4 py-5 justify-center" : "px-5 py-5 justify-between"
+          sidebarCollapsed ? "px-4 py-5 justify-center" : "px-5 py-5 justify-between"
         )}
       >
-        {!collapsed && (
+        {!sidebarCollapsed && (
           <a
             href="/"
             className="flex items-center gap-2 no-underline"
@@ -183,7 +186,7 @@ export default function DashboardLayout({ children }) {
             />
           </a>
         )}
-        {collapsed && (
+        {sidebarCollapsed && (
           <img
             src={faviconMark}
             alt="JOSTAP"
@@ -191,12 +194,14 @@ export default function DashboardLayout({ children }) {
             className="block w-7 h-7 object-contain"
           />
         )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-1 bg-transparent border-none cursor-pointer text-slate-400 hover:text-slate-600 transition-colors"
-        >
-          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
+        {!mobile && (
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="p-1 bg-transparent border-none cursor-pointer text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        )}
       </div>
 
       {/* Nav */}
@@ -214,12 +219,12 @@ export default function DashboardLayout({ children }) {
                   active
                     ? "bg-blue-50 text-blue-600 font-semibold"
                     : "text-slate-500 hover:bg-slate-50 hover:text-slate-700",
-                  collapsed ? "justify-center px-3" : "justify-start"
+                  sidebarCollapsed ? "justify-center px-3" : "justify-start"
                 )}
-                title={collapsed ? label : ""}
+                title={sidebarCollapsed ? label : ""}
               >
                 <Icon size={17} />
-                {!collapsed && <span>{label}</span>}
+                {!sidebarCollapsed && <span>{label}</span>}
               </a>
             );
           })}
@@ -229,7 +234,7 @@ export default function DashboardLayout({ children }) {
       {/* User section */}
       <div className="p-3 border-t border-slate-200">
         {/* Plan badge */}
-        {!collapsed && (
+        {!sidebarCollapsed && (
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-2.5">
             <div className="flex justify-between items-center">
               <div>
@@ -266,16 +271,17 @@ export default function DashboardLayout({ children }) {
           onClick={handleSignOut}
           className={cn(
             "flex items-center gap-2.5 px-3 py-2 rounded-lg border-none bg-transparent text-sm font-normal text-slate-500 transition-colors cursor-pointer",
-            collapsed ? "justify-center px-3" : "justify-start",
+            sidebarCollapsed ? "justify-center px-3" : "justify-start",
             "hover:bg-red-50 hover:text-red-600"
           )}
         >
           <LogOut size={16} />
-          {!collapsed && <span>Sign out</span>}
+          {!sidebarCollapsed && <span>Sign out</span>}
         </button>
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -293,7 +299,7 @@ export default function DashboardLayout({ children }) {
       {mobileOpen && (
         <div className="fixed inset-0 z-[200] flex">
           <div className="flex-none w-60 bg-white border-r border-slate-200 h-screen overflow-hidden">
-            <SidebarContent />
+            <SidebarContent mobile />
           </div>
           <div
             className="flex-1 bg-black/40"
