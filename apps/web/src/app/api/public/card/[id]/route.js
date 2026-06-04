@@ -1,4 +1,4 @@
-import { cardFromRow } from "../../../utils/cards.js";
+import { activePlanForUser, cardFromRow } from "../../../utils/cards.js";
 import { recordCardEngagement } from "../../../utils/engagement.js";
 import { json } from "../../../utils/http.js";
 import { getSupabaseAdmin, hasSupabase } from "../../../utils/supabase.js";
@@ -63,26 +63,16 @@ export async function GET(request, { params }) {
     await recordCardEngagement(supabase, { card: row, type: "profile_view", request });
   }
 
-  let subscription = null;
+  let plan = "free";
 
   if (row.user_id) {
-    const { data, error: subscriptionError } = await supabase
-      .from("subscriptions")
-      .select("plan,status")
-      .eq("user_id", row.user_id)
-      .eq("status", "active")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (subscriptionError) throw subscriptionError;
-    subscription = data;
+    plan = await activePlanForUser(supabase, row.user_id);
   }
 
   return json({
     card: {
       ...safePublicCard(row),
-      plan: subscription?.plan || "free",
+      plan,
       publicUrl: publicCardUrl(row, { request }),
       qrUrl: cardQrUrl(row, { request }),
     },

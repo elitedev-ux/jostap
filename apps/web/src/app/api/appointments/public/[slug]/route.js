@@ -1,5 +1,5 @@
 import { badRequest, json, readJson } from "../../../utils/http.js";
-import { isEmail } from "../../../utils/cards.js";
+import { activePlanForUser, isEmail, planCapabilities } from "../../../utils/cards.js";
 import { getSupabaseAdmin, hasSupabase } from "../../../utils/supabase.js";
 
 function toIso(value) {
@@ -64,6 +64,11 @@ export async function POST(request, { params }) {
   if (!card) return json({ error: "Card not found." }, { status: 404 });
   if (!card.user_id) {
     return badRequest("Appointment booking is not available for this card yet.");
+  }
+
+  const plan = await activePlanForUser(supabase, card.user_id);
+  if (!planCapabilities(plan).hasPremiumFeatures) {
+    return badRequest("Appointment booking is available during trial or on a premium plan.");
   }
 
   const { data, error } = await supabase

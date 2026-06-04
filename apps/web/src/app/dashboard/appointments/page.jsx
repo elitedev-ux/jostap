@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Calendar, CheckCircle, Clock, LockKeyhole, XCircle } from "lucide-react";
 
-const PREMIUM_FEATURE_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
+const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
 const STATUS_FILTERS = ["all", "pending", "approved", "rejected", "cancelled", "completed"];
 const STATUS_ACTIONS = {
   pending: [
@@ -58,7 +58,11 @@ export default function AppointmentsPage() {
         window.location.href = "/auth/signin?callbackUrl=/dashboard/appointments";
         return;
       }
-      if (!hasPremiumFeatures(billingData.subscription?.plan)) {
+      const features = billingData.subscription?.features || {};
+      const canUseAppointments = features.hasPremiumFeatures === undefined
+        ? hasPremiumFeatures(billingData.subscription?.plan)
+        : features.hasPremiumFeatures;
+      if (!canUseAppointments) {
         setLocked(true);
         setAppointments([]);
         return;

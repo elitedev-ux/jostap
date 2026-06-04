@@ -38,6 +38,14 @@ export default function DashboardLayout({ children }) {
   const [billing, setBilling] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
   const [announcementOpen, setAnnouncementOpen] = useState(false);
+  const [readTrialNotices, setReadTrialNotices] = useState(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      return JSON.parse(window.localStorage.getItem("jostap_trial_notice_reads") || "[]");
+    } catch {
+      return [];
+    }
+  });
   const path = typeof window !== "undefined" ? window.location.pathname : "";
 
   const handleSignOut = async () => {
@@ -75,6 +83,13 @@ export default function DashboardLayout({ children }) {
   }, []);
 
   const markAnnouncementRead = async (id) => {
+    if (String(id || "").startsWith("trial-")) {
+      const next = Array.from(new Set([...readTrialNotices, id]));
+      setReadTrialNotices(next);
+      window.localStorage?.setItem("jostap_trial_notice_reads", JSON.stringify(next));
+      return;
+    }
+
     setAnnouncements((items) =>
       items.map((item) => (item.id === id ? { ...item, isRead: true } : item)),
     );
@@ -152,13 +167,15 @@ export default function DashboardLayout({ children }) {
   const accountName = account?.name || "Account";
   const accountAvatar = account?.kyc?.avatarUrl || "";
   const planName =
-    billing?.subscription?.plan === "custom_nfc"
-      ? "Custom NFC"
-      : billing?.subscription?.plan === "jostap_nfc"
-        ? "JOSTAP NFC"
-        : billing?.subscription?.plan === "premium_renewal"
-          ? "Premium Renewal"
-          : "Free";
+    billing?.subscription?.plan === "trial"
+      ? "Free Trial"
+      : billing?.subscription?.plan === "custom_nfc"
+        ? "Custom NFC"
+        : billing?.subscription?.plan === "jostap_nfc"
+          ? "JOSTAP NFC"
+          : billing?.subscription?.plan === "premium_renewal"
+            ? "Premium Renewal"
+            : "Free";
   const cardLimit = billing?.subscription?.cardLimit ?? 5;
   const cardsUsed = billing?.usage?.cards ?? 0;
   const cardLimitLabel = cardLimit ? `${cardsUsed} / ${cardLimit}` : `${cardsUsed}`;
@@ -169,7 +186,32 @@ export default function DashboardLayout({ children }) {
       .join("")
       .slice(0, 2)
       .toUpperCase() || "ME";
-  const unreadAnnouncements = announcements.filter((item) => !item.isRead).length;
+  const trial = billing?.subscription?.trial;
+  const trialAnnouncement =
+    trial && billing?.subscription?.plan === "trial"
+      ? {
+          id: `trial-${trial.daysRemaining}`,
+          title: trial.daysRemaining <= 1 ? "Your free trial ends soon" : "Free trial reminder",
+          message:
+            trial.daysRemaining <= 1
+              ? "Your premium trial expires in 1 day. Upgrade to keep premium features active."
+              : `${trial.daysRemaining} days left in your 14-day premium trial. Upgrade anytime to keep access after it ends.`,
+          type: "warning",
+          isRead: readTrialNotices.includes(`trial-${trial.daysRemaining}`),
+        }
+      : trial?.expired && billing?.subscription?.plan === "free"
+        ? {
+            id: "trial-expired",
+            title: "Your free trial has ended",
+            message: "Premium features are locked again. Upgrade to restore advanced cards, QR downloads, booking, and analytics.",
+            type: "warning",
+            isRead: readTrialNotices.includes("trial-expired"),
+          }
+        : null;
+  const visibleAnnouncements = trialAnnouncement
+    ? [trialAnnouncement, ...announcements]
+    : announcements;
+  const unreadAnnouncements = visibleAnnouncements.filter((item) => !item.isRead).length;
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full overflow-hidden">
@@ -245,7 +287,9 @@ export default function DashboardLayout({ children }) {
                   {planName}
                 </p>
                 <p className="text-[11px] text-slate-500 leading-tight">
-                  {cardLimitLabel} cards used
+                  {billing?.subscription?.plan === "trial"
+                    ? `${billing.subscription.trial?.daysRemaining || 0} days left`
+                    : `${cardLimitLabel} cards used`}
                 </p>
               </div>
               <a
@@ -353,12 +397,12 @@ export default function DashboardLayout({ children }) {
                 <div style={{ padding: "12px 14px", borderBottom: "1px solid #F3F4F6" }}>
                   <p style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>Announcements</p>
                 </div>
-                {announcements.length === 0 ? (
+                {visibleAnnouncements.length === 0 ? (
                   <div style={{ padding: 18, fontSize: 13, color: "#6B7280" }}>
                     No announcements.
                   </div>
                 ) : (
-                  announcements.slice(0, 5).map((item) => (
+                  visibleAnnouncements.slice(0, 5).map((item) => (
                     <button
                       key={item.id}
                       type="button"

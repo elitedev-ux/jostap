@@ -24,7 +24,7 @@ import {
 
 const COLORS = ["#0d6ffd", "#ff9f0d", "#059669"];
 
-const PREMIUM_FEATURE_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
+const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
 
 function hasPremiumFeatures(plan) {
   return PREMIUM_FEATURE_PLANS.has(String(plan || "").toLowerCase());
@@ -68,7 +68,10 @@ export default function AnalyticsPage() {
         const billingResponse = await fetch("/api/billing", { credentials: "same-origin" });
         const billingData = await billingResponse.json().catch(() => ({}));
         if (active && billingResponse.ok) {
-          setAdvancedLocked(!hasPremiumFeatures(billingData.subscription?.plan));
+          const features = billingData.subscription?.features || {};
+          setAdvancedLocked(features.hasPremiumFeatures === undefined
+            ? !hasPremiumFeatures(billingData.subscription?.plan)
+            : !features.hasPremiumFeatures);
         }
 
         const response = await fetch(`/api/analytics?period=${period}`, { credentials: "same-origin" });

@@ -551,17 +551,15 @@ export default function DashboardPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
             {visibleCards.map((card, index) => (
               <div
+                className="dashboard-card-row"
                 key={card.id}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "14px 0",
                   borderBottom:
                     index < visibleCards.length - 1 ? "1px solid #F3F4F6" : "none",
-                  gap: 14,
                 }}
               >
                 <div
+                  className="dashboard-card-avatar"
                   style={{
                     width: 38,
                     height: 38,
@@ -578,8 +576,9 @@ export default function DashboardPage() {
                 >
                   {initialsFor(card.name)}
                 </div>
-                <div style={{ flex: 1 }}>
+                <div className="dashboard-card-identity">
                   <p
+                    className="dashboard-card-name"
                     style={{
                       fontSize: 14,
                       fontWeight: 600,
@@ -588,35 +587,38 @@ export default function DashboardPage() {
                   >
                     {card.name || "Untitled Card"}
                   </p>
-                  <p style={{ fontSize: 12, color: "#6B7280" }}>
+                  <p className="dashboard-card-title" style={{ fontSize: 12, color: "#6B7280" }}>
                     {card.role || card.title || "No title"}
                   </p>
                 </div>
-                <div style={{ textAlign: "center", minWidth: 60 }}>
-                  <p
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: "#111827",
-                    }}
-                  >
-                    {Number(card.views || 0).toLocaleString()}
-                  </p>
-                  <p style={{ fontSize: 11, color: "#9CA3AF" }}>views</p>
-                </div>
-                <div style={{ textAlign: "center", minWidth: 60 }}>
-                  <p
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: "#111827",
-                    }}
-                  >
-                    {Number(card.taps || 0).toLocaleString()}
-                  </p>
-                  <p style={{ fontSize: 11, color: "#9CA3AF" }}>taps</p>
+                <div className="dashboard-card-metrics">
+                  <div className="dashboard-card-stat">
+                    <p
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "#111827",
+                      }}
+                    >
+                      {Number(card.views || 0).toLocaleString()}
+                    </p>
+                    <p style={{ fontSize: 11, color: "#9CA3AF" }}>views</p>
+                  </div>
+                  <div className="dashboard-card-stat">
+                    <p
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "#111827",
+                      }}
+                    >
+                      {Number(card.taps || 0).toLocaleString()}
+                    </p>
+                    <p style={{ fontSize: 11, color: "#9CA3AF" }}>taps</p>
+                  </div>
                 </div>
                 <span
+                  className="dashboard-card-status"
                   style={{
                     fontSize: 11,
                     fontWeight: 600,
@@ -648,6 +650,56 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+      <style jsx global>{`
+        .dashboard-card-row {
+          display: grid;
+          grid-template-columns: 38px minmax(0, 1fr) minmax(128px, auto) auto;
+          align-items: center;
+          gap: 14px;
+          padding: 14px 0;
+          min-width: 0;
+        }
+        .dashboard-card-identity {
+          min-width: 0;
+        }
+        .dashboard-card-name,
+        .dashboard-card-title {
+          overflow-wrap: anywhere;
+        }
+        .dashboard-card-metrics {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(52px, 1fr));
+          gap: 12px;
+          text-align: center;
+        }
+        .dashboard-card-status {
+          justify-self: end;
+          white-space: nowrap;
+        }
+        @media (max-width: 640px) {
+          .dashboard-card-row {
+            grid-template-columns: 44px minmax(0, 1fr) auto;
+            align-items: start;
+            row-gap: 10px;
+          }
+          .dashboard-card-avatar {
+            width: 44px !important;
+            height: 44px !important;
+          }
+          .dashboard-card-status {
+            grid-column: 3;
+            justify-self: end;
+            margin-top: 2px;
+          }
+          .dashboard-card-metrics {
+            grid-column: 2 / 4;
+            justify-content: start;
+            grid-template-columns: repeat(2, minmax(58px, max-content));
+            gap: 24px;
+            text-align: left;
+          }
+        }
+      `}</style>
     </>
   );
 }

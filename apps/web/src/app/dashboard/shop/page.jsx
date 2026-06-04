@@ -1,21 +1,31 @@
-import { Bell, CreditCard, QrCode, ShoppingBag, Sparkles, Wifi } from "lucide-react";
+import { Bell, MessageSquareText, QrCode, ShoppingBag, Sparkles, Tags, Watch, Wifi } from "lucide-react";
 import "./shop.css";
 
 const products = [
   {
-    title: "Premium NFC Cards",
-    copy: "Order branded JOSTAP cards for yourself or your team.",
-    icon: CreditCard,
+    title: "NFC Wristbands",
+    copy: "Tap-to-share wristbands for events, teams, creators, and high-movement networking moments.",
+    icon: Watch,
   },
   {
-    title: "QR Accessories",
-    copy: "Stickers, table stands, and printed touchpoints for easy sharing.",
+    title: "Smart NFC Wristbands",
+    copy: "Advanced wristbands built for richer interactions, campaigns, and premium brand activations.",
+    icon: Wifi,
+  },
+  {
+    title: "Review / Feedback Tags",
+    copy: "Simple tap points that help customers leave reviews, feedback, and follow-up details faster.",
+    icon: MessageSquareText,
+  },
+  {
+    title: "NFC Table Stands",
+    copy: "Countertop sharing for restaurants, salons, events, offices, and front-desk experiences.",
     icon: QrCode,
   },
   {
-    title: "Smart Tap Add-ons",
-    copy: "Tools and upgrades built around faster in-person networking.",
-    icon: Wifi,
+    title: "Additional NFC Solutions",
+    copy: "More smart tags, branded touchpoints, and custom NFC tools for growing businesses.",
+    icon: Tags,
   },
 ];
 
@@ -29,10 +39,10 @@ export default function ShopPage() {
             JOSTAP Shop
           </span>
 
-          <h1>Smart card essentials are on the way.</h1>
+          <h1>More NFC products are coming soon.</h1>
           <p>
-            The shop will bring NFC cards, QR accessories, replacement cards,
-            and premium profile add-ons into one simple checkout experience.
+            JOSTAP is expanding beyond NFC cards with wearable, tabletop,
+            review, and custom NFC solutions designed for everyday business moments.
           </p>
 
           <div className="shop-coming-soon__actions">
@@ -65,12 +75,15 @@ export default function ShopPage() {
         </div>
       </section>
 
-      <section className="shop-coming-soon__grid" aria-label="Upcoming shop categories">
+      <section className="shop-coming-soon__grid" aria-label="Upcoming shop products">
         {products.map(({ title, copy, icon: Icon }) => (
           <article className="shop-coming-soon__tile" key={title}>
-            <span>
-              <Icon size={18} />
-            </span>
+            <div className="shop-coming-soon__tile-top">
+              <span>
+                <Icon size={18} />
+              </span>
+              <strong>Coming Soon</strong>
+            </div>
             <h2>{title}</h2>
             <p>{copy}</p>
           </article>

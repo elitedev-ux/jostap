@@ -1,3 +1,5 @@
+import { accessFromPlanAndTrial, isPremiumPlan, trialStateFromUser } from "./trial.js";
+
 export function normalizeSlug(value) {
   return String(value || "")
     .trim()
@@ -11,8 +13,6 @@ export function isEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || ""));
 }
 
-const PREMIUM_FEATURE_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
-const CUSTOM_BRANDING_PLANS = new Set(["custom_nfc"]);
 const FREE_CARD_LIMIT = 1;
 const MULTI_VALUE_SOCIAL_FIELDS = new Set([
   "twitter",
@@ -107,27 +107,46 @@ function toSocialValue(key, value) {
 
 export function planCapabilities(plan) {
   const value = String(plan || "free").toLowerCase();
+  if (value === "trial") {
+    return {
+      hasPremiumFeatures: true,
+      hasCustomBranding: true,
+    };
+  }
+
   return {
-    hasPremiumFeatures: PREMIUM_FEATURE_PLANS.has(value),
-    hasCustomBranding: CUSTOM_BRANDING_PLANS.has(value),
+    hasPremiumFeatures: isPremiumPlan(value),
+    hasCustomBranding: value === "custom_nfc",
   };
 }
 
 export async function activePlanForUser(supabase, userId) {
-  const { data, error } = await supabase
-    .from("subscriptions")
-    .select("plan")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [{ data, error }, { data: user, error: userError }] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      .select("plan,status")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("users")
+      .select("created_at")
+      .eq("id", userId)
+      .maybeSingle(),
+  ]);
 
-  if (error) {
-    throw error;
+  if (error || userError) {
+    throw error || userError;
   }
 
-  return data?.plan || "free";
+  if (!user) {
+    return data?.plan || "free";
+  }
+
+  const trial = trialStateFromUser(user);
+  return accessFromPlanAndTrial(data?.plan || "free", trial).effectivePlan;
 }
 
 export function cardLimitForPlan(plan) {

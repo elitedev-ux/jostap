@@ -2,27 +2,41 @@ import { json, unauthorized } from "../utils/http.js";
 import { cardLimitForPlan } from "../utils/cards.js";
 import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin } from "../utils/supabase.js";
+import { accessFromPlanAndTrial, trialStateFromUser } from "../utils/trial.js";
 
-function subscriptionFromRow(row) {
+function subscriptionFromRow(row, user) {
+  const trial = trialStateFromUser(user);
+  const basePlan = row?.plan || "free";
+  const features = accessFromPlanAndTrial(basePlan, trial);
+  const cardLimit = features.hasPremiumFeatures ? null : cardLimitForPlan(basePlan);
+
   if (!row) {
     return {
-      plan: "free",
+      plan: features.effectivePlan,
+      basePlan,
       billingCycle: "free",
       status: "active",
       provider: "free",
-      cardLimit: cardLimitForPlan("free"),
+      currentPeriodStart: "",
+      currentPeriodEnd: "",
+      cardLimit,
+      trial,
+      features,
     };
   }
 
   return {
     id: row.id,
-    plan: row.plan,
+    plan: features.effectivePlan,
+    basePlan,
     billingCycle: row.billing_cycle,
     status: row.status,
     provider: row.provider || "manual",
     currentPeriodStart: row.current_period_start || "",
     currentPeriodEnd: row.current_period_end || "",
-    cardLimit: cardLimitForPlan(row.plan),
+    cardLimit,
+    trial,
+    features,
   };
 }
 
@@ -86,7 +100,7 @@ export async function GET(request) {
   };
 
   return json({
-    subscription: subscriptionFromRow(subscription),
+    subscription: subscriptionFromRow(subscription, user),
     invoices: (invoices || []).map(invoiceFromRow),
     usage,
   });

@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash text NOT NULL,
   role text NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
   status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended')),
+  trial_started_at timestamptz NOT NULL DEFAULT now(),
+  trial_ends_at timestamptz NOT NULL DEFAULT (now() + interval '14 days'),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -20,6 +22,18 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_secret text;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_verified_at timestamptz;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_prefs jsonb NOT NULL DEFAULT '{}'::jsonb;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at timestamptz;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at timestamptz;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at timestamptz;
+UPDATE users
+SET
+  trial_started_at = COALESCE(trial_started_at, created_at),
+  trial_ends_at = COALESCE(trial_ends_at, created_at + interval '14 days')
+WHERE trial_started_at IS NULL
+   OR trial_ends_at IS NULL;
+ALTER TABLE users ALTER COLUMN trial_started_at SET DEFAULT now();
+ALTER TABLE users ALTER COLUMN trial_ends_at SET DEFAULT (now() + interval '14 days');
+ALTER TABLE users ALTER COLUMN trial_started_at SET NOT NULL;
+ALTER TABLE users ALTER COLUMN trial_ends_at SET NOT NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_idx ON users (lower(email));
 CREATE INDEX IF NOT EXISTS users_role_status_idx ON users (role, status);

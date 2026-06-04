@@ -46,6 +46,8 @@ export function accountFromUserAndKyc(user, kyc) {
     role: user.role || "user",
     status: user.status || "active",
     createdAt: user.created_at || "",
+    trialStartedAt: user.trial_started_at || "",
+    trialEndsAt: user.trial_ends_at || "",
     kycComplete: Boolean(profile),
     kyc: profile,
   };

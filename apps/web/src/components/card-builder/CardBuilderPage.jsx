@@ -113,9 +113,9 @@ const FIELD_GROUPS = [
 ];
 
 const DEFAULT_ACTIVE = new Set(["name", "title", "company", "email", "phone", "website", "instagram"]);
-const DOWNLOADABLE_QR_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
-const PREMIUM_FEATURE_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
-const CUSTOM_BRANDING_PLANS = new Set(["custom_nfc"]);
+const DOWNLOADABLE_QR_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
+const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
+const CUSTOM_BRANDING_PLANS = new Set(["trial", "custom_nfc"]);
 const PREMIUM_ONLY_FIELDS = new Set(["calendly", "videoUrl"]);
 const MULTI_ENTRY_FIELDS = new Set([
   "twitter",
@@ -256,8 +256,9 @@ export default function CardBuilderPage({ mode = "user" }) {
         const data = await response.json().catch(() => ({}));
         if (!active || !response.ok) return;
         const plan = data.subscription?.plan || "free";
+        const features = data.subscription?.features || {};
         setCurrentPlan(plan);
-        setQrLocked(!hasDownloadableQr(plan));
+        setQrLocked(features.hasDownloadableQr === undefined ? !hasDownloadableQr(plan) : !features.hasDownloadableQr);
       } catch {
         if (active) {
           setCurrentPlan("free");
@@ -356,12 +357,30 @@ export default function CardBuilderPage({ mode = "user" }) {
     }
   };
 
-  const uploadLocalImage = async (key, file) => {
+  const uploadCover = async (file) => {
+    setImageMessage("");
     if (file.size > 2 * 1024 * 1024) {
-      setImageMessage("Use an image that is 2MB or smaller.");
+      setImageMessage("Use a cover photo that is 2MB or smaller.");
       return;
     }
-    update(key, await fileToDataUrl(file));
+
+    const preview = await fileToDataUrl(file);
+    update("coverUrl", preview);
+
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const response = await fetch("/api/cards/media", {
+        method: "POST",
+        credentials: "same-origin",
+        body: form,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to upload cover photo.");
+      update("coverUrl", data.url);
+    } catch (error) {
+      setImageMessage(error.message || "Unable to upload cover photo.");
+    }
   };
 
   const toggleField = (key) => {
@@ -405,6 +424,10 @@ export default function CardBuilderPage({ mode = "user" }) {
     setMessage("");
     if (!card.name.trim() || (!isAdminMode && !card.email.trim())) {
       setMessage(isAdminMode ? "Add at least the card name before continuing." : "Add at least your name and email before continuing.");
+      return;
+    }
+    if (/^data:image\//i.test(card.coverUrl || "")) {
+      setMessage("Please wait for the cover photo upload to finish before saving.");
       return;
     }
     const slug = card.slug || slugFromName(card.name);
@@ -484,7 +507,7 @@ export default function CardBuilderPage({ mode = "user" }) {
             </div>
             <div className="card-builder-upload-grid">
               <UploadTile label="Profile Picture" icon={User} preview={card.avatarUrl} onUpload={uploadProfile} onRemove={() => update("avatarUrl", "")} />
-              <UploadTile label="Cover Photo" icon={Image} preview={card.coverUrl} onUpload={(file) => uploadLocalImage("coverUrl", file)} onRemove={() => update("coverUrl", "")} />
+              <UploadTile label="Cover Photo" icon={Image} preview={card.coverUrl} onUpload={uploadCover} onRemove={() => update("coverUrl", "")} />
             </div>
             {imageMessage && <p className="card-builder-note">{imageMessage}</p>}
           </section>

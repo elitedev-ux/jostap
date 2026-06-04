@@ -2,6 +2,7 @@ import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 
 import { sendOtpEmail } from "./email.js";
 
 const OTP_MINUTES = 10;
+const PASSWORD_RESET_OTP_MINUTES = 15;
 const OTP_DIGITS = 6;
 const TOTP_STEP_SECONDS = 30;
 const TOTP_DIGITS = 6;
@@ -59,7 +60,7 @@ export async function createEmailVerificationChallenge(supabase, user) {
 
 export async function createPasswordResetChallenge(supabase, user) {
   const code = generateOtp();
-  const expiresAt = new Date(Date.now() + OTP_MINUTES * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + PASSWORD_RESET_OTP_MINUTES * 60 * 1000).toISOString();
 
   await supabase
     .from("auth_challenges")

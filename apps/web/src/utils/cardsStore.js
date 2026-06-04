@@ -18,6 +18,7 @@ export const EMPTY_CARD = {
   website: "",
   videoUrl: "",
   avatarUrl: "",
+  coverUrl: "",
   whatsapp: "",
   linkedin: "",
   twitter: "",

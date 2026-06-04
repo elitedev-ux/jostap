@@ -26,7 +26,7 @@ import {
   publicCardUrl,
 } from "../../../utils/publicUrl";
 
-const DOWNLOADABLE_QR_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
+const DOWNLOADABLE_QR_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
 
 function hasDownloadableQr(plan) {
   return DOWNLOADABLE_QR_PLANS.has(String(plan || "").toLowerCase());
@@ -206,6 +206,7 @@ function CardRow({ card, onChange, qrLocked }) {
 
   return (
     <div
+      className="cards-list-row"
       style={{
         background: "#fff",
         border: "1px solid #E5E7EB",
@@ -219,10 +220,10 @@ function CardRow({ card, onChange, qrLocked }) {
       onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#D1D5DB")}
       onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#E5E7EB")}
     >
-      <div style={{ width: 190 }}>
+      <div className="cards-list-preview" style={{ width: 190 }}>
         <CardPreview card={card} />
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="cards-list-details" style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
             display: "flex",
@@ -319,6 +320,7 @@ function CardRow({ card, onChange, qrLocked }) {
       </div>
 
       <div
+        className="cards-list-qr"
         style={{
           display: "flex",
           flexDirection: "column",
@@ -386,7 +388,7 @@ function CardRow({ card, onChange, qrLocked }) {
         </button>
       </div>
 
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+      <div className="cards-list-actions" style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
         <a
           href={publicUrl}
           target="_blank"
@@ -526,7 +528,8 @@ export default function CardsPage() {
         const response = await fetch("/api/billing", { credentials: "same-origin" });
         const data = await response.json().catch(() => ({}));
         if (response.ok) {
-          setQrLocked(!hasDownloadableQr(data.subscription?.plan));
+          const features = data.subscription?.features || {};
+          setQrLocked(features.hasDownloadableQr === undefined ? !hasDownloadableQr(data.subscription?.plan) : !features.hasDownloadableQr);
           setCardLimit(data.subscription?.cardLimit ?? null);
         }
       } catch {
@@ -730,6 +733,37 @@ export default function CardsPage() {
           )}
         </div>
       )}
+      <style jsx global>{`
+        @media (max-width: 900px) {
+          .cards-list-row {
+            grid-template-columns: 160px minmax(0, 1fr) !important;
+          }
+          .cards-list-preview {
+            width: 160px !important;
+          }
+          .cards-list-qr,
+          .cards-list-actions {
+            grid-column: 2;
+            width: 100% !important;
+          }
+          .cards-list-actions {
+            flex-wrap: wrap;
+          }
+        }
+        @media (max-width: 640px) {
+          .cards-list-row {
+            grid-template-columns: 1fr !important;
+            padding: 16px !important;
+          }
+          .cards-list-preview {
+            width: 100% !important;
+          }
+          .cards-list-qr,
+          .cards-list-actions {
+            grid-column: auto;
+          }
+        }
+      `}</style>
     </>
   );
 }

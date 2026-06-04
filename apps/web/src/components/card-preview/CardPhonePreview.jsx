@@ -425,11 +425,11 @@ export default function CardPhonePreview({
               border: 1px solid var(--card-brand-ring);
               border-radius: 28px;
               background: #ffffff;
-              box-shadow: 0 40px 100px -20px var(--card-brand-ring), 0 0 0 1px rgba(15, 23, 42, 0.05);
+              box-shadow: none;
               overflow: hidden;
               transition: box-shadow 0.3s ease;
             }
-            .card-preview-wrap.is-compact .card-preview-phone { width: 190px; border-radius: 18px; box-shadow: 0 10px 24px rgba(15,23,42,0.14); }
+            .card-preview-wrap.is-compact .card-preview-phone { width: 190px; border-radius: 18px; box-shadow: none; }
             .card-preview-notch {
               position: absolute;
               top: 0;
@@ -473,7 +473,7 @@ export default function CardPhonePreview({
             .card-preview-avatar img { width: 100%; height: 100%; object-fit: cover; }
             .card-preview-copy { padding: 12px 22px 16px; }
             .card-preview-wrap.is-compact .card-preview-copy { padding: 8px 12px 12px; }
-            .card-preview-copy h2 { font-size: 22px; line-height: 1.12; margin: 0 0 8px; font-weight: 900; letter-spacing: 0; color: #0f172a; }
+            .card-preview-copy h2 { font-size: 20px; line-height: 1.12; margin: 0 0 8px; font-weight: 900; letter-spacing: 0; color: #0f172a; }
             .card-preview-wrap.is-compact .card-preview-copy h2 { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
             .card-preview-copy p { font-size: 14px; color: #475569; margin: 4px 0; overflow-wrap: anywhere; }
             .card-preview-wrap.is-compact .card-preview-copy p { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -606,11 +606,11 @@ export default function CardPhonePreview({
           border: 1px solid var(--card-brand-ring);
           border-radius: 28px;
           background: #ffffff;
-          box-shadow: 0 40px 100px -20px var(--card-brand-ring), 0 0 0 1px rgba(15, 23, 42, 0.05);
+          box-shadow: none;
           overflow: hidden;
           transition: box-shadow 0.3s ease;
         }
-        .card-preview-wrap.is-compact .card-preview-phone { width: 190px; border-radius: 18px; box-shadow: 0 10px 24px rgba(15,23,42,0.14); }
+        .card-preview-wrap.is-compact .card-preview-phone { width: 190px; border-radius: 18px; box-shadow: none; }
         .card-preview-notch {
           position: absolute;
           top: 0;
@@ -654,7 +654,7 @@ export default function CardPhonePreview({
         .card-preview-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .card-preview-copy { padding: 12px 22px 16px; }
         .card-preview-wrap.is-compact .card-preview-copy { padding: 8px 12px 12px; }
-        .card-preview-copy h2 { font-size: 22px; line-height: 1.12; margin: 0 0 8px; font-weight: 900; letter-spacing: 0; color: #0f172a; }
+        .card-preview-copy h2 { font-size: 20px; line-height: 1.12; margin: 0 0 8px; font-weight: 900; letter-spacing: 0; color: #0f172a; }
         .card-preview-wrap.is-compact .card-preview-copy h2 { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .card-preview-copy p { font-size: 14px; color: #475569; margin: 4px 0; overflow-wrap: anywhere; }
         .card-preview-wrap.is-compact .card-preview-copy p { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -708,7 +708,9 @@ export default function CardPhonePreview({
         .card-preview-qr em { margin-top: 2px; font-style: normal; color: #0d6ffd; background: #eaf3ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 800; text-align: center; }
         .card-preview-brand-mark { width: 30px; height: 30px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 950; font-family: Archivo, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
         @media (max-width: 640px) {
-          .card-preview-wrap:not(.is-compact) .card-preview-copy h2 { font-size: 20px; line-height: 1.15; }
+          .card-preview-wrap:not(.is-compact) { width: 100%; }
+          .card-preview-wrap:not(.is-compact) .card-preview-phone { width: 100%; box-sizing: border-box; }
+          .card-preview-wrap:not(.is-compact) .card-preview-copy h2 { font-size: 18px; line-height: 1.15; }
         }
       `}</style>
       )}
