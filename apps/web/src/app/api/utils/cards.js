@@ -1,4 +1,5 @@
 import { accessFromPlanAndTrial, isPremiumPlan, trialStateFromUser } from "./trial.js";
+import { toCdnStorageUrl, toOriginStorageUrl } from "./storageUrls.js";
 
 export function normalizeSlug(value) {
   return String(value || "")
@@ -215,9 +216,9 @@ export function cardFromRow(row) {
     phone: row.phone || "",
     email: row.email || "",
     website: row.website || "",
-    avatarUrl: row.avatar_url || "",
-    logoUrl: theme.logoUrl || "",
-    coverUrl: theme.coverUrl || "",
+    avatarUrl: toCdnStorageUrl(row.avatar_url || ""),
+    logoUrl: toCdnStorageUrl(theme.logoUrl || ""),
+    coverUrl: toCdnStorageUrl(theme.coverUrl || ""),
     brandColor: theme.brandColor || "",
     videoUrl: theme.videoUrl || "",
     activeFields: Array.isArray(theme.activeFields) ? theme.activeFields : [],
@@ -286,7 +287,7 @@ export function cardPayload(body) {
     phone: normalizeText(body.phone, 60) || null,
     email: normalizeText(body.email, 254),
     website: normalizeText(body.website, 500) || null,
-    avatarUrl: normalizeText(body.avatarUrl, 1000) || null,
+    avatarUrl: toOriginStorageUrl(normalizeText(body.avatarUrl, 1000)) || null,
     slug,
     active: body.active ?? true,
     theme: {
@@ -296,8 +297,8 @@ export function cardPayload(body) {
       showTestimonials: body.showTestimonials ?? true,
       showGallery: body.showGallery ?? false,
       showFaq: body.showFaq ?? false,
-      logoUrl: normalizeText(body.logoUrl, 1000),
-      coverUrl: normalizeText(body.coverUrl, 1000),
+      logoUrl: toOriginStorageUrl(normalizeText(body.logoUrl, 1000)),
+      coverUrl: toOriginStorageUrl(normalizeText(body.coverUrl, 1000)),
       brandColor: normalizeText(body.brandColor, 32),
       videoUrl: normalizeText(body.videoUrl, 1000),
     },

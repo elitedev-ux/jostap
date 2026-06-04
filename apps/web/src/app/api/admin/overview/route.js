@@ -1,6 +1,7 @@
 import { json } from "../../utils/http.js";
 import { requireAdmin, fullName, money } from "../../utils/admin.js";
 import { getSupabaseAdmin } from "../../utils/supabase.js";
+import { toCdnStorageUrl } from "../../utils/storageUrls.js";
 import { publicCardUrl, cardQrUrl } from "../../../../utils/publicUrl.js";
 
 function dateLabel(value) {
@@ -215,7 +216,7 @@ export async function GET(request) {
         cards: cardsByUser.get(user.id) || 0,
         revenue: money(revenueByUser.get(user.id) || 0),
         joined: dateLabel(user.created_at),
-        avatarUrl: profile?.avatar_url || "",
+        avatarUrl: toCdnStorageUrl(profile?.avatar_url || ""),
       };
     }),
     cards: cards.map((card) => {

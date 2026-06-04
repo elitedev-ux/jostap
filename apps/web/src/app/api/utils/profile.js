@@ -1,3 +1,5 @@
+import { toCdnStorageUrl } from "./storageUrls.js";
+
 export function userFullName(user) {
   return [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim();
 }
@@ -28,7 +30,7 @@ export function kycProfileFromRow(row) {
     primaryGoal: row.primary_goal || "",
     bio: row.bio || "",
     profileSlug: row.profile_slug || "",
-    avatarUrl: row.avatar_url || "",
+    avatarUrl: toCdnStorageUrl(row.avatar_url || ""),
     completedAt: row.completed_at || "",
   };
 }

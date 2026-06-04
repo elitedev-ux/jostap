@@ -3,6 +3,7 @@ import { normalizeSlug } from "../utils/cards.js";
 import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin, isUniqueViolation } from "../utils/supabase.js";
 import { accountFromUserAndKyc, splitFullName } from "../utils/profile.js";
+import { toOriginStorageUrl } from "../utils/storageUrls.js";
 
 function clean(value) {
   return String(value || "").trim();
@@ -30,7 +31,7 @@ export async function PATCH(request) {
   const country = clean(body.country);
   const city = clean(body.city);
   const bio = clean(body.bio);
-  const avatarUrl = clean(body.avatarUrl);
+  const avatarUrl = toOriginStorageUrl(clean(body.avatarUrl));
   const profileSlug = normalizeSlug(body.slug || body.profileSlug);
   const businessType = clean(body.businessType) || "Small business";
   const primaryGoal =

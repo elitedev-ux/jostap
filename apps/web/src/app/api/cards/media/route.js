@@ -1,6 +1,7 @@
 import { json, unauthorized } from "../../utils/http.js";
 import { getSessionUser } from "../../utils/session.js";
 import { getSupabaseAdmin } from "../../utils/supabase.js";
+import { toCdnStorageUrl } from "../../utils/storageUrls.js";
 import { PROFILE_IMAGE_MAX_BYTES, PROFILE_IMAGE_TYPES } from "../../../../utils/uploadRules.js";
 
 const BUCKET = "card-media";
@@ -96,5 +97,5 @@ export async function POST(request) {
   if (uploadError) throw uploadError;
 
   const { data: publicUrl } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return json({ url: publicUrl.publicUrl });
+  return json({ url: toCdnStorageUrl(publicUrl.publicUrl) });
 }

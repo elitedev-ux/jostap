@@ -2,6 +2,7 @@ import { json, unauthorized } from "../../utils/http.js";
 import { getSessionUser } from "../../utils/session.js";
 import { getSupabaseAdmin } from "../../utils/supabase.js";
 import { accountFromUserAndKyc } from "../../utils/profile.js";
+import { toCdnStorageUrl } from "../../utils/storageUrls.js";
 import { PROFILE_IMAGE_MAX_BYTES, PROFILE_IMAGE_TYPES } from "../../../../utils/uploadRules.js";
 
 const BUCKET = "avatars";
@@ -110,6 +111,7 @@ export async function POST(request) {
 
   const { data: publicUrl } = supabase.storage.from(BUCKET).getPublicUrl(path);
   const avatarUrl = publicUrl.publicUrl;
+  const displayAvatarUrl = toCdnStorageUrl(avatarUrl);
 
   const { data: profile, error: profileError } = await supabase
     .from("kyc_profiles")
@@ -123,7 +125,7 @@ export async function POST(request) {
   }
 
   return json({
-    avatarUrl,
+    avatarUrl: displayAvatarUrl,
     user: accountFromUserAndKyc(user, profile),
   });
 }

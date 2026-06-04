@@ -12,6 +12,7 @@
 - Dashboard layout uses `/api/billing` usage data for card counts instead of fetching all cards during every layout load.
 - Common owner/time/status lookups have composite indexes in `db/schema.sql`.
 - Admin support ticket filters run in the database before response mapping, with a bounded result set.
+- Public Supabase Storage image URLs can be served through `STORAGE_CDN_ORIGIN`; the database keeps canonical Supabase URLs while API responses rewrite them to the CDN origin.
 
 ## Operational follow-up
 
