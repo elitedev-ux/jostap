@@ -1,17 +1,10 @@
 import { badRequest, json, readJson, unauthorized } from "../utils/http.js";
+import { paginationFromRequest, paginationMeta } from "../utils/pagination.js";
 import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin } from "../utils/supabase.js";
 
 function boundedText(value, max) {
   return String(value || "").trim().slice(0, max);
-}
-
-function paginationFromRequest(request, defaultLimit = 10) {
-  const params = new URL(request.url).searchParams;
-  const limit = Math.min(Math.max(Number.parseInt(params.get("limit") || `${defaultLimit}`, 10) || defaultLimit, 1), 50);
-  const offset = Math.max(Number.parseInt(params.get("offset") || "0", 10) || 0, 0);
-
-  return { limit, offset };
 }
 
 export async function GET(request) {
@@ -34,12 +27,7 @@ export async function GET(request) {
   if (!ticketIds.length) {
     return json({
       tickets: [],
-      pagination: {
-        limit,
-        offset,
-        total: count || 0,
-        hasMore: false,
-      },
+      pagination: paginationMeta({ limit, offset, total: count }),
     });
   }
 
@@ -63,12 +51,7 @@ export async function GET(request) {
       ...ticket,
       messages: messagesByTicket.get(ticket.id) || [],
     })),
-    pagination: {
-      limit,
-      offset,
-      total: count || 0,
-      hasMore: offset + limit < Number(count || 0),
-    },
+    pagination: paginationMeta({ limit, offset, total: count }),
   });
 }
 

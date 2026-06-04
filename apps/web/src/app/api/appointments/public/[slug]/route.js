@@ -1,6 +1,7 @@
 import { badRequest, json, readJson } from "../../../utils/http.js";
 import { activePlanForUser, isEmail, planCapabilities } from "../../../utils/cards.js";
 import { getSupabaseAdmin, hasSupabase } from "../../../utils/supabase.js";
+import { rateLimit, rateLimitKey } from "../../../utils/rateLimit.js";
 import { sendAppointmentCreatedEmail } from "../../../utils/appointmentEmails.js";
 
 function toIso(value) {
@@ -51,6 +52,13 @@ export async function POST(request, { params }) {
     return badRequest("Please choose a valid future date/time.");
   }
 
+  const limited = rateLimit(request, {
+    key: rateLimitKey(request, "public-booking", [params.slug, visitorEmail]),
+    limit: 3,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (limited) return limited;
+
   const endsAt = new Date(start.getTime() + 30 * 60 * 1000).toISOString();
 
   const supabase = getSupabaseAdmin();
@@ -93,7 +101,12 @@ export async function POST(request, { params }) {
     .select("id,visitor_name,visitor_email,visitor_phone,appointment_date,appointment_time,appointment_message,starts_at,ends_at,status,created_at")
     .single();
 
-  if (error) throw error;
+  if (error) {
+    if (error.code === "23505") {
+      return badRequest("You already have a pending appointment request for this time.");
+    }
+    throw error;
+  }
 
   await supabase.from("announcements").insert({
     target_user_id: card.user_id,

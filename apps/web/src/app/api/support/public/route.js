@@ -1,5 +1,6 @@
 import { badRequest, json, readJson } from "../../utils/http.js";
 import { isEmail } from "../../utils/cards.js";
+import { rateLimit, rateLimitKey } from "../../utils/rateLimit.js";
 import { getSupabaseAdmin } from "../../utils/supabase.js";
 
 function boundedText(value, max) {
@@ -26,6 +27,13 @@ export async function POST(request) {
   if (!isEmail(email)) {
     return badRequest("Enter a valid email address.");
   }
+
+  const limited = rateLimit(request, {
+    key: rateLimitKey(request, "public-support", [email]),
+    limit: 3,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (limited) return limited;
 
   const supabase = getSupabaseAdmin();
   const { data: ticket, error: ticketError } = await supabase

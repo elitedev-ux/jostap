@@ -229,6 +229,9 @@ CREATE INDEX IF NOT EXISTS appointments_lead_id_idx ON appointments (lead_id);
 CREATE INDEX IF NOT EXISTS appointments_starts_at_idx ON appointments (starts_at);
 CREATE INDEX IF NOT EXISTS appointments_status_idx ON appointments (status);
 CREATE INDEX IF NOT EXISTS appointments_appointment_date_idx ON appointments (appointment_date);
+CREATE UNIQUE INDEX IF NOT EXISTS appointments_no_duplicate_active_booking_idx
+ON appointments (assigned_user_id, card_id, visitor_email, starts_at)
+WHERE status IN ('pending', 'approved');
 
 CREATE TABLE IF NOT EXISTS subscriptions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

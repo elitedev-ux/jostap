@@ -1,4 +1,5 @@
 import { json, unauthorized } from "../utils/http.js";
+import { paginationFromRequest, paginationMeta } from "../utils/pagination.js";
 import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin } from "../utils/supabase.js";
 
@@ -25,15 +26,20 @@ export async function GET(request) {
   }
 
   const supabase = getSupabaseAdmin();
-  const { data: rows, error } = await supabase
+  const { limit, offset } = paginationFromRequest(request);
+  const { data: rows, error, count } = await supabase
     .from("leads")
-    .select("*, cards(name)")
+    .select("*, cards(name)", { count: "exact" })
     .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (error) {
     throw error;
   }
 
-  return json({ leads: (rows || []).map(leadFromRow) });
+  return json({
+    leads: (rows || []).map(leadFromRow),
+    pagination: paginationMeta({ limit, offset, total: count }),
+  });
 }

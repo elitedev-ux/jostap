@@ -1,4 +1,5 @@
 import { json, unauthorized } from "../utils/http.js";
+import { paginationFromRequest, paginationMeta } from "../utils/pagination.js";
 import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin } from "../utils/supabase.js";
 
@@ -22,14 +23,6 @@ function appointmentFromRow(row) {
     createdAt: row.created_at || "",
     updatedAt: row.updated_at || "",
   };
-}
-
-function paginationFromRequest(request, defaultLimit = 10) {
-  const params = new URL(request.url).searchParams;
-  const limit = Math.min(Math.max(Number.parseInt(params.get("limit") || `${defaultLimit}`, 10) || defaultLimit, 1), 50);
-  const offset = Math.max(Number.parseInt(params.get("offset") || "0", 10) || 0, 0);
-
-  return { limit, offset };
 }
 
 export async function GET(request) {
@@ -77,11 +70,6 @@ export async function GET(request) {
   return json({
     appointments: (rows || []).map(appointmentFromRow),
     counts,
-    pagination: {
-      limit,
-      offset,
-      total: count || 0,
-      hasMore: offset + limit < Number(count || 0),
-    },
+    pagination: paginationMeta({ limit, offset, total: count }),
   });
 }
