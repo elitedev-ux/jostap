@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url';
 import {
 	type RouteConfigEntry,
 	index,
-	layout,
 	route,
 } from '@react-router/dev/routes';
 
@@ -101,7 +100,7 @@ function routePatternFor(path: string) {
 function generateRoutes(node: Tree, parentPath = ''): RouteConfigEntry[] {
 	const routes: RouteConfigEntry[] = [];
 
-	if (node.hasLayout) {
+	if (node.hasLayout && node.path !== '') {
 		const children: RouteConfigEntry[] = [];
 
 		if (node.hasPage) {
@@ -110,11 +109,6 @@ function generateRoutes(node: Tree, parentPath = ''): RouteConfigEntry[] {
 
 		for (const child of node.children) {
 			children.push(...generateRoutes(child, node.path));
-		}
-
-		if (node.path === '') {
-			routes.push(layout(componentPathFor(node, 'layout.jsx'), children));
-			return routes;
 		}
 
 		routes.push(route(routePatternFor(routePathFor(node.path, parentPath)), componentPathFor(node, 'layout.jsx'), children));
