@@ -375,7 +375,7 @@ export default function DashboardLayout({ children }) {
               </div>
             )}
             </div>
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 cursor-pointer hover:bg-slate-100 transition-colors">
+            <div className="dashboard-user-chip flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 cursor-pointer hover:bg-slate-100 transition-colors">
               <div
                 className="w-6.5 h-6.5 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-[11px] overflow-hidden"
                 style={{ width: 26, height: 26 }}
@@ -392,7 +392,7 @@ export default function DashboardLayout({ children }) {
                   accountInitials
                 )}
               </div>
-              <span className="text-sm font-medium text-slate-900">{accountName}</span>
+              <span className="dashboard-user-name text-sm font-medium text-slate-900">{accountName}</span>
             </div>
           </div>
         </header>

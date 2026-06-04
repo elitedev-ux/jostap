@@ -124,6 +124,12 @@
   aside.sticky { display: none; }
   .dashboard-menu-button { display: inline-flex; align-items: center; justify-content: center; }
   header.sticky { padding-left: 1rem; padding-right: 1rem; }
+  .dashboard-user-chip {
+    padding: 0.25rem;
+    gap: 0;
+    background: transparent;
+  }
+  .dashboard-user-name { display: none; }
   header .w-56 { width: min(13rem, 46vw); }
   main.p-7 { padding: 1rem; }
 }
