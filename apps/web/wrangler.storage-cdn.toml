@@ -1,0 +1,7 @@
+name = "jostap-storage-cdn"
+main = "cloudflare/storage-cdn-worker.js"
+compatibility_date = "2026-06-04"
+workers_dev = true
+
+[vars]
+SUPABASE_ORIGIN = "https://vdkweogonjhduiyntppx.supabase.co"

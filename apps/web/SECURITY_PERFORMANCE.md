@@ -13,6 +13,7 @@
 - Common owner/time/status lookups have composite indexes in `db/schema.sql`.
 - Admin support ticket filters run in the database before response mapping, with a bounded result set.
 - Public Supabase Storage image URLs can be served through `STORAGE_CDN_ORIGIN`; the database keeps canonical Supabase URLs while API responses rewrite them to the CDN origin.
+- Cloudflare Worker source for `cdn.jostap.com` lives in `cloudflare/storage-cdn-worker.js` with deploy config in `wrangler.storage-cdn.toml`.
 
 ## Operational follow-up
 
