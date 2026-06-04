@@ -1,3 +1,5 @@
+import { clearDashboardDataCache } from "./dashboardDataStore";
+
 export const CARD_THEMES = [
   { name: "Navy Pro", c1: "#1e3a8a", c2: "#0d6ffd", color1: "#1e3a8a", color2: "#0d6ffd" },
   { name: "Midnight", c1: "#0f172a", c2: "#1e293b", color1: "#0f172a", color2: "#1e293b" },
@@ -74,6 +76,8 @@ async function requestJson(path, options = {}) {
 }
 
 function notifyCardsChanged() {
+  clearDashboardDataCache();
+
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("jostap-cards-change"));
   }

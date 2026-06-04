@@ -18,7 +18,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { getCards } from "../../utils/cardsStore";
+import { getDashboardData } from "../../utils/dashboardDataStore";
 
 function StatCard({ stat }) {
   const Icon = stat.icon;
@@ -89,73 +89,35 @@ export default function DashboardPage() {
   const [account, setAccount] = useState(null);
   const [analytics, setAnalytics] = useState(null);
 
-  const refreshCards = async () => {
-    try {
-      setCards(await getCards());
-    } catch {
-      setCards([]);
-    }
-  };
-
-  useEffect(() => {
-    refreshCards();
-    window.addEventListener("jostap-cards-change", refreshCards);
-    return () => window.removeEventListener("jostap-cards-change", refreshCards);
-  }, []);
-
   useEffect(() => {
     let active = true;
 
-    async function loadAnalytics() {
+    async function loadDashboard(force = false) {
       try {
-        const response = await fetch(`/api/analytics?period=${period}`, {
-          credentials: "same-origin",
-        });
-        const data = await response.json().catch(() => ({}));
+        const data = await getDashboardData({ period, force });
 
-        if (active && response.ok) {
-          setAnalytics(data);
-        }
+        if (!active) return;
+        setCards(data.cards || []);
+        setAccount(data.account || null);
+        setAnalytics(data.analytics || null);
       } catch {
         if (active) {
+          setCards([]);
+          setAccount(null);
           setAnalytics(null);
         }
       }
     }
 
-    loadAnalytics();
+    loadDashboard();
+    const reloadDashboard = () => loadDashboard(true);
+    window.addEventListener("jostap-cards-change", reloadDashboard);
 
     return () => {
       active = false;
+      window.removeEventListener("jostap-cards-change", reloadDashboard);
     };
   }, [period]);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadAccount() {
-      try {
-        const response = await fetch("/api/auth/me", {
-          credentials: "same-origin",
-        });
-        const data = await response.json().catch(() => ({}));
-
-        if (active && response.ok) {
-          setAccount(data.user || null);
-        }
-      } catch {
-        if (active) {
-          setAccount(null);
-        }
-      }
-    }
-
-    loadAccount();
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const totals = useMemo(
     () =>

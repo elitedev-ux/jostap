@@ -18,8 +18,8 @@ import {
   CARD_THEMES,
   deleteCard,
   duplicateCard,
-  getCards,
 } from "../../../utils/cardsStore";
+import { getDashboardData } from "../../../utils/dashboardDataStore";
 import {
   cardQrUrl,
   displayCardUrl,
@@ -167,7 +167,7 @@ function CardPreview({ card }) {
   );
 }
 
-function CardRow({ card, onChange, qrLocked }) {
+function CardRow({ card, qrLocked }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [actionError, setActionError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -198,7 +198,6 @@ function CardRow({ card, onChange, qrLocked }) {
 
     try {
       await action();
-      await onChange();
     } catch (error) {
       setActionError(error.message || "Unable to complete this action.");
     }
@@ -512,9 +511,13 @@ export default function CardsPage() {
   const [qrLocked, setQrLocked] = useState(true);
   const [cardLimit, setCardLimit] = useState(null);
 
-  const refreshCards = async () => {
+  const refreshCards = async (force = false) => {
     try {
-      setCards(await getCards());
+      const data = await getDashboardData({ period: "30d", force });
+      const features = data.billing?.subscription?.features || {};
+      setCards(data.cards || []);
+      setQrLocked(features.hasDownloadableQr === undefined ? !hasDownloadableQr(data.billing?.subscription?.plan) : !features.hasDownloadableQr);
+      setCardLimit(data.billing?.subscription?.cardLimit ?? null);
       setLoadError("");
     } catch (error) {
       setCards([]);
@@ -523,24 +526,10 @@ export default function CardsPage() {
   };
 
   useEffect(() => {
-    async function loadBillingPlan() {
-      try {
-        const response = await fetch("/api/billing", { credentials: "same-origin" });
-        const data = await response.json().catch(() => ({}));
-        if (response.ok) {
-          const features = data.subscription?.features || {};
-          setQrLocked(features.hasDownloadableQr === undefined ? !hasDownloadableQr(data.subscription?.plan) : !features.hasDownloadableQr);
-          setCardLimit(data.subscription?.cardLimit ?? null);
-        }
-      } catch {
-        setQrLocked(true);
-      }
-    }
-
     refreshCards();
-    loadBillingPlan();
-    window.addEventListener("jostap-cards-change", refreshCards);
-    return () => window.removeEventListener("jostap-cards-change", refreshCards);
+    const reloadCards = () => refreshCards(true);
+    window.addEventListener("jostap-cards-change", reloadCards);
+    return () => window.removeEventListener("jostap-cards-change", reloadCards);
   }, []);
 
   const filtered = useMemo(() => {
@@ -692,7 +681,6 @@ export default function CardsPage() {
           <CardRow
             key={card.id}
             card={card}
-            onChange={refreshCards}
             qrLocked={qrLocked}
           />
         ))}

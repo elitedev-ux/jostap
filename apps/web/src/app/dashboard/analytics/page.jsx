@@ -21,6 +21,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { getDashboardData } from "../../../utils/dashboardDataStore";
 
 const COLORS = ["#0d6ffd", "#ff9f0d", "#059669"];
 
@@ -65,29 +66,21 @@ export default function AnalyticsPage() {
 
     async function loadAnalytics() {
       try {
-        const billingResponse = await fetch("/api/billing", { credentials: "same-origin" });
-        const billingData = await billingResponse.json().catch(() => ({}));
-        if (active && billingResponse.ok) {
-          const features = billingData.subscription?.features || {};
-          setAdvancedLocked(features.hasPremiumFeatures === undefined
-            ? !hasPremiumFeatures(billingData.subscription?.plan)
-            : !features.hasPremiumFeatures);
-        }
+        const data = await getDashboardData({ period });
+        const features = data.billing?.subscription?.features || {};
 
-        const response = await fetch(`/api/analytics?period=${period}`, { credentials: "same-origin" });
-        const data = await response.json().catch(() => ({}));
-
-        if (response.status === 401) {
+        if (!active) return;
+        setAdvancedLocked(features.hasPremiumFeatures === undefined
+          ? !hasPremiumFeatures(data.billing?.subscription?.plan)
+          : !features.hasPremiumFeatures);
+        setAnalytics(data.analytics || null);
+        setLoadError("");
+      } catch (error) {
+        if (error.status === 401) {
           window.location.href = "/auth/signin?callbackUrl=/dashboard/analytics";
           return;
         }
 
-        if (!response.ok) {
-          throw new Error(data.error || "Unable to load analytics.");
-        }
-
-        if (active) setAnalytics(data);
-      } catch (error) {
         if (active) setLoadError(error.message || "Unable to load analytics.");
       }
     }

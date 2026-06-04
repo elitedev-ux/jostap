@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import logo from "../../assets/jostap logo.png3.png";
 import faviconMark from "../../assets/jostap favicon bg.png";
+import { getDashboardData } from "../../utils/dashboardDataStore";
 import cn from "classnames";
 import "./dashboard-layout.css";
 
@@ -57,31 +58,6 @@ export default function DashboardLayout({ children }) {
     window.location.href = "/auth/signin";
   };
 
-  useEffect(() => {
-    let active = true;
-
-    async function loadAnnouncements() {
-      try {
-        const response = await fetch("/api/announcements", { credentials: "same-origin" });
-        const data = await response.json().catch(() => ({}));
-
-        if (active && response.ok) {
-          setAnnouncements(data.announcements || []);
-        }
-      } catch {
-        if (active) {
-          setAnnouncements([]);
-        }
-      }
-    }
-
-    loadAnnouncements();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
   const markAnnouncementRead = async (id) => {
     if (String(id || "").startsWith("trial-")) {
       const next = Array.from(new Set([...readTrialNotices, id]));
@@ -103,64 +79,36 @@ export default function DashboardLayout({ children }) {
   useEffect(() => {
     let active = true;
 
-    async function loadBilling() {
+    async function loadDashboardShell(force = false) {
       try {
-        const response = await fetch("/api/billing", { credentials: "same-origin" });
-        const data = await response.json().catch(() => ({}));
+        const data = await getDashboardData({ period: "7d", force });
 
-        if (active && response.ok) {
-          setBilling(data);
+        if (!active) return;
+
+        setAccount(data.account || null);
+        setBilling(data.billing || null);
+        setAnnouncements(data.announcements?.announcements || []);
+
+        if (data.account && !data.account.kycComplete) {
+          window.location.href = "/kyc";
         }
-      } catch {
-        if (active) {
-          setBilling(null);
-        }
-      }
-    }
-
-    loadBilling();
-    window.addEventListener("jostap-cards-change", loadBilling);
-
-    return () => {
-      active = false;
-      window.removeEventListener("jostap-cards-change", loadBilling);
-    };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-
-    async function requireKyc() {
-      try {
-        const response = await fetch("/api/auth/me", {
-          credentials: "same-origin",
-        });
-
-        if (response.status === 401) {
+      } catch (error) {
+        if (active && error.status === 401) {
           window.location.href = "/auth/signin";
           return;
         }
 
-        const data = await response.json().catch(() => ({}));
-
-        if (active && response.ok && data.user) {
-          setAccount(data.user);
-        }
-
-        if (active && response.ok && data.user && !data.user.kycComplete) {
-          window.location.href = "/kyc";
-        }
-      } catch {
-        if (active) {
-          window.location.href = "/auth/signin";
-        }
+        if (active) setAnnouncements([]);
       }
     }
 
-    requireKyc();
+    loadDashboardShell();
+    const reloadDashboardShell = () => loadDashboardShell(true);
+    window.addEventListener("jostap-cards-change", reloadDashboardShell);
 
     return () => {
       active = false;
+      window.removeEventListener("jostap-cards-change", reloadDashboardShell);
     };
   }, []);
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
+import { getDashboardData } from "../../../utils/dashboardDataStore";
 
 const PLANS = [
   {
@@ -85,25 +86,21 @@ export default function BillingPage() {
 
     async function loadBilling() {
       try {
-        const response = await fetch("/api/billing", { credentials: "same-origin" });
-        const data = await response.json().catch(() => ({}));
+        const data = await getDashboardData({ period: "30d" });
+        const billingDetails = data.billing || null;
 
-        if (response.status === 401) {
+        if (active) {
+          setBillingData(billingDetails);
+          if (billingDetails?.subscription?.billingCycle) {
+            setBilling(billingDetails.subscription.billingCycle);
+          }
+        }
+      } catch (error) {
+        if (error.status === 401) {
           window.location.href = "/auth/signin?callbackUrl=/dashboard/billing";
           return;
         }
 
-        if (!response.ok) {
-          throw new Error(data.error || "Unable to load billing details.");
-        }
-
-        if (active) {
-          setBillingData(data);
-          if (data.subscription?.billingCycle) {
-            setBilling(data.subscription.billingCycle);
-          }
-        }
-      } catch (error) {
         if (active) {
           setLoadError(error.message || "Unable to load billing details.");
         }

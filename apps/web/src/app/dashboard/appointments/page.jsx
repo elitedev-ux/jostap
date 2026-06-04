@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Calendar, CheckCircle, Clock, LockKeyhole, XCircle } from "lucide-react";
+import { clearDashboardDataCache, getDashboardData } from "../../../utils/dashboardDataStore";
 
 const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
 const STATUS_FILTERS = ["all", "pending", "approved", "rejected", "cancelled", "completed"];
@@ -51,13 +52,9 @@ export default function AppointmentsPage() {
 
   async function loadAppointments(active = true) {
     try {
-      const billingResponse = await fetch("/api/billing", { credentials: "same-origin" });
-      const billingData = await billingResponse.json().catch(() => ({}));
+      const dashboardData = await getDashboardData({ period: "30d" });
+      const billingData = dashboardData.billing || {};
       if (!active) return;
-      if (billingResponse.status === 401) {
-        window.location.href = "/auth/signin?callbackUrl=/dashboard/appointments";
-        return;
-      }
       const features = billingData.subscription?.features || {};
       const canUseAppointments = features.hasPremiumFeatures === undefined
         ? hasPremiumFeatures(billingData.subscription?.plan)
@@ -83,6 +80,11 @@ export default function AppointmentsPage() {
 
       if (active) setAppointments(data.appointments || []);
     } catch (error) {
+      if (error.status === 401) {
+        window.location.href = "/auth/signin?callbackUrl=/dashboard/appointments";
+        return;
+      }
+
       if (active) {
         setAppointments([]);
         setLoadError(error.message || "Unable to load appointments.");
@@ -128,6 +130,7 @@ export default function AppointmentsPage() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Unable to update appointment.");
+      clearDashboardDataCache();
       await loadAppointments(true);
     } catch (error) {
       setLoadError(error.message || "Unable to update appointment.");
