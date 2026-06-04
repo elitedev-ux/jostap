@@ -6,6 +6,7 @@ const panelStyle = {
   border: "1px solid #E5E7EB",
   borderRadius: 12,
 };
+const ADMIN_SUPPORT_PAGE_SIZE = 20;
 
 function statusColor(status) {
   if (status === "resolved") return { fg: "#047857", bg: "#ECFDF5" };
@@ -24,6 +25,8 @@ export default function AdminSupportPage() {
   const [nextStatus, setNextStatus] = useState("");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [pageInfo, setPageInfo] = useState({ limit: ADMIN_SUPPORT_PAGE_SIZE, offset: 0, total: 0, hasMore: false });
   const [error, setError] = useState("");
 
   const selectedTicket = useMemo(
@@ -31,11 +34,13 @@ export default function AdminSupportPage() {
     [tickets, selectedId],
   );
 
-  const loadTickets = async () => {
+  const loadTickets = async ({ offset = 0, append = false } = {}) => {
     setError("");
     const params = new URLSearchParams();
     if (filters.status) params.set("status", filters.status);
     if (filters.priority) params.set("priority", filters.priority);
+    params.set("limit", String(ADMIN_SUPPORT_PAGE_SIZE));
+    params.set("offset", String(offset));
 
     const response = await fetch(`/api/admin/support?${params.toString()}`, {
       credentials: "same-origin",
@@ -47,12 +52,14 @@ export default function AdminSupportPage() {
     }
 
     const rows = data.tickets || [];
-    setTickets(rows);
-    setError("");
+    const nextRows = append ? [...tickets, ...rows] : rows;
+    setTickets(nextRows);
     setSelectedId((currentId) => {
-      if (rows.some((ticket) => ticket.id === currentId)) return currentId;
-      return rows[0]?.id || "";
+      if (nextRows.some((ticket) => ticket.id === currentId)) return currentId;
+      return nextRows[0]?.id || "";
     });
+    setPageInfo(data.pagination || { limit: ADMIN_SUPPORT_PAGE_SIZE, offset, total: 0, hasMore: false });
+    setError("");
   };
 
   const loadThread = async (id) => {
@@ -71,7 +78,7 @@ export default function AdminSupportPage() {
   };
 
   useEffect(() => {
-    loadTickets().catch((err) => setError(err.message));
+    loadTickets({ offset: 0 }).catch((err) => setError(err.message));
   }, [filters.status, filters.priority]);
 
   useEffect(() => {
@@ -82,7 +89,7 @@ export default function AdminSupportPage() {
     setRefreshing(true);
     setError("");
     try {
-      await loadTickets();
+      await loadTickets({ offset: 0 });
       if (selectedId) {
         await loadThread(selectedId);
       }
@@ -90,6 +97,17 @@ export default function AdminSupportPage() {
       setError(err.message || "Unable to refresh support tickets.");
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const loadMoreTickets = async () => {
+    setLoadingMore(true);
+    try {
+      await loadTickets({ offset: tickets.length, append: true });
+    } catch (err) {
+      setError(err.message || "Unable to load more support tickets.");
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -123,7 +141,7 @@ export default function AdminSupportPage() {
 
       setReply("");
       setNextStatus("");
-      await loadTickets();
+      await loadTickets({ offset: 0 });
       await loadThread(selectedId);
     } catch (err) {
       setError(err.message || "Unable to send reply.");
@@ -224,6 +242,18 @@ export default function AdminSupportPage() {
                 </button>
               );
             })}
+            {pageInfo.hasMore && (
+              <div style={{ padding: 12, borderTop: "1px solid #F3F4F6", display: "flex", justifyContent: "center" }}>
+                <button
+                  type="button"
+                  onClick={loadMoreTickets}
+                  disabled={loadingMore}
+                  style={{ border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff", color: "#0d6ffd", padding: "7px 11px", fontSize: 12, fontWeight: 800, cursor: loadingMore ? "wait" : "pointer" }}
+                >
+                  {loadingMore ? "Loading..." : `Load more (${tickets.length}/${pageInfo.total})`}
+                </button>
+              </div>
+            )}
           </div>
         </section>
 
@@ -262,7 +292,7 @@ export default function AdminSupportPage() {
                 {threadTicket?.id && (
                   <button
                     type="button"
-                    onClick={() => patchStatus(threadTicket.id, nextStatus || "pending").then(() => loadTickets()).then(() => loadThread(threadTicket.id)).catch((err) => setError(err.message))}
+                    onClick={() => patchStatus(threadTicket.id, nextStatus || "pending").then(() => loadTickets({ offset: 0 })).then(() => loadThread(threadTicket.id)).catch((err) => setError(err.message))}
                     style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "7px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
                   >
                     Update

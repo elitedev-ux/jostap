@@ -6,23 +6,41 @@ function boundedText(value, max) {
   return String(value || "").trim().slice(0, max);
 }
 
+function paginationFromRequest(request, defaultLimit = 10) {
+  const params = new URL(request.url).searchParams;
+  const limit = Math.min(Math.max(Number.parseInt(params.get("limit") || `${defaultLimit}`, 10) || defaultLimit, 1), 50);
+  const offset = Math.max(Number.parseInt(params.get("offset") || "0", 10) || 0, 0);
+
+  return { limit, offset };
+}
+
 export async function GET(request) {
   const user = await getSessionUser(request);
 
   if (!user) return unauthorized();
 
   const supabase = getSupabaseAdmin();
-  const { data: tickets, error } = await supabase
+  const { limit, offset } = paginationFromRequest(request);
+  const { data: tickets, error, count } = await supabase
     .from("support_tickets")
-    .select("*")
+    .select("id,user_id,subject,message,category,priority,status,admin_notes,created_at,updated_at", { count: "exact" })
     .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (error) throw error;
 
   const ticketIds = (tickets || []).map((ticket) => ticket.id);
   if (!ticketIds.length) {
-    return json({ tickets: [] });
+    return json({
+      tickets: [],
+      pagination: {
+        limit,
+        offset,
+        total: count || 0,
+        hasMore: false,
+      },
+    });
   }
 
   const { data: messages, error: messagesError } = await supabase
@@ -45,6 +63,12 @@ export async function GET(request) {
       ...ticket,
       messages: messagesByTicket.get(ticket.id) || [],
     })),
+    pagination: {
+      limit,
+      offset,
+      total: count || 0,
+      hasMore: offset + limit < Number(count || 0),
+    },
   });
 }
 

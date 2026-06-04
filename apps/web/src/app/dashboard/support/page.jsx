@@ -12,6 +12,7 @@ const inputStyle = {
   background: "#fff",
   boxSizing: "border-box",
 };
+const SUPPORT_PAGE_SIZE = 10;
 
 export default function UserSupportPage() {
   const [tickets, setTickets] = useState([]);
@@ -25,6 +26,8 @@ export default function UserSupportPage() {
   const [reply, setReply] = useState("");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [pageInfo, setPageInfo] = useState({ limit: SUPPORT_PAGE_SIZE, offset: 0, total: 0, hasMore: false });
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
@@ -33,8 +36,12 @@ export default function UserSupportPage() {
     [tickets, selectedId],
   );
 
-  async function loadTickets() {
-    const response = await fetch("/api/support", { credentials: "same-origin" });
+  async function loadTickets({ offset = 0, append = false } = {}) {
+    const params = new URLSearchParams({
+      limit: String(SUPPORT_PAGE_SIZE),
+      offset: String(offset),
+    });
+    const response = await fetch(`/api/support?${params.toString()}`, { credentials: "same-origin" });
     const data = await response.json().catch(() => ({}));
 
     if (response.status === 401) {
@@ -47,12 +54,14 @@ export default function UserSupportPage() {
     }
 
     const rows = data.tickets || [];
-    setTickets(rows);
-    setError("");
+    const nextRows = append ? [...tickets, ...rows] : rows;
+    setTickets(nextRows);
     setSelectedId((currentId) => {
-      if (rows.some((ticket) => ticket.id === currentId)) return currentId;
-      return rows[0]?.id || "";
+      if (nextRows.some((ticket) => ticket.id === currentId)) return currentId;
+      return nextRows[0]?.id || "";
     });
+    setPageInfo(data.pagination || { limit: SUPPORT_PAGE_SIZE, offset, total: 0, hasMore: false });
+    setError("");
   }
 
   useEffect(() => {
@@ -63,11 +72,22 @@ export default function UserSupportPage() {
     setRefreshing(true);
     setNotice("");
     try {
-      await loadTickets();
+      await loadTickets({ offset: 0 });
     } catch (err) {
       setError(err.message || "Unable to refresh support tickets.");
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const loadMoreTickets = async () => {
+    setLoadingMore(true);
+    try {
+      await loadTickets({ offset: tickets.length, append: true });
+    } catch (err) {
+      setError(err.message || "Unable to load more support tickets.");
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -92,7 +112,7 @@ export default function UserSupportPage() {
 
       setForm({ subject: "", category: "General", priority: "normal", message: "" });
       setNotice("Ticket submitted to admin support.");
-      await loadTickets();
+      await loadTickets({ offset: 0 });
     } catch (err) {
       setError(err.message || "Unable to submit ticket.");
     } finally {
@@ -116,7 +136,7 @@ export default function UserSupportPage() {
       if (!response.ok) throw new Error(data.error || "Unable to send reply.");
       setReply("");
       setNotice("Reply sent.");
-      await loadTickets();
+      await loadTickets({ offset: 0 });
     } catch (err) {
       setError(err.message || "Unable to send reply.");
     } finally {
@@ -247,6 +267,18 @@ export default function UserSupportPage() {
                     </span>
                   </button>
                 ))}
+                {pageInfo.hasMore && (
+                  <div style={{ padding: 10, borderTop: "1px solid #F3F4F6", display: "flex", justifyContent: "center" }}>
+                    <button
+                      type="button"
+                      onClick={loadMoreTickets}
+                      disabled={loadingMore}
+                      style={{ border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff", color: "#0d6ffd", padding: "7px 11px", fontSize: 12, fontWeight: 800, cursor: loadingMore ? "wait" : "pointer" }}
+                    >
+                      {loadingMore ? "Loading..." : `Load more (${tickets.length}/${pageInfo.total})`}
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div style={{ padding: 12, maxHeight: 230, overflowY: "auto", background: "#f5f5f5" }}>

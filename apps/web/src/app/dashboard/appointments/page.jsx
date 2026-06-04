@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Calendar, CheckCircle, Clock, LockKeyhole, XCircle } from "lucide-react";
 import { clearDashboardDataCache, getDashboardData } from "../../../utils/dashboardDataStore";
 
 const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
 const STATUS_FILTERS = ["all", "pending", "approved", "rejected", "cancelled", "completed"];
+const APPOINTMENTS_PAGE_SIZE = 10;
 const STATUS_ACTIONS = {
   pending: [
     ["approved", "Approve"],
@@ -49,8 +50,11 @@ export default function AppointmentsPage() {
   const [locked, setLocked] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [busyId, setBusyId] = useState("");
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [pageInfo, setPageInfo] = useState({ limit: APPOINTMENTS_PAGE_SIZE, offset: 0, total: 0, hasMore: false });
+  const [counts, setCounts] = useState({ total: 0, pending: 0, approved: 0, rejected: 0, cancelled: 0, completed: 0 });
 
-  async function loadAppointments(active = true) {
+  async function loadAppointments({ active = true, offset = 0, append = false } = {}) {
     try {
       const dashboardData = await getDashboardData({ period: "30d" });
       const billingData = dashboardData.billing || {};
@@ -66,7 +70,13 @@ export default function AppointmentsPage() {
       }
       setLocked(false);
 
-      const response = await fetch("/api/appointments", { credentials: "same-origin" });
+      const params = new URLSearchParams({
+        limit: String(APPOINTMENTS_PAGE_SIZE),
+        offset: String(offset),
+      });
+      if (statusFilter !== "all") params.set("status", statusFilter);
+
+      const response = await fetch(`/api/appointments?${params.toString()}`, { credentials: "same-origin" });
       const data = await response.json().catch(() => ({}));
 
       if (response.status === 401) {
@@ -78,7 +88,12 @@ export default function AppointmentsPage() {
         throw new Error(data.error || "Unable to load appointments.");
       }
 
-      if (active) setAppointments(data.appointments || []);
+      if (active) {
+        setAppointments((current) => (append ? [...current, ...(data.appointments || [])] : data.appointments || []));
+        setPageInfo(data.pagination || { limit: APPOINTMENTS_PAGE_SIZE, offset, total: 0, hasMore: false });
+        setCounts(data.counts || { total: 0, pending: 0, approved: 0, rejected: 0, cancelled: 0, completed: 0 });
+        setLoadError("");
+      }
     } catch (error) {
       if (error.status === 401) {
         window.location.href = "/auth/signin?callbackUrl=/dashboard/appointments";
@@ -94,29 +109,23 @@ export default function AppointmentsPage() {
 
   useEffect(() => {
     let active = true;
-    loadAppointments(active);
+    setAppointments([]);
+    loadAppointments({ active, offset: 0 });
     return () => {
       active = false;
     };
-  }, []);
+  }, [statusFilter]);
 
-  const counts = useMemo(
-    () =>
-      appointments.reduce(
-        (items, appointment) => {
-          const status = appointment.status || "pending";
-          items.total += 1;
-          items[status] = (items[status] || 0) + 1;
-          return items;
-        },
-        { total: 0, pending: 0, approved: 0, rejected: 0, cancelled: 0, completed: 0 },
-      ),
-    [appointments],
-  );
+  const filteredAppointments = appointments;
 
-  const filteredAppointments = appointments.filter((appointment) =>
-    statusFilter === "all" ? true : appointment.status === statusFilter,
-  );
+  const loadMoreAppointments = async () => {
+    setLoadingMore(true);
+    try {
+      await loadAppointments({ offset: appointments.length, append: true });
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const updateStatus = async (appointment, status) => {
     setBusyId(appointment.id);
@@ -131,7 +140,7 @@ export default function AppointmentsPage() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Unable to update appointment.");
       clearDashboardDataCache();
-      await loadAppointments(true);
+      await loadAppointments({ offset: 0 });
     } catch (error) {
       setLoadError(error.message || "Unable to update appointment.");
     } finally {
@@ -263,6 +272,18 @@ export default function AppointmentsPage() {
                 </div>
               );
             })}
+            {pageInfo.hasMore && (
+              <div style={{ display: "flex", justifyContent: "center", padding: 16, borderTop: "1px solid #F3F4F6" }}>
+                <button
+                  type="button"
+                  onClick={loadMoreAppointments}
+                  disabled={loadingMore}
+                  style={{ border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff", color: "#0d6ffd", padding: "8px 13px", fontSize: 13, fontWeight: 800, cursor: loadingMore ? "wait" : "pointer" }}
+                >
+                  {loadingMore ? "Loading..." : `Load more (${filteredAppointments.length}/${pageInfo.total})`}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
