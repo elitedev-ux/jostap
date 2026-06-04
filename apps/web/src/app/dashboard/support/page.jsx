@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Headphones, MessageSquare, Send, TicketCheck } from "lucide-react";
+import { Headphones, MessageSquare, RefreshCcw, Send, TicketCheck } from "lucide-react";
 
 const inputStyle = {
   width: "100%",
@@ -24,6 +24,7 @@ export default function UserSupportPage() {
   });
   const [reply, setReply] = useState("");
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
@@ -47,6 +48,7 @@ export default function UserSupportPage() {
 
     const rows = data.tickets || [];
     setTickets(rows);
+    setError("");
     setSelectedId((currentId) => {
       if (rows.some((ticket) => ticket.id === currentId)) return currentId;
       return rows[0]?.id || "";
@@ -57,13 +59,17 @@ export default function UserSupportPage() {
     loadTickets().catch((err) => setError(err.message));
   }, []);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      loadTickets().catch((err) => setError(err.message));
-    }, 15000);
-
-    return () => window.clearInterval(timer);
-  }, []);
+  const refreshTickets = async () => {
+    setRefreshing(true);
+    setNotice("");
+    try {
+      await loadTickets();
+    } catch (err) {
+      setError(err.message || "Unable to refresh support tickets.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const submitTicket = async (event) => {
     event.preventDefault();
@@ -194,9 +200,20 @@ export default function UserSupportPage() {
         </section>
 
         <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
-          <div style={{ padding: 16, borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", gap: 8 }}>
-            <TicketCheck size={17} color="#059669" />
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>Your Tickets</h2>
+          <div style={{ padding: 16, borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <TicketCheck size={17} color="#059669" />
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>Your Tickets</h2>
+            </div>
+            <button
+              type="button"
+              onClick={refreshTickets}
+              disabled={refreshing}
+              title="Refresh tickets"
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff", color: "#6B7280", cursor: refreshing ? "wait" : "pointer" }}
+            >
+              <RefreshCcw size={14} style={{ transform: refreshing ? "rotate(45deg)" : "none" }} />
+            </button>
           </div>
           {tickets.length === 0 ? (
             <div className="ui-empty-state" style={{ border: "none", padding: "30px 10px" }}>

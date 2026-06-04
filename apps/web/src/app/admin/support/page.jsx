@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Filter, MessageSquare, Send } from "lucide-react";
+import { Filter, RefreshCcw, Send } from "lucide-react";
 
 const panelStyle = {
   background: "#fff",
@@ -23,6 +23,7 @@ export default function AdminSupportPage() {
   const [reply, setReply] = useState("");
   const [nextStatus, setNextStatus] = useState("");
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
   const selectedTicket = useMemo(
@@ -47,6 +48,7 @@ export default function AdminSupportPage() {
 
     const rows = data.tickets || [];
     setTickets(rows);
+    setError("");
     setSelectedId((currentId) => {
       if (rows.some((ticket) => ticket.id === currentId)) return currentId;
       return rows[0]?.id || "";
@@ -76,16 +78,20 @@ export default function AdminSupportPage() {
     loadThread(selectedId).catch((err) => setError(err.message));
   }, [selectedId]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      loadTickets().catch((err) => setError(err.message));
+  const refreshSupport = async () => {
+    setRefreshing(true);
+    setError("");
+    try {
+      await loadTickets();
       if (selectedId) {
-        loadThread(selectedId).catch((err) => setError(err.message));
+        await loadThread(selectedId);
       }
-    }, 15000);
-
-    return () => window.clearInterval(timer);
-  }, [selectedId, filters.status, filters.priority]);
+    } catch (err) {
+      setError(err.message || "Unable to refresh support tickets.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const patchStatus = async (id, status) => {
     const response = await fetch(`/api/admin/support/${id}`, {
@@ -144,7 +150,7 @@ export default function AdminSupportPage() {
       <div style={{ display: "grid", gridTemplateColumns: "340px minmax(0,1fr)", gap: 18 }}>
         <section style={{ ...panelStyle, overflow: "hidden" }}>
           <div style={{ padding: 14, borderBottom: "1px solid #E5E7EB", display: "grid", gap: 10 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8 }}>
               <select
                 value={filters.status}
                 onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}
@@ -167,6 +173,15 @@ export default function AdminSupportPage() {
                 <option value="high">High</option>
                 <option value="urgent">Urgent</option>
               </select>
+              <button
+                type="button"
+                onClick={refreshSupport}
+                disabled={refreshing}
+                title="Refresh tickets"
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff", color: "#6B7280", cursor: refreshing ? "wait" : "pointer" }}
+              >
+                <RefreshCcw size={14} style={{ transform: refreshing ? "rotate(45deg)" : "none" }} />
+              </button>
             </div>
           </div>
 
