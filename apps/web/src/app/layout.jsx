@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Outlet } from "react-router";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -7,6 +8,8 @@ const queryClient = new QueryClient({
 });
 
 export default function RootLayout({ children }) {
+  const content = children ?? <Outlet />;
+
   return (
     <>
       <head>
@@ -32,7 +35,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <QueryClientProvider client={queryClient}>
-        {children}
+        {content}
       </QueryClientProvider>
     </>
   );
