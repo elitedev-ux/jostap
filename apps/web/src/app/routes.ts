@@ -13,7 +13,6 @@ type Tree = {
 	path: string;
 	children: Tree[];
 	hasPage: boolean;
-	hasLayout: boolean;
 	isParam: boolean;
 	paramName: string;
 	isCatchAll: boolean;
@@ -25,7 +24,6 @@ function buildRouteTree(dir: string, basePath = ''): Tree {
 		path: basePath,
 		children: [],
 		hasPage: false,
-		hasLayout: false,
 		isParam: false,
 		isCatchAll: false,
 		paramName: '',
@@ -56,15 +54,13 @@ function buildRouteTree(dir: string, basePath = ''): Tree {
 			node.children.push(childNode);
 		} else if (file === 'page.jsx') {
 			node.hasPage = true;
-    } else if (file === 'layout.jsx') {
-			node.hasLayout = true;
     }
 	}
 
 	return node;
 }
 
-function componentPathFor(node: Tree, file: 'page.jsx' | 'layout.jsx'): string {
+function componentPathFor(node: Tree, file: 'page.jsx'): string {
 	return node.path === '' ? `./${file}` : `./${node.path}/${file}`;
 }
 
@@ -99,21 +95,6 @@ function routePatternFor(path: string) {
 
 function generateRoutes(node: Tree, parentPath = ''): RouteConfigEntry[] {
 	const routes: RouteConfigEntry[] = [];
-
-	if (node.hasLayout && node.path !== '') {
-		const children: RouteConfigEntry[] = [];
-
-		if (node.hasPage) {
-			children.push(index(componentPathFor(node, 'page.jsx')));
-		}
-
-		for (const child of node.children) {
-			children.push(...generateRoutes(child, node.path));
-		}
-
-		routes.push(route(routePatternFor(routePathFor(node.path, parentPath)), componentPathFor(node, 'layout.jsx'), children));
-		return routes;
-	}
 
 	if (node.hasPage) {
 		const componentPath = componentPathFor(node, 'page.jsx');

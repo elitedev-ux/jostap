@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Outlet } from "react-router";
 import {
   LayoutDashboard,
   CreditCard,
@@ -285,8 +284,6 @@ export default function DashboardLayout({ children }) {
     );
   };
 
-  const content = children ?? <Outlet />;
-
   return (
     <div className="flex min-h-screen bg-slate-50">
       {/* Desktop sidebar */}
@@ -395,7 +392,7 @@ export default function DashboardLayout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 p-7">{content}</main>
+        <main className="flex-1 p-7">{children}</main>
       </div>
     </div>
   );
