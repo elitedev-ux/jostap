@@ -2,7 +2,7 @@ import { json } from "../../utils/http.js";
 import { requireAdmin, fullName, money } from "../../utils/admin.js";
 import { getSupabaseAdmin } from "../../utils/supabase.js";
 import { toCdnStorageUrl } from "../../utils/storageUrls.js";
-import { publicCardUrl, cardQrUrl } from "../../../../utils/publicUrl.js";
+import { cardNfcUrl, publicCardUrl, cardQrUrl } from "../../../../utils/publicUrl.js";
 
 function dateLabel(value) {
   return value ? new Date(value).toLocaleDateString() : "";
@@ -273,6 +273,7 @@ export async function GET(request) {
         slug: card.slug,
         publicUrl: card.id ? publicCardUrl(card, { request }) : "",
         qrUrl: card.id ? cardQrUrl(card, { request }) : "",
+        nfcUrl: card.id ? cardNfcUrl(card, { request }) : "",
         status: card.active ? "Published" : "Paused",
         active: Boolean(card.active),
         views: card.views || 0,

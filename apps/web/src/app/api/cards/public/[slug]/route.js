@@ -1,8 +1,8 @@
 import { activePlanForUser, cardFromRow } from "../../../utils/cards.js";
-import { recordCardEngagement } from "../../../utils/engagement.js";
+import { engagementTypeFromSource, recordCardEngagement } from "../../../utils/engagement.js";
 import { json } from "../../../utils/http.js";
 import { getSupabaseAdmin, hasSupabase } from "../../../utils/supabase.js";
-import { publicCardUrl, cardQrUrl } from "../../../../../utils/publicUrl.js";
+import { cardNfcUrl, publicCardUrl, cardQrUrl } from "../../../../../utils/publicUrl.js";
 
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || ""));
@@ -60,11 +60,11 @@ export async function GET(request, { params }) {
   }
 
   const source = new URL(request.url).searchParams.get("source");
-  if (source === "qr") {
-    await recordCardEngagement(supabase, { card: row, type: "qr_scan", request });
-  } else {
-    await recordCardEngagement(supabase, { card: row, type: "profile_view", request });
-  }
+  await recordCardEngagement(supabase, {
+    card: row,
+    type: engagementTypeFromSource(source),
+    request,
+  });
 
   let plan = "free";
 
@@ -78,6 +78,7 @@ export async function GET(request, { params }) {
       plan,
       publicUrl: publicCardUrl(row, { request }),
       qrUrl: cardQrUrl(row, { request }),
+      nfcUrl: cardNfcUrl(row, { request }),
     },
   });
 }

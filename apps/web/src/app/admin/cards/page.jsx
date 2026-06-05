@@ -1,5 +1,6 @@
 import {
   CreditCard,
+  Copy,
   Download,
   Eye,
   Flag,
@@ -11,6 +12,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { downloadQrSvg } from "../../../components/QRCode";
 import {
+  cardNfcUrl,
   cardQrUrl,
   displayCardUrl,
   publicCardUrl,
@@ -181,9 +183,10 @@ export default function AdminCardsPage() {
           </div>
         )}
         {filteredCards.map((card, index) => {
-          const { name: title, owner, status, views, qrScans: scans, contactDownloads, slug, publicUrl, qrUrl } = card;
+          const { name: title, owner, status, views, qrScans: scans, contactDownloads, slug, publicUrl, qrUrl, nfcUrl } = card;
           const cardLink = publicUrl || (card.id ? publicCardUrl(card) : "");
           const qrValue = qrUrl || (card.id ? cardQrUrl(card) : "");
+          const nfcLink = nfcUrl || (card.id ? cardNfcUrl(card) : "");
           const displayUrl = slug ? displayCardUrl(slug) : "";
           const [bg, color, border] = statusColors[status] || statusColors.Draft;
           const [assignmentBg, assignmentColor, assignmentBorder] = assignmentColors[card.assignmentStatus] || assignmentColors.unassigned;
@@ -242,6 +245,15 @@ export default function AdminCardsPage() {
                     style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, height: 30, padding: "0 10px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "#374151", cursor: "pointer", fontSize: 12, fontWeight: 800, whiteSpace: "nowrap" }}
                   >
                     <Download size={13} /> QR
+                  </button>
+                )}
+                {nfcLink && (
+                  <button
+                    title="Copy NFC tracking link"
+                    onClick={() => navigator.clipboard?.writeText(nfcLink)}
+                    style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, height: 30, padding: "0 10px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "#374151", cursor: "pointer", fontSize: 12, fontWeight: 800, whiteSpace: "nowrap" }}
+                  >
+                    <Copy size={13} /> NFC
                   </button>
                 )}
                 <button

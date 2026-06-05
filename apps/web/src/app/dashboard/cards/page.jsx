@@ -21,6 +21,7 @@ import {
 } from "../../../utils/cardsStore";
 import { getDashboardData } from "../../../utils/dashboardDataStore";
 import {
+  cardNfcUrl,
   cardQrUrl,
   displayCardUrl,
   publicCardUrl,
@@ -174,6 +175,7 @@ function CardRow({ card, qrLocked }) {
   const role = card.role || card.title || "No title";
   const company = card.company || "No company";
   const publicUrl = publicCardUrl(card);
+  const nfcUrl = card.nfcUrl || cardNfcUrl(card);
   const qrValue = card.qrUrl || cardQrUrl(card);
   const displayUrl = displayCardUrl(card.slug);
 
@@ -465,6 +467,12 @@ function CardRow({ card, qrLocked }) {
                   QrCode,
                   "#374151",
                   () => navigator.clipboard?.writeText(publicUrl),
+                ],
+                [
+                  "Copy NFC Link",
+                  Wifi,
+                  "#374151",
+                  () => navigator.clipboard?.writeText(nfcUrl),
                 ],
                 [
                   "Download QR",

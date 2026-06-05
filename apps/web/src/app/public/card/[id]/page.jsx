@@ -43,8 +43,9 @@ export default function PublicCardByIdPage() {
     async function loadCard() {
       try {
         const params = new URLSearchParams(location.search);
+        const source = params.get("source") || "";
         const found = await getPublicCard(id, {
-          source: params.get("source") === "qr" ? "qr" : "",
+          source: source === "nfc" || source === "qr" ? source : "",
           referrer: typeof document !== "undefined" ? document.referrer : "",
         });
         if (active) {

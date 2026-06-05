@@ -2,13 +2,14 @@ import { badRequest, json, readJson, unauthorized } from "../utils/http.js";
 import { activePlanForUser, applyPlanLimits, assertCanCreateCard, cardFromRow, cardPayload, isEmail } from "../utils/cards.js";
 import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin, isUniqueViolation } from "../utils/supabase.js";
-import { publicCardUrl, cardQrUrl } from "../../../utils/publicUrl.js";
+import { cardNfcUrl, publicCardUrl, cardQrUrl } from "../../../utils/publicUrl.js";
 
 function cardResponse(row, request) {
   return {
     ...cardFromRow(row),
     publicUrl: publicCardUrl(row, { request }),
     qrUrl: cardQrUrl(row, { request }),
+    nfcUrl: cardNfcUrl(row, { request }),
   };
 }
 

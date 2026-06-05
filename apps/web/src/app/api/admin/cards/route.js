@@ -2,13 +2,14 @@ import { badRequest, json, readJson } from "../../utils/http.js";
 import { requireAdmin, logAdminAction, fullName } from "../../utils/admin.js";
 import { activePlanForUser, applyPlanLimits, cardFromRow, cardPayload, isEmail } from "../../utils/cards.js";
 import { getSupabaseAdmin, isUniqueViolation } from "../../utils/supabase.js";
-import { publicCardUrl, cardQrUrl } from "../../../../utils/publicUrl.js";
+import { cardNfcUrl, publicCardUrl, cardQrUrl } from "../../../../utils/publicUrl.js";
 
 function cardResponse(row, request) {
   return {
     ...cardFromRow(row),
     publicUrl: publicCardUrl(row, { request }),
     qrUrl: cardQrUrl(row, { request }),
+    nfcUrl: cardNfcUrl(row, { request }),
   };
 }
 

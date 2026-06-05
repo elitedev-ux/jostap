@@ -75,12 +75,21 @@ export function cardQrPath(card) {
   return path === "/" ? path : `${path}?source=qr`;
 }
 
+export function cardNfcPath(card) {
+  const path = publicCardPath(card);
+  return path === "/" ? path : `${path}?source=nfc`;
+}
+
 export function cardProfileUrl(slug, options = {}) {
   return absolutePublicUrl(cardProfilePath(slug), options);
 }
 
 export function cardQrUrl(card, options = {}) {
   return absolutePublicUrl(cardQrPath(card), options);
+}
+
+export function cardNfcUrl(card, options = {}) {
+  return absolutePublicUrl(cardNfcPath(card), options);
 }
 
 export function displayCardUrl(slug, options = {}) {

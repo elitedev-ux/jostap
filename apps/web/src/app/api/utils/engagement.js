@@ -1,9 +1,18 @@
+import { createHash } from "node:crypto";
+
 const EVENT_COUNTERS = {
   profile_view: "views",
   qr_scan: "qr_scans",
   nfc_tap: "taps",
   contact_download: "contact_downloads",
 };
+
+export function engagementTypeFromSource(source) {
+  const value = String(source || "").trim().toLowerCase();
+  if (value === "qr" || value === "qr_scan" || value === "qrcode") return "qr_scan";
+  if (value === "nfc" || value === "nfc_tap" || value === "tap") return "nfc_tap";
+  return "profile_view";
+}
 
 function cleanHeader(value, max = 500) {
   return String(value || "").trim().slice(0, max) || null;
@@ -89,4 +98,3 @@ export async function recordCardEngagement(supabase, { card, type, request }) {
     throw error;
   }
 }
-import { createHash } from "node:crypto";

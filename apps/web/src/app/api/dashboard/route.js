@@ -4,7 +4,7 @@ import { accountFromUserAndKyc } from "../utils/profile.js";
 import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin } from "../utils/supabase.js";
 import { accessFromPlanAndTrial, trialStateFromUser } from "../utils/trial.js";
-import { cardQrUrl, publicCardUrl } from "../../../utils/publicUrl.js";
+import { cardNfcUrl, cardQrUrl, publicCardUrl } from "../../../utils/publicUrl.js";
 
 const PERIOD_DAYS = {
   "7d": 7,
@@ -183,6 +183,7 @@ function cardResponse(row, request) {
     ...cardFromRow(row),
     publicUrl: publicCardUrl(row, { request }),
     qrUrl: cardQrUrl(row, { request }),
+    nfcUrl: cardNfcUrl(row, { request }),
   };
 }
 
