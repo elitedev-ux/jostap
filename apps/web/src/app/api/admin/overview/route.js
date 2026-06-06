@@ -24,18 +24,35 @@ function sum(rows, key) {
   return (rows || []).reduce((total, row) => total + Number(row[key] || 0), 0);
 }
 
-const PLAN_PRICES = {
+const DEFAULT_PLAN_PRICE_KOBO = {
   free: { free: 0 },
-  jostap_nfc: { one_time: 3000 },
-  custom_nfc: { one_time: 5000 },
-  basic_renewal: { yearly: 1200 },
-  premium_renewal: { yearly: 2000 },
+  jostap_nfc: { one_time: 4000000 },
+  custom_nfc: { one_time: 5000000 },
+  basic_renewal: { yearly: 120000 },
+  premium_renewal: { yearly: 200000 },
 };
 
-function estimatedMonthlyValue(subscription) {
+function currentPlanPrice(plan, cycle, value) {
+  const fallback = DEFAULT_PLAN_PRICE_KOBO[plan]?.[cycle] || 0;
+  const amount = Number(value || 0);
+
+  return fallback ? Math.max(amount, fallback) : amount;
+}
+
+function priceForSubscription(subscription, pricingBySlug) {
   if (!subscription || subscription.status !== "active") return 0;
 
-  return PLAN_PRICES[subscription.plan]?.[subscription.billing_cycle] || 0;
+  const pricing = pricingBySlug.get(subscription.plan);
+
+  if (subscription.billing_cycle === "yearly") {
+    return currentPlanPrice(subscription.plan, "yearly", pricing?.yearly_cents);
+  }
+
+  if (subscription.billing_cycle === "one_time") {
+    return currentPlanPrice(subscription.plan, "one_time", pricing?.monthly_cents);
+  }
+
+  return 0;
 }
 
 function ticketContact(ticket) {
@@ -199,6 +216,7 @@ export async function GET(request) {
   const userById = new Map(users.map((user) => [user.id, user]));
   const profileByUser = new Map(profiles.map((profile) => [profile.user_id, profile]));
   const subscriptionsByUser = new Map(subscriptions.map((item) => [item.user_id, item]));
+  const pricingBySlug = new Map(pricingPlans.map((plan) => [plan.slug, plan]));
   const activeSubscriptions = subscriptions.filter((item) => item.status === "active");
   const premiumSubscriptions = activeSubscriptions.filter((item) =>
     ["custom_nfc", "premium_renewal"].includes(item.plan),
@@ -255,7 +273,7 @@ export async function GET(request) {
       premiumSubscriptions: premiumSubscriptions.length,
       revenueCents: sum(payments.filter((payment) => payment.status === "succeeded"), "amount_cents"),
       estimatedMrrCents: sum(activeSubscriptions.map((subscription) => ({
-        value: estimatedMonthlyValue(subscription),
+        value: priceForSubscription(subscription, pricingBySlug),
       })), "value"),
       openInvoices: invoices.filter((invoice) => invoice.status === "open").length,
       paidInvoices: invoices.filter((invoice) => invoice.status === "paid").length,

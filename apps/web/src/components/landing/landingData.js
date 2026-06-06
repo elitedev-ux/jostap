@@ -50,8 +50,8 @@ export const plans = [
   },
   {
     name: "JOSTAP Card",
-    price: "\u20A630,000",
-    note: "Launch Promo - \u20A640,000 Regular Price",
+    price: "\u20A640,000",
+    note: "",
     desc: "Best for professionals",
     features: [
       "Physical NFC card",

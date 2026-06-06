@@ -21,9 +21,8 @@ const PLANS = {
   },
   jostap_nfc: {
     name: "JOSTAP Card",
-    price: 30000,
-    displayPrice: "\u20A630,000",
-    previousPrice: "\u20A640,000",
+    price: 40000,
+    displayPrice: "\u20A640,000",
     billingLabel: "One-time payment",
     cards: "Physical NFC card",
     trial: "Includes 1 year premium feature access",
@@ -643,8 +642,7 @@ export default function CheckoutPage() {
             >
               <ShieldCheck size={16} style={{ flexShrink: 0, marginTop: 1 }} />
               <span>
-                  Paid checkout is blocked until Stripe, Paystack, or another
-                  approved payment provider is connected.
+                Free upgrade is enabled for now while online payment is being configured.
               </span>
             </div>
           </aside>

@@ -23,9 +23,8 @@ const PLANS = [
   },
   {
     name: "JOSTAP Card",
-    price: "\u20A630,000",
-    note: "Launch Promo",
-    subNote: "\u20A640,000 Regular Price",
+    price: "\u20A640,000",
+    note: "",
     desc: "Best for professionals",
     cta: "Order Card",
     href: "/checkout?plan=jostap_nfc&billing=one_time",

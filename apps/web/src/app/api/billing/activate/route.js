@@ -4,7 +4,6 @@ import { getSupabaseAdmin } from "../../utils/supabase.js";
 
 const PLANS = new Set(["free", "jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
 const CYCLES = new Set(["free", "one_time", "yearly"]);
-const BILLING_BYPASS_ENABLED = process.env.ALLOW_BILLING_BYPASS === "true";
 
 function addPeriod(cycle) {
   const date = new Date();
@@ -27,10 +26,6 @@ export async function POST(request) {
     return badRequest("Choose a valid plan and billing cycle.");
   }
 
-  if (plan !== "free" && !BILLING_BYPASS_ENABLED) {
-    return badRequest("Paid checkout is not configured yet. Please contact JOSTAP support to complete this order.");
-  }
-
   const supabase = getSupabaseAdmin();
   const now = new Date().toISOString();
   const { data: existing, error: lookupError } = await supabase
@@ -51,7 +46,7 @@ export async function POST(request) {
     plan,
     billing_cycle: billingCycle,
     status: "active",
-    provider: plan === "free" ? "free" : "billing_bypass",
+    provider: plan === "free" ? "free" : "free_upgrade",
     current_period_start: now,
     current_period_end: addPeriod(billingCycle),
   };

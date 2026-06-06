@@ -21,7 +21,7 @@ const PLANS = [
   {
     name: "JOSTAP Card",
     slug: "jostap_nfc",
-    price: "\u20A630,000",
+    price: "\u20A640,000",
     billing: "one_time",
     features: [
       "Physical NFC card",
