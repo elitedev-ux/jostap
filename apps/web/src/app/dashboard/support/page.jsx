@@ -166,8 +166,14 @@ export default function UserSupportPage() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 380px", gap: 20 }}>
-        <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 22 }}>
+      <div
+        className="support-dashboard-grid"
+        style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 380px", gap: 20 }}
+      >
+        <section
+          className="support-create-card"
+          style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 22, minWidth: 0 }}
+        >
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
             <Headphones size={17} color="#0d6ffd" />
             <h2 style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>Create Ticket</h2>
@@ -180,7 +186,7 @@ export default function UserSupportPage() {
               required
               style={inputStyle}
             />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="support-form-split" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <select
                 value={form.category}
                 onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
@@ -219,7 +225,10 @@ export default function UserSupportPage() {
           </form>
         </section>
 
-        <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
+        <section
+          className="support-tickets-card"
+          style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden", minWidth: 0 }}
+        >
           <div style={{ padding: 16, borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <TicketCheck size={17} color="#059669" />
@@ -281,7 +290,7 @@ export default function UserSupportPage() {
                 )}
               </div>
 
-              <div style={{ padding: 12, maxHeight: 230, overflowY: "auto", background: "#f5f5f5" }}>
+              <div className="support-messages-panel" style={{ padding: 12, maxHeight: 230, overflowY: "auto", background: "#f5f5f5" }}>
                 {(selectedTicket?.messages || []).length === 0 ? (
                   <div className="ui-empty-state" style={{ border: "none", padding: "22px 10px" }}>
                     <p className="ui-empty-state__title">No replies yet</p>
@@ -291,7 +300,11 @@ export default function UserSupportPage() {
                     {selectedTicket.messages.map((message) => {
                       const isAdmin = message.sender_role !== "user";
                       return (
-                        <div key={message.id} style={{ marginLeft: isAdmin ? "auto" : 0, maxWidth: "82%", background: isAdmin ? "#eaf3ff" : "#fff", border: "1px solid #E5E7EB", borderRadius: 9, padding: "9px 10px", overflow: "hidden" }}>
+                        <div
+                          className="support-message-bubble"
+                          key={message.id}
+                          style={{ marginLeft: isAdmin ? "auto" : 0, maxWidth: "82%", background: isAdmin ? "#eaf3ff" : "#fff", border: "1px solid #E5E7EB", borderRadius: 9, padding: "9px 10px", overflow: "hidden" }}
+                        >
                           <p style={{ fontSize: 11, color: "#6B7280", marginBottom: 3 }}>{isAdmin ? "Admin" : "You"}</p>
                           <p style={{ fontSize: 13, color: "#111827", lineHeight: 1.45, margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word" }}>{message.message}</p>
                         </div>
@@ -301,8 +314,8 @@ export default function UserSupportPage() {
                 )}
               </div>
 
-              <div style={{ padding: 12, borderTop: "1px solid #E5E7EB", display: "grid", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <div className="support-reply-panel" style={{ padding: 12, borderTop: "1px solid #E5E7EB", display: "grid", gap: 8 }}>
+                <div className="support-reply-row" style={{ display: "flex", alignItems: "center", gap: 7 }}>
                   <MessageSquare size={14} color="#6B7280" />
                   <input
                     value={reply}
@@ -313,6 +326,7 @@ export default function UserSupportPage() {
                   />
                 </div>
                 <button
+                  className="support-reply-button"
                   type="button"
                   onClick={sendReply}
                   disabled={!selectedTicket || !reply.trim() || loading}
@@ -325,6 +339,70 @@ export default function UserSupportPage() {
           )}
         </section>
       </div>
+      <style jsx global>{`
+        .support-dashboard-grid,
+        .support-create-card,
+        .support-tickets-card {
+          min-width: 0;
+          width: 100%;
+        }
+
+        .support-tickets-card button,
+        .support-tickets-card p,
+        .support-create-card input,
+        .support-create-card select,
+        .support-create-card textarea {
+          max-width: 100%;
+        }
+
+        @media (max-width: 900px) {
+          .support-dashboard-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+
+          .support-tickets-card {
+            order: 1;
+          }
+
+          .support-create-card {
+            order: 2;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .support-dashboard-grid {
+            gap: 14px !important;
+            padding-bottom: 72px;
+          }
+
+          .support-create-card {
+            padding: 16px !important;
+          }
+
+          .support-form-split {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+
+          .support-messages-panel {
+            max-height: 260px !important;
+          }
+
+          .support-message-bubble {
+            max-width: 100% !important;
+          }
+
+          .support-reply-row {
+            display: grid !important;
+            grid-template-columns: 18px minmax(0, 1fr);
+            align-items: center;
+          }
+
+          .support-reply-button {
+            width: 100% !important;
+            justify-content: center;
+          }
+        }
+      `}</style>
     </>
   );
 }

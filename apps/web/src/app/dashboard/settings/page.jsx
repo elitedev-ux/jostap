@@ -916,25 +916,21 @@ export default function SettingsPage() {
             {
               name: "Cal.com",
               desc: "Appointment booking",
-              connected: true,
               color: "#0d6ffd",
             },
             {
               name: "Stripe",
               desc: "Payments & billing",
-              connected: true,
               color: "#635BFF",
             },
             {
               name: "Zapier",
               desc: "Workflow automation",
-              connected: false,
               color: "#FF4A00",
             },
             {
               name: "HubSpot",
               desc: "CRM sync",
-              connected: false,
               color: "#FF7A59",
             },
           ].map((int) => (
@@ -944,6 +940,8 @@ export default function SettingsPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
+                gap: 14,
+                flexWrap: "wrap",
                 padding: "14px 0",
                 borderBottom: "1px solid #F3F4F6",
               }}
@@ -972,36 +970,23 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {int.connected && (
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 500,
-                      color: "#059669",
-                      background: "#ECFDF5",
-                      borderRadius: 999,
-                      padding: "3px 9px",
-                    }}
-                  >
-                    Connected
-                  </span>
-                )}
-                <button
+                <span
                   style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: int.connected ? "#DC2626" : "#0d6ffd",
-                    background: int.connected ? "#FEF2F2" : "#eaf3ff",
-                    border: int.connected
-                      ? "1px solid #FECACA"
-                      : "1px solid #BFDBFE",
-                    borderRadius: 7,
-                    padding: "6px 14px",
-                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: 106,
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: "#92400E",
+                    background: "#FFFBEB",
+                    border: "1px solid #FDE68A",
+                    borderRadius: 999,
+                    padding: "6px 12px",
                   }}
                 >
-                  {int.connected ? "Disconnect" : "Connect"}
-                </button>
+                  Coming Soon
+                </span>
               </div>
             </div>
           ))}
