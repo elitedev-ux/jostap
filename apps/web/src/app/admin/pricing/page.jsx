@@ -1,5 +1,13 @@
 import AdminResourcePage from "../AdminResourcePage";
 
+function money(cents) {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(Number(cents || 0) / 100);
+}
+
 async function updatePlan(row) {
   const response = await fetch(`/api/admin/platform/pricing/${row.id}`, {
     method: "PATCH",
@@ -13,8 +21,8 @@ async function updatePlan(row) {
 const columns = [
   { label: "Plan", key: "name", strong: true },
   { label: "Slug", key: "slug" },
-  { label: "Monthly", key: (row) => `$${Number(row.monthly_cents || 0) / 100}` },
-  { label: "Yearly", key: (row) => `$${Number(row.yearly_cents || 0) / 100}` },
+  { label: "Monthly", key: (row) => money(row.monthly_cents) },
+  { label: "Yearly", key: (row) => money(row.yearly_cents) },
   { label: "Cards", key: "card_limit" },
   { label: "Active", key: "is_active" },
 ];

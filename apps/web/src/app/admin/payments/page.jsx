@@ -1,5 +1,13 @@
 import AdminResourcePage from "../AdminResourcePage";
 
+function money(cents) {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(Number(cents || 0) / 100);
+}
+
 const columns = [
   { label: "Account", key: "account", strong: true },
   { label: "Amount", key: "amount" },
@@ -20,7 +28,7 @@ export default function AdminPaymentsPage() {
       statCards={[
         ["Total Payments", (data) => data?.payments?.length || 0, "#0d6ffd", "#eaf3ff"],
         ["Successful", (data) => data?.payments?.filter((item) => item.status === "succeeded").length || 0, "#047857", "#ECFDF5"],
-        ["Revenue", (data) => data?.stats?.revenueCents ? `$${Math.round(data.stats.revenueCents / 100).toLocaleString()}` : "$0", "#4F46E5", "#EEF2FF"],
+        ["Revenue", (data) => money(data?.stats?.revenueCents), "#4F46E5", "#EEF2FF"],
       ]}
     />
   );

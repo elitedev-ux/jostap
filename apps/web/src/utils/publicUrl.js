@@ -61,7 +61,7 @@ export function cardProfilePath(slug) {
 export function publicCardPath(card) {
   const value =
     typeof card === "object" && card !== null
-      ? trimSlashes(card.id)
+      ? trimSlashes(card.slug || card.id)
       : trimSlashes(card);
   return value ? `/public/card/${encodeURIComponent(value)}` : "/";
 }

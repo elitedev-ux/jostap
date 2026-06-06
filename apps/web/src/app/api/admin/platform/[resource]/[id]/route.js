@@ -61,6 +61,29 @@ export async function PATCH(request, { params }) {
   }
 
   const supabase = getSupabaseAdmin();
+  if (params.resource === "notifications" && updates.is_read === true) {
+    const { data: notification, error: notificationError } = await supabase
+      .from("admin_notifications")
+      .select("id,source,source_id")
+      .eq("id", params.id)
+      .maybeSingle();
+
+    if (notificationError) throw notificationError;
+
+    if (notification?.source === "support_ticket" && notification.source_id) {
+      const { data: ticket, error: ticketError } = await supabase
+        .from("support_tickets")
+        .select("status")
+        .eq("id", notification.source_id)
+        .maybeSingle();
+
+      if (ticketError) throw ticketError;
+      if (ticket && ticket.status !== "closed") {
+        return badRequest("Support ticket notifications stay unread until the ticket is closed.");
+      }
+    }
+  }
+
   const { data, error } = await supabase
     .from(table)
     .update(updates)

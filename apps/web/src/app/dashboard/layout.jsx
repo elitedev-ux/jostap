@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Bell,
+  Gem,
   Menu,
   X,
   Wallet,
@@ -128,6 +129,9 @@ export default function DashboardLayout({ children }) {
   const cardLimit = billing?.subscription?.cardLimit ?? 5;
   const cardsUsed = billing?.usage?.cards ?? 0;
   const cardLimitLabel = cardLimit ? `${cardsUsed} / ${cardLimit}` : `${cardsUsed}`;
+  const isPaidPremium =
+    Boolean(billing?.subscription?.features?.hasPremiumFeatures) &&
+    !["free", "trial"].includes(String(billing?.subscription?.plan || "free"));
   const accountInitials =
     accountName
       .split(" ")
@@ -236,28 +240,43 @@ export default function DashboardLayout({ children }) {
       <div className="p-3 border-t border-slate-200">
         {/* Plan badge */}
         {!sidebarCollapsed && (
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-2.5">
+          <div
+            className={cn(
+              "rounded-lg p-3 mb-2.5",
+              isPaidPremium
+                ? "bg-amber-50 border border-amber-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]"
+                : "bg-slate-50 border border-slate-200",
+            )}
+          >
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-[11px] font-semibold text-slate-900 leading-tight">
+                <p className={cn("text-[11px] font-semibold leading-tight", isPaidPremium ? "text-amber-950" : "text-slate-900")}>
                   {planName}
                 </p>
-                <p className="text-[11px] text-slate-500 leading-tight">
-                  {billing?.subscription?.plan === "trial"
+                <p className={cn("text-[11px] leading-tight", isPaidPremium ? "text-amber-700" : "text-slate-500")}>
+                  {isPaidPremium
+                    ? "Premium active"
+                    : billing?.subscription?.plan === "trial"
                     ? `${billing.subscription.trial?.daysRemaining || 0} days left`
                     : `${cardLimitLabel} cards used`}
                 </p>
               </div>
-              <a
-                href="/dashboard/billing"
-                className="text-[11px] font-semibold text-blue-600 no-underline bg-blue-50 rounded-full px-2 py-1 hover:bg-blue-100 transition-colors"
-              >
-                Upgrade
-              </a>
+              {isPaidPremium ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-800 ring-1 ring-amber-300">
+                  <Gem size={12} /> Premium
+                </span>
+              ) : (
+                <a
+                  href="/dashboard/billing"
+                  className="text-[11px] font-semibold text-blue-600 no-underline bg-blue-50 rounded-full px-2 py-1 hover:bg-blue-100 transition-colors"
+                >
+                  Upgrade
+                </a>
+              )}
             </div>
             <div className="mt-2 h-1 bg-slate-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                className={cn("h-full rounded-full transition-all duration-500", isPaidPremium ? "bg-amber-500" : "bg-blue-600")}
                 style={{
                   width: cardLimit
                     ? `${Math.min((cardsUsed / cardLimit) * 100, 100)}%`

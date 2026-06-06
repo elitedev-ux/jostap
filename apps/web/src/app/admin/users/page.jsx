@@ -8,6 +8,27 @@ const statusStyle = {
   "No plan": ["#f5f5f5", "#6B7280", "#E5E7EB"],
 };
 
+const selectStyle = {
+  border: "1px solid #E5E7EB",
+  background: "#fff",
+  borderRadius: 9,
+  padding: "8px 12px",
+  color: "#374151",
+  fontSize: 13,
+  fontWeight: 600,
+  outline: "none",
+  cursor: "pointer",
+};
+
+function planLabel(plan) {
+  const value = String(plan || "none");
+  if (value === "none") return "None";
+
+  return value
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 function downloadCsv(rows) {
   const columns = ["name", "email", "company", "role", "status", "plan", "subscriptionStatus", "cards", "revenue", "joined"];
   const body = rows.map((row) => columns.map((column) => JSON.stringify(String(row[column] ?? ""))).join(",")).join("\n");
@@ -23,6 +44,9 @@ function downloadCsv(rows) {
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [query, setQuery] = useState("");
+  const [planFilter, setPlanFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState("newest");
   const [loadError, setLoadError] = useState("");
   const [busyId, setBusyId] = useState("");
 
@@ -70,15 +94,33 @@ export default function AdminUsersPage() {
     };
   }, []);
 
-  const filteredUsers = useMemo(
-    () =>
-      users.filter((user) =>
-        [user.name, user.email, user.company, user.plan, user.status, user.subscriptionStatus, user.role]
-          .filter(Boolean)
-          .some((value) => value.toLowerCase().includes(query.toLowerCase())),
-      ),
-    [query, users],
-  );
+  const planOptions = useMemo(() => {
+    const plans = Array.from(new Set(users.map((user) => user.plan || "none")));
+    return plans.sort((a, b) => planLabel(a).localeCompare(planLabel(b)));
+  }, [users]);
+
+  const filteredUsers = useMemo(() => {
+    const search = query.trim().toLowerCase();
+
+    return users
+      .filter((user) => {
+        const userStatus = user.status === "suspended" ? "suspended" : "active";
+        const matchesSearch =
+          !search ||
+          [user.name, user.email, user.company, user.plan, user.status, user.subscriptionStatus, user.role, user.joined]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(search));
+        const matchesPlan = planFilter === "all" || (user.plan || "none") === planFilter;
+        const matchesStatus = statusFilter === "all" || userStatus === statusFilter;
+
+        return matchesSearch && matchesPlan && matchesStatus;
+      })
+      .sort((a, b) => {
+        const aTime = new Date(a.createdAt || 0).getTime() || 0;
+        const bTime = new Date(b.createdAt || 0).getTime() || 0;
+        return sortOrder === "newest" ? bTime - aTime : aTime - bTime;
+      });
+  }, [planFilter, query, sortOrder, statusFilter, users]);
 
   return (
     <>
@@ -100,17 +142,29 @@ export default function AdminUsersPage() {
             <Search size={14} color="#9CA3AF" />
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search users..." style={{ border: "none", outline: "none", background: "transparent", width: "100%", fontSize: 13 }} />
           </div>
-          {["All plans", "All status", "Newest first"].map((filter) => (
-            <button key={filter} style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 9, padding: "8px 12px", color: "#374151", fontSize: 13, fontWeight: 600 }}>
-              {filter}
-            </button>
-          ))}
+          <select value={planFilter} onChange={(event) => setPlanFilter(event.target.value)} style={selectStyle} aria-label="Filter by plan">
+            <option value="all">All plans</option>
+            {planOptions.map((plan) => (
+              <option key={plan} value={plan}>
+                {plan === "none" ? "No plan" : planLabel(plan)}
+              </option>
+            ))}
+          </select>
+          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} style={selectStyle} aria-label="Filter by status">
+            <option value="all">All status</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+          </select>
+          <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} style={selectStyle} aria-label="Sort users">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
         </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead style={{ background: "#f5f5f5" }}>
               <tr>
-                {["User", "Plan", "Status", "Cards", "Revenue", "Actions"].map((heading) => (
+                {["User", "Plan", "Status", "Cards", "Revenue", "Created", "Actions"].map((heading) => (
                   <th key={heading} style={{ textAlign: "left", padding: "12px 16px", fontSize: 12, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.04em" }}>{heading}</th>
                 ))}
               </tr>
@@ -118,14 +172,14 @@ export default function AdminUsersPage() {
             <tbody>
               {loadError && (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={7}>
                     <div style={{ background: "#FEF2F2", color: "#B91C1C", padding: 16, fontSize: 13, fontWeight: 700 }}>{loadError}</div>
                   </td>
                 </tr>
               )}
               {!loadError && filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={7}>
                     <div className="ui-empty-state" style={{ border: "none" }}>
                       <p className="ui-empty-state__title">No users yet</p>
                       <p className="ui-empty-state__copy">User records will appear here as accounts are created.</p>
@@ -150,7 +204,7 @@ export default function AdminUsersPage() {
                       </div>
                     </td>
                     <td style={{ padding: 16, fontSize: 13, color: "#374151", fontWeight: 600, textTransform: "capitalize" }}>
-                      {user.plan}
+                      {planLabel(user.plan)}
                       <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 3 }}>{user.subscriptionStatus}</p>
                     </td>
                     <td style={{ padding: 16 }}>
@@ -160,6 +214,7 @@ export default function AdminUsersPage() {
                     </td>
                     <td style={{ padding: 16, fontSize: 13, color: "#6B7280" }}>{user.cards}</td>
                     <td style={{ padding: 16, fontSize: 13, color: "#111827", fontWeight: 700 }}>{user.revenue}</td>
+                    <td style={{ padding: 16, fontSize: 12, color: "#6B7280", fontWeight: 700, whiteSpace: "nowrap" }}>{user.joined || "Unknown"}</td>
                     <td style={{ padding: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <button
                         onClick={() => updateUser(user, { status: user.status === "suspended" ? "active" : "suspended" })}

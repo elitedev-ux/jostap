@@ -8,6 +8,18 @@ function dateLabel(value) {
   return value ? new Date(value).toLocaleDateString() : "";
 }
 
+function dateTimeLabel(value) {
+  if (!value) return "";
+
+  return new Date(value).toLocaleString([], {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function sum(rows, key) {
   return (rows || []).reduce((total, row) => total + Number(row[key] || 0), 0);
 }
@@ -129,9 +141,29 @@ export async function GET(request) {
   const staticPages = staticPagesResult.data || [];
   const faqs = faqsResult.data || [];
   const pricingPlans = pricingPlansResult.data || [];
-  const notifications = notificationsResult.data || [];
+  const rawNotifications = notificationsResult.data || [];
   const announcements = announcementsResult.data || [];
   const supportTickets = supportTicketsResult.data || [];
+  const supportTicketById = new Map(supportTickets.map((ticket) => [ticket.id, ticket]));
+  const notifications = rawNotifications.map((item) => {
+    if (item.source !== "support_ticket" || !item.source_id) return item;
+
+    const ticket = supportTicketById.get(item.source_id);
+    const ticketIsActive = ticket && ticket.status !== "closed";
+
+    return {
+      ...item,
+      is_read: ticketIsActive ? false : item.is_read,
+      source: "support_ticket",
+      ticketId: item.source_id,
+      locked: ticketIsActive,
+    };
+  });
+  const linkedSupportTicketNotificationIds = new Set(
+    notifications
+      .filter((item) => item.source === "support_ticket" && item.source_id)
+      .map((item) => item.source_id),
+  );
   const unreadNewTicketSubjects = new Set(
     notifications
       .filter((item) =>
@@ -142,7 +174,11 @@ export async function GET(request) {
       .filter(Boolean),
   );
   const activeSupportTicketNotifications = supportTickets
-    .filter((ticket) => ticket.status !== "closed" && !unreadNewTicketSubjects.has(ticket.subject))
+    .filter((ticket) =>
+      ticket.status !== "closed" &&
+      !linkedSupportTicketNotificationIds.has(ticket.id) &&
+      !unreadNewTicketSubjects.has(ticket.subject),
+    )
     .map((ticket) => ({
       id: `support-ticket-${ticket.id}`,
       title: "Support ticket requires attention",
@@ -255,7 +291,8 @@ export async function GET(request) {
         subscriptionStatus: subscription?.status || "no plan",
         cards: cardsByUser.get(user.id) || 0,
         revenue: money(revenueByUser.get(user.id) || 0),
-        joined: dateLabel(user.created_at),
+        joined: dateTimeLabel(user.created_at),
+        createdAt: user.created_at || "",
         avatarUrl: toCdnStorageUrl(profile?.avatar_url || ""),
       };
     }),

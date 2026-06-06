@@ -11,7 +11,11 @@ function planName(plan) {
 }
 
 function money(cents) {
-  return `$${Math.round(Number(cents || 0) / 100).toLocaleString()}`;
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(Number(cents || 0) / 100);
 }
 
 export default function AdminSubscriptionsPage() {

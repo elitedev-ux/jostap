@@ -1,6 +1,7 @@
 import { badRequest, json, readJson, unauthorized } from "../../../utils/http.js";
 import { getSessionUser } from "../../../utils/session.js";
 import { getSupabaseAdmin } from "../../../utils/supabase.js";
+import { syncSupportTicketNotification } from "../../../utils/supportNotifications.js";
 
 function boundedText(value, max) {
   return String(value || "").trim().slice(0, max);
@@ -65,19 +66,16 @@ export async function POST(request, { params }) {
 
   if (error) throw error;
 
+  const nextStatus = ticket.status === "resolved" ? "pending" : ticket.status;
   await supabase
     .from("support_tickets")
     .update({
-      status: ticket.status === "resolved" ? "pending" : ticket.status,
+      status: nextStatus,
       updated_at: new Date().toISOString(),
     })
     .eq("id", ticket.id);
 
-  await supabase.from("admin_notifications").insert({
-    title: "Support ticket reply",
-    message: `${user.email} replied to ticket ${ticket.subject}`,
-    type: "info",
-  });
+  await syncSupportTicketNotification(supabase, { ...ticket, status: nextStatus }, user.email);
 
   return json({ message: row }, { status: 201 });
 }

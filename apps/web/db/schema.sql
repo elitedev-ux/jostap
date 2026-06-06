@@ -368,9 +368,15 @@ CREATE TABLE IF NOT EXISTS admin_notifications (
   title text NOT NULL,
   message text NOT NULL,
   type text NOT NULL DEFAULT 'info' CHECK (type IN ('info', 'warning', 'success', 'error')),
+  source text,
+  source_id text,
   is_read boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE admin_notifications ADD COLUMN IF NOT EXISTS source text;
+ALTER TABLE admin_notifications ADD COLUMN IF NOT EXISTS source_id text;
+CREATE INDEX IF NOT EXISTS admin_notifications_source_idx ON admin_notifications (source, source_id);
 
 CREATE TABLE IF NOT EXISTS announcements (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

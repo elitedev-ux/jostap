@@ -101,10 +101,10 @@ export async function requireAdmin(request, requiredPermission = null) {
   return { user, permissions };
 }
 
-export function money(cents, currency = "usd") {
-  return new Intl.NumberFormat("en", {
+export function money(cents) {
+  return new Intl.NumberFormat("en-NG", {
     style: "currency",
-    currency: String(currency || "usd").toUpperCase(),
+    currency: "NGN",
     maximumFractionDigits: 0,
   }).format(Number(cents || 0) / 100);
 }

@@ -2,6 +2,7 @@ import { badRequest, json, readJson } from "../../utils/http.js";
 import { isEmail } from "../../utils/cards.js";
 import { rateLimit, rateLimitKey } from "../../utils/rateLimit.js";
 import { getSupabaseAdmin } from "../../utils/supabase.js";
+import { syncSupportTicketNotification } from "../../utils/supportNotifications.js";
 
 function boundedText(value, max) {
   return String(value || "").trim().slice(0, max);
@@ -59,11 +60,7 @@ export async function POST(request) {
     message,
   });
 
-  await supabase.from("admin_notifications").insert({
-    title: "New help center ticket",
-    message: `${email} submitted: ${subject}`,
-    type: priority === "urgent" || priority === "high" ? "warning" : "info",
-  });
+  await syncSupportTicketNotification(supabase, ticket, email);
 
   return json({ ticket }, { status: 201 });
 }

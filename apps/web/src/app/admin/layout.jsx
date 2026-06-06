@@ -51,6 +51,7 @@ const NAV = [
 export default function AdminLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [adminUser, setAdminUser] = useState(null);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const path = typeof window !== "undefined" ? window.location.pathname : "";
 
@@ -78,6 +79,17 @@ export default function AdminLayout({ children }) {
           setAdminUser(data.user);
           setCheckingAdmin(false);
         }
+
+        fetch("/api/admin/overview", { credentials: "same-origin" })
+          .then((overviewResponse) => overviewResponse.ok ? overviewResponse.json() : null)
+          .then((overview) => {
+            if (active && overview?.stats) {
+              setUnreadNotifications(Number(overview.stats.unreadNotifications || 0));
+            }
+          })
+          .catch(() => {
+            if (active) setUnreadNotifications(0);
+          });
       } catch {
         if (active) {
           setCheckingAdmin(false);
@@ -92,6 +104,28 @@ export default function AdminLayout({ children }) {
       active = false;
     };
   }, []);
+
+  const NotificationBadge = ({ compact = false } = {}) =>
+    unreadNotifications > 0 ? (
+      <span
+        style={{
+          minWidth: compact ? 16 : 18,
+          height: compact ? 16 : 18,
+          borderRadius: 999,
+          background: "#DC2626",
+          color: "#fff",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: compact ? "0 4px" : "0 6px",
+          fontSize: compact ? 10 : 11,
+          fontWeight: 800,
+          lineHeight: 1,
+        }}
+      >
+        {unreadNotifications > 99 ? "99+" : unreadNotifications}
+      </span>
+    ) : null;
 
   if (checkingAdmin) {
     return (
@@ -149,6 +183,11 @@ export default function AdminLayout({ children }) {
             >
               <Icon size={17} />
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+              {label === "Notifications" && (
+                <span style={{ marginLeft: "auto" }}>
+                  <NotificationBadge compact />
+                </span>
+              )}
             </a>
           );
         })}
@@ -240,6 +279,30 @@ export default function AdminLayout({ children }) {
             </button>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <a
+              href="/admin/notifications"
+              title="Notifications"
+              style={{
+                position: "relative",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textDecoration: "none",
+                color: "#374151",
+                background: "#fff",
+                border: "1px solid #E5E7EB",
+                borderRadius: 8,
+                width: 38,
+                height: 38,
+              }}
+            >
+              <Bell size={16} />
+              {unreadNotifications > 0 && (
+                <span style={{ position: "absolute", top: -6, right: -7 }}>
+                  <NotificationBadge compact />
+                </span>
+              )}
+            </a>
             <a
               href="/dashboard"
               style={{

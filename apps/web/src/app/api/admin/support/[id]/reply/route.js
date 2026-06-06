@@ -1,9 +1,20 @@
 import { badRequest, json, readJson } from "../../../../utils/http.js";
 import { requireAdmin, logAdminAction } from "../../../../utils/admin.js";
 import { getSupabaseAdmin } from "../../../../utils/supabase.js";
+import { syncSupportTicketNotification } from "../../../../utils/supportNotifications.js";
 
 function boundedText(value, max) {
   return String(value || "").trim().slice(0, max);
+}
+
+function contactForTicket(ticket) {
+  return (
+    [ticket.users?.first_name, ticket.users?.last_name].filter(Boolean).join(" ").trim() ||
+    ticket.guest_name ||
+    ticket.users?.email ||
+    ticket.guest_email ||
+    "A user"
+  );
 }
 
 export async function POST(request, { params }) {
@@ -23,7 +34,7 @@ export async function POST(request, { params }) {
   const supabase = getSupabaseAdmin();
   const { data: ticket, error: ticketError } = await supabase
     .from("support_tickets")
-    .select("id,status")
+    .select("*, users(first_name,last_name,email)")
     .eq("id", params.id)
     .maybeSingle();
 
@@ -47,6 +58,8 @@ export async function POST(request, { params }) {
   if (nextStatus !== ticket.status) {
     await supabase.from("support_tickets").update({ status: nextStatus }).eq("id", ticket.id);
   }
+
+  await syncSupportTicketNotification(supabase, { ...ticket, status: nextStatus }, contactForTicket(ticket));
 
   await logAdminAction(supabase, adminUser, "support.reply", "support_ticket", params.id, {
     status: nextStatus,

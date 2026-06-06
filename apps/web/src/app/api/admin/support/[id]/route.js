@@ -1,6 +1,7 @@
 import { badRequest, json, readJson } from "../../../utils/http.js";
 import { requireAdmin, logAdminAction } from "../../../utils/admin.js";
 import { getSupabaseAdmin } from "../../../utils/supabase.js";
+import { syncSupportTicketNotification } from "../../../utils/supportNotifications.js";
 
 function boundedText(value, max) {
   return String(value || "").trim().slice(0, max);
@@ -87,7 +88,7 @@ export async function PATCH(request, { params }) {
     .from("support_tickets")
     .update(updates)
     .eq("id", params.id)
-    .select("*")
+    .select("*, users(first_name,last_name,email)")
     .single();
 
   if (error) throw error;
@@ -99,6 +100,7 @@ export async function PATCH(request, { params }) {
       sender_role: "system",
       message: `Status updated to "${updates.status}".`,
     });
+    await syncSupportTicketNotification(supabase, data, contactForTicket(data).contactEmail || contactForTicket(data).contactName);
   }
 
   await logAdminAction(supabase, adminUser, "support.updated", "support_ticket", params.id, updates);

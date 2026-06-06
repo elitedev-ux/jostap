@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   ArrowUpRight,
   BarChart3,
+  Bell,
   CheckCircle2,
   CreditCard,
   DollarSign,
@@ -15,9 +16,9 @@ import {
 import { useEffect, useState } from "react";
 
 function money(cents) {
-  return new Intl.NumberFormat("en", {
+  return new Intl.NumberFormat("en-NG", {
     style: "currency",
-    currency: "USD",
+    currency: "NGN",
     maximumFractionDigits: 0,
   }).format(Number(cents || 0) / 100);
 }
@@ -119,6 +120,7 @@ export default function AdminOverviewPage() {
       card.created || "",
     ]),
   ].slice(0, 7);
+  const notifications = (admin?.notifications || []).slice(0, 5);
 
   return (
     <>
@@ -201,6 +203,70 @@ export default function AdminOverviewPage() {
           </div>
         </section>
       </div>
+
+      <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 22, marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+          <div>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 4 }}>Recent Notifications</h2>
+            <p style={{ fontSize: 13, color: "#6B7280" }}>Unread support tickets stay visible until the ticket is closed.</p>
+          </div>
+          <a
+            href="/admin/notifications"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              textDecoration: "none",
+              color: "#0d6ffd",
+              background: "#eaf3ff",
+              borderRadius: 9,
+              padding: "8px 11px",
+              fontSize: 12,
+              fontWeight: 800,
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Bell size={14} /> View all
+          </a>
+        </div>
+        {notifications.length === 0 && (
+          <div className="ui-empty-state" style={{ border: "none", padding: "26px 18px" }}>
+            <p className="ui-empty-state__title">No notifications yet</p>
+            <p className="ui-empty-state__copy">New support tickets and platform alerts will appear here.</p>
+          </div>
+        )}
+        {notifications.map((notification, index) => {
+          const unread = !notification.is_read;
+          const href = notification.source === "support_ticket" && notification.ticketId
+            ? `/admin/support?ticket=${encodeURIComponent(notification.ticketId)}`
+            : "/admin/notifications";
+
+          return (
+            <a
+              key={notification.id || index}
+              href={href}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "13px 0",
+                borderTop: index ? "1px solid #F3F4F6" : "none",
+                textDecoration: "none",
+                color: "inherit",
+              }}
+            >
+              <span style={{ width: 9, height: 9, borderRadius: "50%", background: unread ? "#DC2626" : "#D1D5DB", flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 800, color: "#111827", marginBottom: 3 }}>{notification.title}</p>
+                <p style={{ fontSize: 12, color: "#6B7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{notification.message}</p>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 800, color: unread ? "#B91C1C" : "#6B7280", background: unread ? "#FEF2F2" : "#F3F4F6", borderRadius: 999, padding: "3px 8px", whiteSpace: "nowrap" }}>
+                {unread ? "Unread" : "Read"}
+              </span>
+            </a>
+          );
+        })}
+      </section>
 
       <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 22 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 12 }}>Recent Activity</h2>

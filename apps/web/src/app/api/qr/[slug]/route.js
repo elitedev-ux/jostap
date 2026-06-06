@@ -33,5 +33,5 @@ export async function GET(request, { params }) {
 
   await recordCardEngagement(supabase, { card: row, type: "qr_scan", request });
 
-  return redirectTo(publicCardPath(row.id), request);
+  return redirectTo(publicCardPath(row), request);
 }
