@@ -1,5 +1,6 @@
 import { createSession } from "../../../utils/session.js";
 import { getSupabaseAdmin, hasSupabase } from "../../../utils/supabase.js";
+import { createEmailVerificationChallenge } from "../../../utils/authSecurity.js";
 
 const STATE_COOKIE = "jostap_google_state";
 const RETURN_COOKIE = "jostap_google_return_to";
@@ -21,32 +22,37 @@ function parseCookie(header) {
   );
 }
 
-function clearStateCookie(request) {
+function cookieDomainFlag(request) {
+  const hostname = new URL(request.url).hostname.toLowerCase();
+
+  return hostname === "jostap.com" || hostname.endsWith(".jostap.com")
+    ? "Domain=.jostap.com"
+    : "";
+}
+
+function clearCookie(request, name, includeDomain = false) {
   const secure =
     process.env.NODE_ENV === "production" || request.url.startsWith("https://");
 
   return [
-    `${STATE_COOKIE}=`,
+    `${name}=`,
     "Max-Age=0",
     "Path=/",
     "SameSite=Lax",
     "HttpOnly",
+    includeDomain ? cookieDomainFlag(request) : "",
     secure ? "Secure" : "",
   ].filter(Boolean).join("; ");
 }
 
-function clearReturnCookie(request) {
-  const secure =
-    process.env.NODE_ENV === "production" || request.url.startsWith("https://");
+function appendGoogleCookieClears(headers, request) {
+  headers.append("Set-Cookie", clearCookie(request, STATE_COOKIE));
+  headers.append("Set-Cookie", clearCookie(request, RETURN_COOKIE));
 
-  return [
-    `${RETURN_COOKIE}=`,
-    "Max-Age=0",
-    "Path=/",
-    "SameSite=Lax",
-    "HttpOnly",
-    secure ? "Secure" : "",
-  ].filter(Boolean).join("; ");
+  if (cookieDomainFlag(request)) {
+    headers.append("Set-Cookie", clearCookie(request, STATE_COOKIE, true));
+    headers.append("Set-Cookie", clearCookie(request, RETURN_COOKIE, true));
+  }
 }
 
 function safeReturnTo(value) {
@@ -88,8 +94,24 @@ function redirectWithError(request, message) {
     Location: url.toString(),
   });
 
-  headers.append("Set-Cookie", clearStateCookie(request));
-  headers.append("Set-Cookie", clearReturnCookie(request));
+  appendGoogleCookieClears(headers, request);
+
+  return new Response(null, {
+    status: 302,
+    headers,
+  });
+}
+
+function redirectForEmailVerification(request, user, returnTo) {
+  const url = new URL("/auth/signin", request.url);
+  url.searchParams.set("verifyEmail", user.email);
+  url.searchParams.set("callbackUrl", returnTo || "/dashboard");
+
+  const headers = new Headers({
+    Location: url.toString(),
+  });
+
+  appendGoogleCookieClears(headers, request);
 
   return new Response(null, {
     status: 302,
@@ -164,7 +186,7 @@ export async function GET(request) {
   const supabase = getSupabaseAdmin();
   const { data: existingUser, error: existingError } = await supabase
     .from("users")
-    .select("id, first_name, last_name, company, email, role, status, created_at")
+    .select("id, first_name, last_name, company, email, role, status, email_verified_at, created_at")
     .ilike("email", email)
     .maybeSingle();
 
@@ -186,7 +208,7 @@ export async function GET(request) {
         email,
         password_hash: `google:${profile.sub}`,
       })
-      .select("id, first_name, last_name, company, email, role, status, created_at")
+      .select("id, first_name, last_name, company, email, role, status, email_verified_at, created_at")
       .single();
 
     if (insertError) {
@@ -201,13 +223,17 @@ export async function GET(request) {
     return redirectWithError(request, "This account has been suspended.");
   }
 
+  if (!user.email_verified_at) {
+    await createEmailVerificationChallenge(supabase, user);
+    return redirectForEmailVerification(request, user, isNewUser ? "/kyc" : returnTo);
+  }
+
   const session = await createSession(user.id, request);
   const headers = new Headers({
     Location: new URL(destinationForUser(user, returnTo, isNewUser), url.origin).toString(),
   });
 
-  headers.append("Set-Cookie", clearStateCookie(request));
-  headers.append("Set-Cookie", clearReturnCookie(request));
+  appendGoogleCookieClears(headers, request);
   headers.append("Set-Cookie", session.cookie);
 
   return new Response(null, {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import logo from "../../../assets/jostap logo.png3.png";
 import authMockup from "../../../assets/JOSTAP Design (5).png";
@@ -61,15 +61,51 @@ export default function SignInPage() {
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("error") || ""
       : "";
+  const initialVerificationEmail =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("verifyEmail") || ""
+      : "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(initialError);
-  const [verificationEmail, setVerificationEmail] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [error, setError] = useState("");
+  const [verificationEmail, setVerificationEmail] = useState(initialVerificationEmail);
   const [verificationCode, setVerificationCode] = useState("");
   const [twoFactorChallengeId, setTwoFactorChallengeId] = useState("");
   const [twoFactorCode, setTwoFactorCode] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function redirectAuthenticatedUser() {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "same-origin" });
+        const data = await response.json().catch(() => ({}));
+
+        if (response.ok && data.user) {
+          clearDashboardDataCache();
+          window.location.replace(destinationForUser(data.user, callbackUrl));
+          return;
+        }
+      } catch {
+        // If the session check fails, let the normal sign-in form handle auth.
+      }
+
+      if (active) {
+        setError(initialError);
+        setCheckingSession(false);
+      }
+    }
+
+    redirectAuthenticatedUser();
+
+    return () => {
+      active = false;
+    };
+  }, [callbackUrl, initialError]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -142,6 +178,29 @@ export default function SignInPage() {
     }
   };
 
+  const resendVerificationCode = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ email: verificationEmail || email }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to resend verification code.");
+      }
+    } catch (error) {
+      setError(error.message || "Unable to resend verification code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTwoFactor = async (event) => {
     event.preventDefault();
     setLoading(true);
@@ -188,6 +247,9 @@ export default function SignInPage() {
 
         {verificationEmail ? (
           <form onSubmit={handleVerifyEmail}>
+            <p className="auth-form__switch" style={{ marginTop: 0 }}>
+              We sent a 6-digit code to {verificationEmail}.
+            </p>
             <div className="auth-fields">
               <label className="auth-field">
                 <span>Email verification code</span>
@@ -202,6 +264,15 @@ export default function SignInPage() {
             </div>
             <button className="auth-submit" disabled={loading} type="submit">
               {loading ? "Verifying..." : "Verify Email"}
+            </button>
+            <button
+              type="button"
+              onClick={resendVerificationCode}
+              disabled={loading}
+              className="auth-submit"
+              style={{ marginTop: 10, background: "#eaf3ff", color: "#0d6ffd" }}
+            >
+              Resend Code
             </button>
           </form>
         ) : twoFactorChallengeId ? (
@@ -279,12 +350,16 @@ export default function SignInPage() {
         {!verificationEmail && !twoFactorChallengeId && <div className="auth-social-grid">
           <button
             type="button"
+            disabled={loading || googleLoading || checkingSession}
             onClick={() => {
+              if (googleLoading) return;
+              setGoogleLoading(true);
+              setError("");
               window.location.href = `/api/auth/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
             }}
           >
             <GoogleIcon />
-            Continue with Google
+            {googleLoading ? "Connecting..." : "Continue with Google"}
           </button>
         </div>}
       </div>

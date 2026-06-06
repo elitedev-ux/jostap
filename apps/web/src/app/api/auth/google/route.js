@@ -6,6 +6,7 @@ const RETURN_COOKIE = "jostap_google_return_to";
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 
 function cookieFlags(request) {
+  const hostname = new URL(request.url).hostname.toLowerCase();
   const secure =
     process.env.NODE_ENV === "production" || request.url.startsWith("https://");
 
@@ -14,6 +15,9 @@ function cookieFlags(request) {
     "Path=/",
     "SameSite=Lax",
     "Max-Age=600",
+    hostname === "jostap.com" || hostname.endsWith(".jostap.com")
+      ? "Domain=.jostap.com"
+      : "",
     secure ? "Secure" : "",
   ].filter(Boolean);
 }

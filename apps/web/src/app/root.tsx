@@ -31,6 +31,7 @@ import { Toaster, toast } from 'sonner';
 import { useDevServerHeartbeat } from '../__create/useDevServerHeartbeat';
 import '../__create/design-mode';
 import favicon from '../assets/jostap favicon bg.png';
+import FloatingWhatsapp from '../components/FloatingWhatsapp';
 import type { Route } from './+types/root';
 
 export const links = () => [];
@@ -407,6 +408,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location?.pathname;
+  const showFloatingWhatsapp = pathname === '/' || pathname?.startsWith('/dashboard');
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -446,6 +448,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <ClientOnly loader={() => children} />
+        {showFloatingWhatsapp ? <FloatingWhatsapp /> : null}
         <Toaster position={isMobile ? 'top-center' : 'bottom-right'} />
         <ScrollRestoration />
         <Scripts />
