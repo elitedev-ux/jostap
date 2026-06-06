@@ -16,6 +16,7 @@ import {
 } from "../../../utils/uploadRules";
 import { IMAGE_UPLOAD_TARGETS, prepareImageForUpload } from "../../../utils/imageCompression";
 import { displayCardUrl } from "../../../utils/publicUrl";
+import { clearDashboardDataCache } from "../../../utils/dashboardDataStore";
 
 const TABS = ["Profile", "Notifications", "Security", "Integrations"];
 
@@ -82,6 +83,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [saveError, setSaveError] = useState("");
   const avatarInputRef = useRef(null);
   const [profile, setProfile] = useState({
@@ -256,6 +258,37 @@ export default function SettingsPage() {
     } finally {
       setUploadingAvatar(false);
       event.target.value = "";
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      "Delete your JOSTAP account and all account data? This cannot be undone.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setSaveError("");
+    setDeletingAccount(true);
+
+    try {
+      const response = await fetch("/api/account", {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to delete your account.");
+      }
+
+      clearDashboardDataCache();
+      window.location.href = "/";
+    } catch (error) {
+      setSaveError(error.message || "Unable to delete your account.");
+      setDeletingAccount(false);
     }
   };
 
@@ -726,6 +759,9 @@ export default function SettingsPage() {
             desc="Irreversible and destructive actions."
           >
             <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={deletingAccount}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -737,10 +773,11 @@ export default function SettingsPage() {
                 border: "1px solid #FECACA",
                 borderRadius: 8,
                 padding: "9px 16px",
-                cursor: "pointer",
+                cursor: deletingAccount ? "wait" : "pointer",
+                opacity: deletingAccount ? 0.7 : 1,
               }}
             >
-              <Trash2 size={14} /> Delete Account
+              <Trash2 size={14} /> {deletingAccount ? "Deleting..." : "Delete Account"}
             </button>
           </Section>
         </>

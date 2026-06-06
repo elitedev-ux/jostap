@@ -4,6 +4,7 @@ import { createEmailVerificationChallenge } from "../../../utils/authSecurity.js
 
 const STATE_COOKIE = "jostap_google_state";
 const RETURN_COOKIE = "jostap_google_return_to";
+const INTENT_COOKIE = "jostap_google_intent";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
 
@@ -48,10 +49,12 @@ function clearCookie(request, name, includeDomain = false) {
 function appendGoogleCookieClears(headers, request) {
   headers.append("Set-Cookie", clearCookie(request, STATE_COOKIE));
   headers.append("Set-Cookie", clearCookie(request, RETURN_COOKIE));
+  headers.append("Set-Cookie", clearCookie(request, INTENT_COOKIE));
 
   if (cookieDomainFlag(request)) {
     headers.append("Set-Cookie", clearCookie(request, STATE_COOKIE, true));
     headers.append("Set-Cookie", clearCookie(request, RETURN_COOKIE, true));
+    headers.append("Set-Cookie", clearCookie(request, INTENT_COOKIE, true));
   }
 }
 
@@ -89,6 +92,21 @@ function appOrigin(request) {
 
 function redirectWithError(request, message) {
   const url = new URL("/auth/signin", request.url);
+  url.searchParams.set("error", message);
+  const headers = new Headers({
+    Location: url.toString(),
+  });
+
+  appendGoogleCookieClears(headers, request);
+
+  return new Response(null, {
+    status: 302,
+    headers,
+  });
+}
+
+function redirectToSignupWithError(request, message) {
+  const url = new URL("/auth/signup", request.url);
   url.searchParams.set("error", message);
   const headers = new Headers({
     Location: url.toString(),
@@ -143,6 +161,7 @@ export async function GET(request) {
   const cookies = parseCookie(request.headers.get("Cookie"));
   const storedState = cookies[STATE_COOKIE];
   const returnTo = safeReturnTo(cookies[RETURN_COOKIE]);
+  const intent = cookies[INTENT_COOKIE] === "signup" ? "signup" : "signin";
 
   if (!code || !state || !storedState || state !== storedState) {
     return redirectWithError(request, "Google sign in could not be verified.");
@@ -192,6 +211,13 @@ export async function GET(request) {
 
   if (existingError) {
     throw existingError;
+  }
+
+  if (existingUser && intent === "signup") {
+    return redirectToSignupWithError(
+      request,
+      "An account with this email already exists. Please sign in instead.",
+    );
   }
 
   let user = existingUser;

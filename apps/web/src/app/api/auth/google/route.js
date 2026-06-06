@@ -3,6 +3,7 @@ import { json } from "../../utils/http.js";
 
 const STATE_COOKIE = "jostap_google_state";
 const RETURN_COOKIE = "jostap_google_return_to";
+const INTENT_COOKIE = "jostap_google_intent";
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 
 function cookieFlags(request) {
@@ -32,6 +33,10 @@ function safeReturnTo(value) {
   }
 
   return value;
+}
+
+function safeIntent(value) {
+  return value === "signup" ? "signup" : "signin";
 }
 
 function authPageFromRequest(request) {
@@ -86,6 +91,7 @@ export async function GET(request) {
   const url = new URL(request.url);
   const state = randomUUID();
   const returnTo = safeReturnTo(url.searchParams.get("callbackUrl"));
+  const intent = safeIntent(url.searchParams.get("intent"));
   const callbackUrl = new URL("/api/auth/google/callback", appOrigin(request));
   const authUrl = new URL(GOOGLE_AUTH_URL);
 
@@ -107,6 +113,10 @@ export async function GET(request) {
       [
         "Set-Cookie",
         `${RETURN_COOKIE}=${encodeURIComponent(returnTo)}; ${cookieFlags(request).join("; ")}`,
+      ],
+      [
+        "Set-Cookie",
+        `${INTENT_COOKIE}=${encodeURIComponent(intent)}; ${cookieFlags(request).join("; ")}`,
       ],
     ],
   });

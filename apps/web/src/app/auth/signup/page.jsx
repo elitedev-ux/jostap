@@ -320,7 +320,7 @@ export default function SignUpPage() {
           <button
             type="button"
             onClick={() => {
-              window.location.href = `/api/auth/google?callbackUrl=${encodeURIComponent("/kyc")}`;
+              window.location.href = `/api/auth/google?intent=signup&callbackUrl=${encodeURIComponent("/kyc")}`;
             }}
           >
             <GoogleIcon />
