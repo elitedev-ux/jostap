@@ -1,5 +1,6 @@
 import { badRequest, json, readJson, unauthorized } from "../../../utils/http.js";
 import { createSession, getSessionUser } from "../../../utils/session.js";
+import { authRateLimit } from "../../../utils/rateLimit.js";
 import { getSupabaseAdmin } from "../../../utils/supabase.js";
 import { verifyTotp } from "../../../utils/authSecurity.js";
 
@@ -64,6 +65,8 @@ export async function POST(request) {
 
   const code = String(body.code || "").trim();
   const challengeId = String(body.challengeId || "").trim();
+  const limited = authRateLimit(request, "two-factor-verify", challengeId || "session");
+  if (limited) return limited;
 
   if (!code) return badRequest("Two-factor code is required.");
 

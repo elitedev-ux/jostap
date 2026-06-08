@@ -2,6 +2,7 @@ import { badRequest, json, readJson, unauthorized } from "../../utils/http.js";
 import { createSession } from "../../utils/session.js";
 import { verifyPassword } from "../../utils/password.js";
 import { getSupabaseAdmin, hasSupabase } from "../../utils/supabase.js";
+import { authRateLimit } from "../../utils/rateLimit.js";
 import {
   createEmailVerificationChallenge,
   createTwoFactorLoginChallenge,
@@ -24,6 +25,8 @@ export async function POST(request) {
 
   const email = normalizeEmail(body.email);
   const password = String(body.password || "");
+  const limited = authRateLimit(request, "signin", email || "missing-email");
+  if (limited) return limited;
 
   if (!email || !password) {
     return badRequest("Email and password are required.");

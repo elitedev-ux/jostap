@@ -1,5 +1,6 @@
 import { badRequest, json, readJson } from "../../utils/http.js";
 import { getSupabaseAdmin, hasSupabase } from "../../utils/supabase.js";
+import { authRateLimit } from "../../utils/rateLimit.js";
 import { createEmailVerificationChallenge, normalizeEmail } from "../../utils/authSecurity.js";
 
 export async function POST(request) {
@@ -15,6 +16,12 @@ export async function POST(request) {
 
   const email = normalizeEmail(body.email);
   if (!email) return badRequest("Email is required.");
+
+  const limited = authRateLimit(request, "resend-otp", email, {
+    limit: 4,
+    windowMs: 30 * 60_000,
+  });
+  if (limited) return limited;
 
   const supabase = getSupabaseAdmin();
   const { data: user, error } = await supabase

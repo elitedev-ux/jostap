@@ -502,7 +502,7 @@ export default function BillingPage() {
               {invoice.status}
             </span>
             {invoice.hostedInvoiceUrl ? (
-              <a href={invoice.hostedInvoiceUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#0d6ffd", fontWeight: 700 }}>
+              <a href={invoice.hostedInvoiceUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: "#0d6ffd", fontWeight: 700 }}>
                 View invoice
               </a>
             ) : (

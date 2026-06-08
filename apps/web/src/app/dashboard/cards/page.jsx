@@ -393,7 +393,7 @@ function CardRow({ card, qrLocked }) {
         <a
           href={publicUrl}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           style={{
             display: "inline-flex",
             alignItems: "center",

@@ -16,9 +16,18 @@ function parseCookie(header) {
       .filter(Boolean)
       .map((part) => {
         const index = part.indexOf("=");
+        const rawValue = index === -1 ? "" : part.slice(index + 1);
+        let value = rawValue;
+
+        try {
+          value = decodeURIComponent(rawValue);
+        } catch {
+          value = rawValue;
+        }
+
         return index === -1
           ? [part, ""]
-          : [part.slice(0, index), decodeURIComponent(part.slice(index + 1))];
+          : [part.slice(0, index), value];
       }),
   );
 }

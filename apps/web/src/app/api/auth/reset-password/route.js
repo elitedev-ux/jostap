@@ -1,6 +1,7 @@
 import { badRequest, json, readJson, unauthorized } from "../../utils/http.js";
 import { normalizeEmail, verifyPasswordResetChallenge } from "../../utils/authSecurity.js";
 import { hashPassword, validatePassword } from "../../utils/password.js";
+import { authRateLimit } from "../../utils/rateLimit.js";
 import { getSupabaseAdmin, hasSupabase } from "../../utils/supabase.js";
 
 export async function POST(request) {
@@ -17,6 +18,8 @@ export async function POST(request) {
   const email = normalizeEmail(body.email);
   const code = String(body.code || "").trim();
   const password = String(body.password || "");
+  const limited = authRateLimit(request, "reset-password", email || "missing-email");
+  if (limited) return limited;
 
   if (!email || !code || !password) {
     return badRequest("Email, reset code, and new password are required.");

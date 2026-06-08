@@ -132,9 +132,32 @@ export function initials(name) {
 }
 
 export function normalizedUrl(value) {
-  if (!value) return "#";
-  if (/^https?:\/\//i.test(value)) return value;
-  return `https://${value}`;
+  const raw = String(value || "").trim();
+  if (!raw) return "#";
+
+  const candidate = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+
+  try {
+    const url = new URL(candidate);
+    return ["http:", "https:"].includes(url.protocol) && url.hostname
+      ? url.toString()
+      : "#";
+  } catch {
+    return "#";
+  }
+}
+
+function normalizedOptionalUrl(value) {
+  const url = normalizedUrl(value);
+  return url === "#" ? "" : url;
+}
+
+function safeHandle(value) {
+  return String(value || "")
+    .trim()
+    .replace(/^@/, "")
+    .replace(/[\s/#?&]+/g, "")
+    .slice(0, 80);
 }
 
 function cleanHandle(value) {
@@ -142,12 +165,25 @@ function cleanHandle(value) {
   if (/^https?:\/\//i.test(raw)) {
     try {
       const url = new URL(raw);
-      return url.pathname.split("/").filter(Boolean).pop()?.replace(/^@/, "") || raw;
+      return safeHandle(url.pathname.split("/").filter(Boolean).pop() || "");
     } catch {
-      return raw.replace(/^@/, "");
+      return safeHandle(raw);
     }
   }
-  return raw.replace(/^@/, "");
+  return safeHandle(raw);
+}
+
+function normalizeSkype(value) {
+  const handle = String(value || "")
+    .trim()
+    .replace(/^skype:/i, "")
+    .replace(/\?.*$/g, "");
+
+  if (!/^[a-z0-9._,+-]{1,80}$/i.test(handle)) {
+    return "";
+  }
+
+  return `skype:${encodeURIComponent(handle)}?chat`;
 }
 
 function normalizeWhatsapp(value) {
@@ -157,38 +193,39 @@ function normalizeWhatsapp(value) {
 export function platformUrl(field, value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
-  if (/^https?:\/\//i.test(raw) || /^skype:/i.test(raw)) return raw;
+  if (/^https?:\/\//i.test(raw)) return normalizedOptionalUrl(raw);
+  if (/^skype:/i.test(raw)) return field === "skype" ? normalizeSkype(raw) : "";
 
   const handle = cleanHandle(raw);
   const urls = {
-    website: normalizedUrl(raw),
-    portfolio: normalizedUrl(raw),
-    linkedin: normalizedUrl(raw.includes("linkedin.com") ? raw : `linkedin.com/in/${handle}`),
-    twitter: normalizedUrl(`x.com/${handle}`),
-    instagram: normalizedUrl(`instagram.com/${handle}`),
-    threads: normalizedUrl(`threads.net/@${handle}`),
-    facebook: normalizedUrl(raw.includes("facebook.com") ? raw : `facebook.com/${handle}`),
-    youtube: normalizedUrl(raw.includes("youtube.com") ? raw : `youtube.com/@${handle}`),
-    snapchat: normalizedUrl(`snapchat.com/add/${handle}`),
-    tiktok: normalizedUrl(`tiktok.com/@${handle}`),
-    twitch: normalizedUrl(`twitch.tv/${handle}`),
-    yelp: normalizedUrl(raw),
-    whatsapp: normalizeWhatsapp(raw) ? `https://wa.me/${normalizeWhatsapp(raw)}` : normalizedUrl(raw),
-    signal: normalizedUrl(raw),
-    discord: normalizedUrl(raw),
-    skype: `skype:${raw}?chat`,
-    telegram: normalizedUrl(`t.me/${handle}`),
-    github: normalizedUrl(raw.includes("github.com") ? raw : `github.com/${handle}`),
-    behance: normalizedUrl(raw.includes("behance.net") ? raw : `behance.net/${handle}`),
-    dribbble: normalizedUrl(raw.includes("dribbble.com") ? raw : `dribbble.com/${handle}`),
-    spotify: normalizedUrl(raw),
-    appleMusic: normalizedUrl(raw),
-    boomplay: normalizedUrl(raw),
-    audiomack: normalizedUrl(raw.includes("audiomack.com") ? raw : `audiomack.com/${handle}`),
-    youtubeMusic: normalizedUrl(raw),
+    website: normalizedOptionalUrl(raw),
+    portfolio: normalizedOptionalUrl(raw),
+    linkedin: normalizedOptionalUrl(raw.includes("linkedin.com") ? raw : `linkedin.com/in/${handle}`),
+    twitter: normalizedOptionalUrl(`x.com/${handle}`),
+    instagram: normalizedOptionalUrl(`instagram.com/${handle}`),
+    threads: normalizedOptionalUrl(`threads.net/@${handle}`),
+    facebook: normalizedOptionalUrl(raw.includes("facebook.com") ? raw : `facebook.com/${handle}`),
+    youtube: normalizedOptionalUrl(raw.includes("youtube.com") ? raw : `youtube.com/@${handle}`),
+    snapchat: normalizedOptionalUrl(`snapchat.com/add/${handle}`),
+    tiktok: normalizedOptionalUrl(`tiktok.com/@${handle}`),
+    twitch: normalizedOptionalUrl(`twitch.tv/${handle}`),
+    yelp: normalizedOptionalUrl(raw),
+    whatsapp: normalizeWhatsapp(raw) ? `https://wa.me/${normalizeWhatsapp(raw)}` : normalizedOptionalUrl(raw),
+    signal: normalizedOptionalUrl(raw),
+    discord: normalizedOptionalUrl(raw),
+    skype: normalizeSkype(raw),
+    telegram: normalizedOptionalUrl(`t.me/${handle}`),
+    github: normalizedOptionalUrl(raw.includes("github.com") ? raw : `github.com/${handle}`),
+    behance: normalizedOptionalUrl(raw.includes("behance.net") ? raw : `behance.net/${handle}`),
+    dribbble: normalizedOptionalUrl(raw.includes("dribbble.com") ? raw : `dribbble.com/${handle}`),
+    spotify: normalizedOptionalUrl(raw),
+    appleMusic: normalizedOptionalUrl(raw),
+    boomplay: normalizedOptionalUrl(raw),
+    audiomack: normalizedOptionalUrl(raw.includes("audiomack.com") ? raw : `audiomack.com/${handle}`),
+    youtubeMusic: normalizedOptionalUrl(raw),
   };
 
-  return urls[field] || normalizedUrl(raw);
+  return urls[field] || normalizedOptionalUrl(raw);
 }
 
 function escapeVcard(value) {

@@ -49,3 +49,11 @@ export function rateLimit(request, { key, limit = 5, windowMs = 60_000 }) {
 export function rateLimitKey(request, scope, parts = []) {
   return [scope, clientIp(request), ...parts.map((part) => String(part || "").toLowerCase())].join(":");
 }
+
+export function authRateLimit(request, scope, identifier, options = {}) {
+  return rateLimit(request, {
+    limit: options.limit ?? 8,
+    windowMs: options.windowMs ?? 15 * 60_000,
+    key: rateLimitKey(request, scope, [identifier]),
+  });
+}

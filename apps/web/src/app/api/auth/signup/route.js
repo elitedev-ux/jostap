@@ -1,6 +1,7 @@
 import { badRequest, json, readJson } from "../../utils/http.js";
 import { hashPassword, validatePassword } from "../../utils/password.js";
 import { getSupabaseAdmin, hasSupabase, isUniqueViolation } from "../../utils/supabase.js";
+import { authRateLimit } from "../../utils/rateLimit.js";
 import { createEmailVerificationChallenge, normalizeEmail } from "../../utils/authSecurity.js";
 
 export async function POST(request) {
@@ -22,6 +23,11 @@ export async function POST(request) {
   const company = String(body.company || "").trim() || null;
   const email = normalizeEmail(body.email);
   const password = String(body.password || "");
+  const limited = authRateLimit(request, "signup", email || "missing-email", {
+    limit: 5,
+    windowMs: 30 * 60_000,
+  });
+  if (limited) return limited;
 
   if (!firstName || !lastName || !email || !password) {
     return badRequest("First name, last name, email, and password are required.");

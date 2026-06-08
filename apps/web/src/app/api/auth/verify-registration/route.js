@@ -1,5 +1,6 @@
 import { badRequest, json, readJson, unauthorized } from "../../utils/http.js";
 import { createSession } from "../../utils/session.js";
+import { authRateLimit } from "../../utils/rateLimit.js";
 import { getSupabaseAdmin, hasSupabase } from "../../utils/supabase.js";
 import { normalizeEmail, verifyEmailChallenge } from "../../utils/authSecurity.js";
 
@@ -17,6 +18,8 @@ export async function POST(request) {
 
   const email = normalizeEmail(body.email);
   const code = String(body.code || "").trim();
+  const limited = authRateLimit(request, "verify-registration", email || "missing-email");
+  if (limited) return limited;
 
   if (!email || !code) {
     return badRequest("Email and verification code are required.");

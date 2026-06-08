@@ -1,6 +1,7 @@
 import { badRequest, json, readJson } from "../../utils/http.js";
 import { createPasswordResetChallenge, normalizeEmail } from "../../utils/authSecurity.js";
 import { hasEmailDelivery } from "../../utils/email.js";
+import { authRateLimit } from "../../utils/rateLimit.js";
 import { getSupabaseAdmin, hasSupabase } from "../../utils/supabase.js";
 
 const GENERIC_MESSAGE = "If an account exists for that email, a reset code has been sent.";
@@ -18,6 +19,12 @@ export async function POST(request) {
 
   const email = normalizeEmail(body.email);
   if (!email) return badRequest("Email is required.");
+
+  const limited = authRateLimit(request, "forgot-password", email, {
+    limit: 4,
+    windowMs: 30 * 60_000,
+  });
+  if (limited) return limited;
 
   if (!hasEmailDelivery()) {
     return json(
