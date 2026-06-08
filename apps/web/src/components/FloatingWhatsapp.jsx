@@ -1,7 +1,7 @@
 import { SiWhatsapp } from "react-icons/si";
 import "./FloatingWhatsapp.css";
 
-const WHATSAPP_URL = "https://wa.me/2347025114834";
+const WHATSAPP_URL = "https://wa.me/2348066613437?text=Hi,%20I%27m%20interested%20in%20JOSTAP.";
 
 export default function FloatingWhatsapp() {
   return (
