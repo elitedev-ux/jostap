@@ -51,6 +51,20 @@ const inputStyle = {
   boxSizing: "border-box",
 };
 
+async function responseBody(response) {
+  const text = await response.text();
+
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text.slice(0, 500) };
+  }
+}
+
 function Field({ label, children }) {
   return (
     <label style={{ display: "block" }}>
@@ -122,10 +136,10 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan: planKey, billingCycle: billing, account }),
       });
-      const data = await response.json().catch(() => ({}));
+      const data = await responseBody(response);
 
       if (!response.ok) {
-        throw new Error(data.error || "Unable to activate this plan.");
+        throw new Error(data.error || `Checkout request failed (${response.status}).`);
       }
 
       if (isFreePlan) {
