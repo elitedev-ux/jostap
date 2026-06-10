@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   Check,
-  CreditCard,
   LockKeyhole,
   ShieldCheck,
   Sparkles,
@@ -74,8 +73,6 @@ function Field({ label, children }) {
 export default function CheckoutPage() {
   const [planKey, setPlanKey] = useState("jostap_nfc");
   const [billing, setBilling] = useState("one_time");
-  const [sameAsBilling, setSameAsBilling] = useState(true);
-  const [saveCard, setSaveCard] = useState(true);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState("");
   const [account, setAccount] = useState({
@@ -88,10 +85,21 @@ export default function CheckoutPage() {
     const checkout = getCheckoutFromUrl();
     setPlanKey(checkout.plan);
     setBilling(checkout.billing);
+
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    if (payment === "failed") {
+      setNotice("Paystack could not confirm this payment. Please try again.");
+    } else if (payment === "error") {
+      setNotice("We could not verify the Paystack payment yet. Please contact support if money was deducted.");
+    } else if (payment === "missing-reference") {
+      setNotice("Paystack returned without a transaction reference. Please try again.");
+    }
   }, []);
 
   const plan = PLANS[planKey];
-  const billedToday = 0;
+  const isFreePlan = planKey === "free" || billing === "free";
+  const billedToday = isFreePlan ? "\u20A60" : plan.displayPrice || `\u20A6${plan.price}`;
   const nextChargeLabel =
     billing === "yearly" ? `${plan.displayPrice || `\u20A6${plan.price}`}/year` : billing === "free" ? "\u20A60" : "No recurring charge";
 
@@ -105,11 +113,14 @@ export default function CheckoutPage() {
     setNotice("");
 
     try {
-      const response = await fetch("/api/billing/activate", {
+      const endpoint = isFreePlan
+        ? "/api/billing/activate"
+        : "/api/billing/paystack/initialize";
+      const response = await fetch(endpoint, {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planKey, billingCycle: billing }),
+        body: JSON.stringify({ plan: planKey, billingCycle: billing, account }),
       });
       const data = await response.json().catch(() => ({}));
 
@@ -117,7 +128,16 @@ export default function CheckoutPage() {
         throw new Error(data.error || "Unable to activate this plan.");
       }
 
-      window.location.href = "/dashboard";
+      if (isFreePlan) {
+        window.location.href = "/dashboard/billing?plan=free";
+        return;
+      }
+
+      if (!data.authorizationUrl) {
+        throw new Error("Paystack did not return a checkout link.");
+      }
+
+      window.location.href = data.authorizationUrl;
     } catch (error) {
       setNotice(error.message || "Unable to activate this plan.");
       setLoading(false);
@@ -232,7 +252,7 @@ export default function CheckoutPage() {
                   Start your JOSTAP plan
                 </h1>
                 <p style={{ color: "#6B7280", fontSize: 14, lineHeight: 1.6 }}>
-                  Free plans can be activated immediately. Paid JOSTAP Card orders require a configured payment provider or manual admin processing.
+                  Free plans can be activated immediately. Paid JOSTAP Card orders continue through Paystack test checkout.
                 </p>
               </div>
 
@@ -367,110 +387,21 @@ export default function CheckoutPage() {
                   gap: 14,
                 }}
               >
-                <Field label="Card number">
-                  <div style={{ position: "relative" }}>
-                    <input
-                      inputMode="numeric"
-                      required
-                      style={{ ...inputStyle, paddingLeft: 42 }}
-                      placeholder="Card number"
-                    />
-                    <CreditCard
-                      size={17}
-                      color="#6B7280"
-                      style={{
-                        position: "absolute",
-                        left: 14,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                      }}
-                    />
-                  </div>
-                </Field>
-
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 14,
+                    border: "1px solid #BFDBFE",
+                    borderRadius: 12,
+                    background: "#FAFBFF",
+                    padding: 16,
                   }}
                 >
-                  <Field label="Expiry">
-                    <input required style={inputStyle} placeholder="MM / YY" />
-                  </Field>
-                  <Field label="CVC">
-                    <input required style={inputStyle} placeholder="CVC" />
-                  </Field>
+                  <p style={{ color: "#111827", fontSize: 14, fontWeight: 800, marginBottom: 6 }}>
+                    Paystack test checkout
+                  </p>
+                  <p style={{ color: "#6B7280", fontSize: 13, lineHeight: 1.6 }}>
+                    Card details are collected by Paystack. After a successful test payment, your JOSTAP plan will activate automatically.
+                  </p>
                 </div>
-
-                <Field label="Billing address">
-                  <input required style={inputStyle} placeholder="Street address" />
-                </Field>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 14,
-                  }}
-                >
-                  <Field label="City">
-                    <input required style={inputStyle} placeholder="City" />
-                  </Field>
-                  <Field label="Country">
-                    <select required style={inputStyle} defaultValue="">
-                      <option value="" disabled>
-                        Select country
-                      </option>
-                      <option value="NG">Nigeria</option>
-                      <option value="US">United States</option>
-                      <option value="GB">United Kingdom</option>
-                      <option value="CA">Canada</option>
-                      <option value="GH">Ghana</option>
-                    </select>
-                  </Field>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 10,
-                  marginTop: 18,
-                }}
-              >
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    color: "#374151",
-                    fontSize: 13,
-                  }}
-                >
-                  <input
-                    checked={sameAsBilling}
-                    onChange={(event) => setSameAsBilling(event.target.checked)}
-                    type="checkbox"
-                  />
-                  Shipping address is the same as billing address
-                </label>
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    color: "#374151",
-                    fontSize: 13,
-                  }}
-                >
-                  <input
-                    checked={saveCard}
-                    onChange={(event) => setSaveCard(event.target.checked)}
-                    type="checkbox"
-                  />
-                  Save this card for subscription renewals
-                </label>
               </div>
 
               {notice && (
@@ -505,7 +436,13 @@ export default function CheckoutPage() {
                   padding: "13px 18px",
                 }}
               >
-                {loading ? "Opening dashboard..." : "Continue to dashboard"}
+                {loading
+                  ? isFreePlan
+                    ? "Activating..."
+                    : "Redirecting to Paystack..."
+                  : isFreePlan
+                    ? "Activate free plan"
+                    : "Pay with Paystack test mode"}
               </button>
             </div>
           </form>
@@ -612,7 +549,7 @@ export default function CheckoutPage() {
                   Due today
                 </span>
                 <span style={{ color: "#111827", fontSize: 13, fontWeight: 700 }}>
-                  {`\u20A6${billedToday}`}
+                  {billedToday}
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -642,7 +579,7 @@ export default function CheckoutPage() {
             >
               <ShieldCheck size={16} style={{ flexShrink: 0, marginTop: 1 }} />
               <span>
-                Free upgrade is enabled for now while online payment is being configured.
+                Paystack test mode is enabled. Use Paystack test cards from your Paystack dashboard to complete checkout.
               </span>
             </div>
           </aside>

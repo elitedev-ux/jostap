@@ -2,8 +2,8 @@ import { badRequest, json, unauthorized } from "../../utils/http.js";
 import { getSessionUser } from "../../utils/session.js";
 import { getSupabaseAdmin } from "../../utils/supabase.js";
 
-const PLANS = new Set(["free", "jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
-const CYCLES = new Set(["free", "one_time", "yearly"]);
+const PLANS = new Set(["free"]);
+const CYCLES = new Set(["free"]);
 
 function addPeriod(cycle) {
   const date = new Date();
@@ -23,7 +23,7 @@ export async function POST(request) {
   const billingCycle = String(body?.billingCycle || body?.billing || (plan === "free" ? "free" : "one_time")).toLowerCase();
 
   if (!PLANS.has(plan) || !CYCLES.has(billingCycle)) {
-    return badRequest("Choose a valid plan and billing cycle.");
+    return badRequest("Paid plans must be activated through Paystack checkout.");
   }
 
   const supabase = getSupabaseAdmin();
@@ -46,7 +46,7 @@ export async function POST(request) {
     plan,
     billing_cycle: billingCycle,
     status: "active",
-    provider: plan === "free" ? "free" : "free_upgrade",
+    provider: "free",
     current_period_start: now,
     current_period_end: addPeriod(billingCycle),
   };
