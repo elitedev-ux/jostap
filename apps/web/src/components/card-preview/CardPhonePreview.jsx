@@ -1,4 +1,4 @@
-import { Building2, Calendar, Globe, Mail, MapPin, Phone, User } from "lucide-react";
+import { Building2, Globe, Mail, MapPin, Phone, User } from "lucide-react";
 import { FaLinkedinIn, FaSkype } from "react-icons/fa";
 import {
   SiDiscord,
@@ -416,7 +416,6 @@ export default function CardPhonePreview({
   const resolvedPublicUrl = publicUrl || card?.publicUrl || (card?.id ? publicCardUrl(card) : cardProfileUrl(card?.slug));
   const resolvedQrUrl = card?.qrUrl || (card?.id ? cardQrUrl(card) : resolvedPublicUrl);
   const resolvedDisplayUrl = displayCardUrl(card?.slug || "your-slug");
-  const appointmentUrl = visibleFields.has("calendly") ? "#book-appointment" : "";
   const hasVcardInfo = Boolean(card?.name || card?.company || card?.title || card?.email || card?.phone || card?.website || card?.portfolio);
   const Root = framed ? "div" : "section";
 
@@ -639,11 +638,6 @@ export default function CardPhonePreview({
               )}
             </div>
           )}
-          {appointmentUrl && (
-            <a className="card-preview-appointment" href={appointmentUrl} onClick={(event) => event.preventDefault()}>
-              <Calendar size={16} /> Book Appointment
-            </a>
-          )}
           <div className={`card-preview-qr ${qrLocked ? "is-locked" : ""}`}>
             <div className="card-preview-qr-code">
               <QRCode value={resolvedQrUrl} size={144} />
@@ -723,7 +717,6 @@ export default function CardPhonePreview({
         .card-preview-wrap.is-compact .card-preview-info-list,
         .card-preview-wrap.is-compact .card-preview-social-card,
         .card-preview-wrap.is-compact .card-preview-video-card,
-        .card-preview-wrap.is-compact .card-preview-appointment,
         .card-preview-wrap.is-compact .card-preview-qr,
         .card-preview-wrap.is-compact .card-preview-vcard { display: none; }
         .card-preview-quick-actions a {
@@ -757,7 +750,6 @@ export default function CardPhonePreview({
         .card-preview-video-card { margin: 0 22px 22px; min-height: 150px; border-radius: 18px; background: #f8fafc; border: 1px solid #eef2f7; display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--card-brand); aspect-ratio: 16 / 9; }
         .card-preview-video-card strong { font-size: 24px; letter-spacing: 0; }
         .card-preview-video-card iframe, .card-preview-video-card video { width: 100%; height: 100%; border: 0; object-fit: cover; display: block; }
-        .card-preview-appointment { width: calc(100% - 44px); min-height: 48px; margin: 0 22px 22px; border-radius: 14px; background: #0f172a; border: 2px solid var(--card-brand); color: #ffffff; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; font-weight: 800; font-size: 15px; }
         .card-preview-qr { display: grid; justify-items: center; gap: 8px; margin: 0 22px 28px; padding: 18px; border: 1px solid var(--card-brand-ring); border-radius: 18px; background: #fff; color: #0f172a; font-size: 13px; font-weight: 500; }
         .card-preview-qr-code { display: flex; align-items: center; justify-content: center; transition: filter .2s ease, opacity .2s ease; }
         .card-preview-qr.is-locked .card-preview-qr-code { filter: blur(5px); opacity: .48; pointer-events: none; user-select: none; }

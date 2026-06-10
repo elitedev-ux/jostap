@@ -86,10 +86,14 @@ export function PublicCardProfile({ token }) {
   }
 
   const includePremium = hasPremiumFeatures(card.plan);
-  const visibleFields =
+  const storedFields =
     Array.isArray(card.activeFields) && card.activeFields.length
       ? card.activeFields
-      : activeFieldsForCard(card, { includePremium });
+      : Array.from(activeFieldsForCard(card, { includePremium }));
+  const visibleFields = includePremium
+    ? storedFields
+    : storedFields.filter((field) => field !== "calendly" && field !== "videoUrl");
+  const appointmentBookingEnabled = includePremium && visibleFields.includes("calendly");
   const brandColor = hasCustomBranding(card.plan) ? card.brandColor : "";
   const minDate = new Date(Date.now() + 60_000).toISOString().slice(0, 10);
 
@@ -142,7 +146,7 @@ export function PublicCardProfile({ token }) {
           }}
         />
 
-        {includePremium && (
+        {appointmentBookingEnabled && (
           <section className="booking-panel" aria-labelledby="booking-title">
             <div className="booking-panel__header">
               <h2 id="booking-title">Book Appointment</h2>

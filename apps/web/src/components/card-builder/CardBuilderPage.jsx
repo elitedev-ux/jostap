@@ -519,12 +519,21 @@ export default function CardBuilderPage({ mode = "user" }) {
                     const active = activeFields.has(key);
                     const locked = PREMIUM_ONLY_FIELDS.has(key) && !canUsePremiumFields;
                     const isMultiField = MULTI_ENTRY_FIELDS.has(key);
+                    const isAppointmentToggle = key === "calendly";
                     return (
-                      <div className={`card-builder-field ${active ? "is-active" : ""} ${locked ? "is-locked" : ""}`} key={key}>
-                        <button type="button" onClick={() => toggleField(key)}>
+                      <div className={`card-builder-field ${active ? "is-active" : ""} ${locked ? "is-locked" : ""} ${isAppointmentToggle ? "is-toggle-field" : ""}`} key={key}>
+                        <button type="button" onClick={() => toggleField(key)} aria-pressed={!locked && isAppointmentToggle ? active : undefined}>
                           {locked ? <span className="card-builder-brand-mark"><LockKeyhole size={15} /></span> : <BrandMark field={key} icon={Icon} />}
                           <span>{label}</span>
-                          {locked ? <a href="/pricing" onClick={(event) => event.stopPropagation()}>Upgrade</a> : <Plus size={15} />}
+                          {locked ? (
+                            <a href="/pricing" onClick={(event) => event.stopPropagation()}>Upgrade</a>
+                          ) : isAppointmentToggle ? (
+                            <span className="card-builder-toggle" aria-hidden="true">
+                              <span />
+                            </span>
+                          ) : (
+                            <Plus size={15} />
+                          )}
                         </button>
                         {active && !locked && (
                           isMultiField ? (
@@ -812,25 +821,6 @@ export default function CardBuilderPage({ mode = "user" }) {
         }
         .card-builder-video-card strong { font-size: 24px; letter-spacing: 0; }
         .card-builder-video-card iframe, .card-builder-video-card video { width: 100%; height: 100%; border: 0; object-fit: cover; display: block; }
-        .card-builder-appointment {
-          width: calc(100% - 44px);
-          min-height: 48px;
-          margin: 0 22px 22px;
-          border-radius: 14px;
-          background: #0f172a;
-          border: 2px solid var(--card-brand);
-          color: #ffffff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          text-decoration: none;
-          font-weight: 800;
-          font-size: 15px;
-          transition: border-color 0.2s ease;
-        }
-        .card-builder-appointment:hover {
-          border-color: #fff;
-        }
         .card-builder-appointment-note {
           margin: 0;
           border: 1px solid #bfdbfe;
@@ -896,6 +886,34 @@ export default function CardBuilderPage({ mode = "user" }) {
         .card-builder-field:hover:not(.is-locked) { border-color: #8fc1ff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04); }
         .card-builder-field button { width: 100%; border: none; background: transparent; display: grid; grid-template-columns: 30px 1fr 28px; align-items: center; gap: 8px; text-align: left; padding: 11px 12px; cursor: pointer; color: #201c19; font-weight: 700; transition: background 0.2s ease; }
         .card-builder-field button > svg:last-child { justify-self: end; border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px; width: 24px; height: 24px; }
+        .card-builder-field.is-toggle-field button { grid-template-columns: 30px minmax(0, 1fr) 46px; }
+        .card-builder-toggle {
+          justify-self: end;
+          width: 42px;
+          height: 24px;
+          border-radius: 999px;
+          border: 1px solid #d1d5db;
+          background: #f3f4f6;
+          padding: 2px;
+          display: inline-flex;
+          align-items: center;
+          transition: background 0.2s ease, border-color 0.2s ease;
+        }
+        .card-builder-toggle span {
+          width: 18px;
+          height: 18px;
+          border-radius: 999px;
+          background: #ffffff;
+          box-shadow: 0 1px 4px rgba(15, 23, 42, 0.22);
+          transition: transform 0.2s ease;
+        }
+        .card-builder-field.is-toggle-field.is-active .card-builder-toggle {
+          border-color: #0d6ffd;
+          background: #0d6ffd;
+        }
+        .card-builder-field.is-toggle-field.is-active .card-builder-toggle span {
+          transform: translateX(18px);
+        }
         .card-builder-field.is-locked { background: #f8fafc; border-color: #e2e8f0; opacity: 0.85; }
         .card-builder-field.is-locked button { grid-template-columns: 30px minmax(0,1fr) auto; color: #94a3b8; cursor: default; }
         .card-builder-field.is-locked .card-builder-brand-mark { background: #f3f4f6; color: #6b7280; }
