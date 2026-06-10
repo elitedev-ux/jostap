@@ -1,4 +1,4 @@
-import { accessFromPlanAndTrial, isPremiumPlan, trialStateFromUser } from "./trial.js";
+import { accessFromPlanAndTrial, isCustomBrandingPlan, isPremiumPlan, trialStateFromUser } from "./trial.js";
 import { toCdnStorageUrl, toOriginStorageUrl } from "./storageUrls.js";
 
 export function normalizeSlug(value) {
@@ -117,7 +117,7 @@ export function planCapabilities(plan) {
 
   return {
     hasPremiumFeatures: isPremiumPlan(value),
-    hasCustomBranding: value === "custom_nfc",
+    hasCustomBranding: isCustomBrandingPlan(value),
   };
 }
 

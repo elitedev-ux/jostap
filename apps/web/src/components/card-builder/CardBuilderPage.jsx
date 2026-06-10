@@ -116,7 +116,7 @@ const FIELD_GROUPS = [
 const DEFAULT_ACTIVE = new Set(["name", "title", "company", "email", "phone", "website", "instagram"]);
 const DOWNLOADABLE_QR_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
 const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
-const CUSTOM_BRANDING_PLANS = new Set(["trial", "custom_nfc"]);
+const CUSTOM_BRANDING_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
 const PREMIUM_ONLY_FIELDS = new Set(["calendly", "videoUrl"]);
 const MULTI_ENTRY_FIELDS = new Set([
   "twitter",
@@ -199,6 +199,34 @@ function UploadTile({ label, icon: Icon, onUpload, preview, onRemove }) {
   );
 }
 
+function AppointmentFormPreview() {
+  return (
+    <section className="card-builder-booking-preview" aria-labelledby="card-builder-booking-preview-title">
+      <div className="card-builder-booking-preview__header">
+        <h2 id="card-builder-booking-preview-title">Book Appointment</h2>
+      </div>
+      <form className="card-builder-booking-preview__form" onSubmit={(event) => event.preventDefault()}>
+        <input readOnly tabIndex={-1} placeholder="Your name" />
+        <input readOnly tabIndex={-1} type="email" placeholder="Your email" />
+        <input readOnly tabIndex={-1} type="tel" placeholder="Your phone number" />
+        <label>
+          <span>Preferred date</span>
+          <input readOnly tabIndex={-1} type="date" />
+        </label>
+        <label>
+          <span>Preferred time</span>
+          <input readOnly tabIndex={-1} type="time" />
+        </label>
+        <textarea readOnly tabIndex={-1} placeholder="Optional note" rows={3} />
+        <button type="button" className="card-builder-booking-preview__submit">
+          <Calendar size={14} />
+          Request Appointment
+        </button>
+      </form>
+    </section>
+  );
+}
+
 function userLabel(user) {
   return `${user.name || user.email}${user.email && user.name !== user.email ? ` (${user.email})` : ""}`;
 }
@@ -226,10 +254,11 @@ export default function CardBuilderPage({ mode = "user" }) {
     }
     return next;
   }, [activeFields, canUsePremiumFields]);
+  const showAppointmentPreview = canUsePremiumFields && previewFields.has("calendly");
 
   const update = (key, value) => {
     if (key === "brandColor" && !canCustomizeBrand) {
-      setMessage("Custom colors are available on the Custom NFC Business Card plan.");
+      setMessage("Custom colors are available on premium plans.");
       return;
     }
 
@@ -456,11 +485,14 @@ export default function CardBuilderPage({ mode = "user" }) {
         <a href="/dashboard" className="card-builder-brand">
           <img src={logo} alt="JOSTAP" decoding="async" />
         </a>
-        <CardPhonePreview
-          card={{ ...card, brandColor: canCustomizeBrand ? card.brandColor : "" }}
-          activeFields={previewFields}
-          qrLocked={qrLocked}
-        />
+        <div className="card-builder-live-preview">
+          <CardPhonePreview
+            card={{ ...card, brandColor: canCustomizeBrand ? card.brandColor : "" }}
+            activeFields={previewFields}
+            qrLocked={qrLocked}
+          />
+          {showAppointmentPreview && <AppointmentFormPreview />}
+        </div>
       </aside>
 
       <main className="card-builder-main">
@@ -503,7 +535,7 @@ export default function CardBuilderPage({ mode = "user" }) {
             ) : (
               <div className="card-builder-locked-row">
                 <LockKeyhole size={16} />
-                <span>Custom colors unlock with the Custom NFC Business Card.</span>
+                <span>Custom colors unlock with a premium plan.</span>
                 <a href="/pricing">Upgrade</a>
               </div>
             )}
@@ -639,9 +671,19 @@ export default function CardBuilderPage({ mode = "user" }) {
           top: 0;
           display: flex;
           flex-direction: column;
-          gap: 34px;
+          gap: 28px;
         }
         .card-builder-brand img { width: 118px; height: 46px; object-fit: contain; }
+        .card-builder-live-preview {
+          display: grid;
+          justify-items: center;
+          align-content: start;
+          gap: 18px;
+        }
+        .card-builder-live-preview .card-preview-wrap {
+          flex: none;
+          width: 100%;
+        }
         .card-builder-preview-wrap { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding-top: 8px; }
         .card-builder-phone {
           width: min(390px, 86vw);
@@ -821,6 +863,79 @@ export default function CardBuilderPage({ mode = "user" }) {
         }
         .card-builder-video-card strong { font-size: 24px; letter-spacing: 0; }
         .card-builder-video-card iframe, .card-builder-video-card video { width: 100%; height: 100%; border: 0; object-fit: cover; display: block; }
+        .card-builder-booking-preview {
+          width: min(100%, 390px);
+          border: 1px solid #e5e7eb;
+          border-radius: 16px;
+          background: #ffffff;
+          padding: 16px;
+          box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+        }
+        .card-builder-booking-preview__header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 12px;
+        }
+        .card-builder-booking-preview__header h2 {
+          margin: 0;
+          color: #111827;
+          font-size: 16px;
+          font-weight: 850;
+          letter-spacing: 0;
+        }
+        .card-builder-booking-preview__form {
+          display: grid;
+          gap: 10px;
+        }
+        .card-builder-booking-preview__form input,
+        .card-builder-booking-preview__form textarea {
+          width: 100%;
+          border: 1px solid #dbe1ea;
+          border-radius: 10px;
+          background: #ffffff;
+          color: #111827;
+          box-sizing: border-box;
+          font-size: 14px;
+          line-height: 1.45;
+          padding: 10px 12px;
+          outline: none;
+        }
+        .card-builder-booking-preview__form input {
+          min-height: 44px;
+        }
+        .card-builder-booking-preview__form textarea {
+          resize: none;
+        }
+        .card-builder-booking-preview__form input::placeholder,
+        .card-builder-booking-preview__form textarea::placeholder {
+          color: #6b7280;
+          opacity: 1;
+        }
+        .card-builder-booking-preview__form label {
+          display: grid;
+          gap: 6px;
+        }
+        .card-builder-booking-preview__form label span {
+          color: #4b5563;
+          font-size: 12px;
+          font-weight: 800;
+        }
+        .card-builder-booking-preview__submit {
+          width: 100%;
+          min-height: 40px;
+          border: none;
+          border-radius: 8px;
+          background: #0d6ffd;
+          color: #ffffff;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-size: 14px;
+          font-weight: 850;
+        }
         .card-builder-appointment-note {
           margin: 0;
           border: 1px solid #bfdbfe;

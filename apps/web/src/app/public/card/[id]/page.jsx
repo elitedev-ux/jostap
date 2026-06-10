@@ -8,7 +8,7 @@ import { getPublicCard } from "../../../../utils/cardsStore";
 import "../../../[username]/page.css";
 
 const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
-const CUSTOM_BRANDING_PLANS = new Set(["trial", "custom_nfc"]);
+const CUSTOM_BRANDING_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
 
 function hasPremiumFeatures(plan) {
   return PREMIUM_FEATURE_PLANS.has(String(plan || "").toLowerCase());
