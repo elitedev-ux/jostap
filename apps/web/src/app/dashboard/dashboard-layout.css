@@ -123,6 +123,130 @@
   overflow: hidden;
 }
 
+.dashboard-plan-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 10px;
+  padding: 0.8rem;
+  margin-bottom: 0.625rem;
+}
+
+.dashboard-plan-card--premium {
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  background:
+    linear-gradient(145deg, #111827 0%, #1f2937 52%, #34210b 100%);
+  box-shadow:
+    0 16px 28px rgba(15, 23, 42, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.dashboard-plan-card--free {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.dashboard-plan-card__shine {
+  position: absolute;
+  inset: -42px -68px auto auto;
+  width: 130px;
+  height: 92px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.38), transparent 68%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.dashboard-plan-card--free .dashboard-plan-card__shine {
+  display: none;
+}
+
+.dashboard-plan-card__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.dashboard-plan-card__name {
+  margin: 0;
+  color: #ffffff;
+  font-size: 0.74rem;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.dashboard-plan-card--free .dashboard-plan-card__name {
+  color: #0f172a;
+}
+
+.dashboard-plan-card__status {
+  margin: 0.25rem 0 0;
+  color: #fcd34d;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  font-weight: 650;
+}
+
+.dashboard-plan-card--free .dashboard-plan-card__status {
+  color: #64748b;
+}
+
+.dashboard-plan-card__badge,
+.dashboard-plan-card__upgrade {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  flex: none;
+  border-radius: 999px;
+  padding: 0.26rem 0.48rem;
+  font-size: 0.68rem;
+  line-height: 1;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.dashboard-plan-card__badge {
+  border: 1px solid rgba(252, 211, 77, 0.55);
+  background: rgba(252, 211, 77, 0.14);
+  color: #fde68a;
+}
+
+.dashboard-plan-card__upgrade {
+  background: #eff6ff;
+  color: #2563eb;
+  transition: background 150ms ease;
+}
+
+.dashboard-plan-card__upgrade:hover {
+  background: #dbeafe;
+}
+
+.dashboard-plan-card__meter {
+  height: 4px;
+  margin-top: 0.85rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.dashboard-plan-card--free .dashboard-plan-card__meter {
+  background: #e2e8f0;
+}
+
+.dashboard-plan-card__meter-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f59e0b, #fde68a);
+  transition: width 500ms ease;
+}
+
+.dashboard-plan-card--free .dashboard-plan-card__meter-fill {
+  background: #2563eb;
+}
+
 .hover\:text-slate-600:hover { color: #475569; }
 .hover\:bg-slate-50:hover { background: #f8fafc; }
 .hover\:bg-slate-100:hover { background: #f1f5f9; }

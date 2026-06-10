@@ -129,6 +129,7 @@ export default function DashboardLayout({ children }) {
   const cardLimit = billing?.subscription?.cardLimit ?? 5;
   const cardsUsed = billing?.usage?.cards ?? 0;
   const cardLimitLabel = cardLimit ? `${cardsUsed} / ${cardLimit}` : `${cardsUsed}`;
+  const cardUsageProgress = cardLimit ? Math.min((cardsUsed / cardLimit) * 100, 100) : 100;
   const isPaidPremium =
     Boolean(billing?.subscription?.features?.hasPremiumFeatures) &&
     !["free", "trial"].includes(String(billing?.subscription?.plan || "free"));
@@ -242,18 +243,17 @@ export default function DashboardLayout({ children }) {
         {!sidebarCollapsed && (
           <div
             className={cn(
-              "rounded-lg p-3 mb-2.5",
-              isPaidPremium
-                ? "bg-amber-50 border border-amber-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]"
-                : "bg-slate-50 border border-slate-200",
+              "dashboard-plan-card",
+              isPaidPremium ? "dashboard-plan-card--premium" : "dashboard-plan-card--free",
             )}
           >
-            <div className="flex justify-between items-center">
+            <div className="dashboard-plan-card__shine" aria-hidden="true" />
+            <div className="dashboard-plan-card__row">
               <div>
-                <p className={cn("text-[11px] font-semibold leading-tight", isPaidPremium ? "text-amber-950" : "text-slate-900")}>
+                <p className="dashboard-plan-card__name">
                   {planName}
                 </p>
-                <p className={cn("text-[11px] leading-tight", isPaidPremium ? "text-amber-700" : "text-slate-500")}>
+                <p className="dashboard-plan-card__status">
                   {isPaidPremium
                     ? "Premium active"
                     : billing?.subscription?.plan === "trial"
@@ -262,26 +262,22 @@ export default function DashboardLayout({ children }) {
                 </p>
               </div>
               {isPaidPremium ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-800 ring-1 ring-amber-300">
+                <span className="dashboard-plan-card__badge">
                   <Gem size={12} /> Premium
                 </span>
               ) : (
                 <a
                   href="/dashboard/billing"
-                  className="text-[11px] font-semibold text-blue-600 no-underline bg-blue-50 rounded-full px-2 py-1 hover:bg-blue-100 transition-colors"
+                  className="dashboard-plan-card__upgrade"
                 >
                   Upgrade
                 </a>
               )}
             </div>
-            <div className="mt-2 h-1 bg-slate-200 rounded-full overflow-hidden">
+            <div className="dashboard-plan-card__meter">
               <div
-                className={cn("h-full rounded-full transition-all duration-500", isPaidPremium ? "bg-amber-500" : "bg-blue-600")}
-                style={{
-                  width: cardLimit
-                    ? `${Math.min((cardsUsed / cardLimit) * 100, 100)}%`
-                    : "100%",
-                }}
+                className="dashboard-plan-card__meter-fill"
+                style={{ width: `${cardUsageProgress}%` }}
               />
             </div>
           </div>
