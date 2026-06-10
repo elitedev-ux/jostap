@@ -121,11 +121,18 @@ export function planCapabilities(plan) {
   };
 }
 
+function hasConfirmedPlanAccess(row) {
+  if (!row || row.status !== "active") return false;
+  if (row.plan === "free") return true;
+
+  return !["free", "free_upgrade"].includes(String(row.provider || "").toLowerCase());
+}
+
 export async function activePlanForUser(supabase, userId) {
   const [{ data, error }, { data: user, error: userError }] = await Promise.all([
     supabase
       .from("subscriptions")
-      .select("plan,status")
+      .select("plan,status,provider")
       .eq("user_id", userId)
       .eq("status", "active")
       .order("created_at", { ascending: false })
@@ -143,11 +150,12 @@ export async function activePlanForUser(supabase, userId) {
   }
 
   if (!user) {
-    return data?.plan || "free";
+    return hasConfirmedPlanAccess(data) ? data.plan : "free";
   }
 
   const trial = trialStateFromUser(user);
-  return accessFromPlanAndTrial(data?.plan || "free", trial).effectivePlan;
+  const plan = hasConfirmedPlanAccess(data) ? data.plan : "free";
+  return accessFromPlanAndTrial(plan, trial).effectivePlan;
 }
 
 export function cardLimitForPlan(plan) {

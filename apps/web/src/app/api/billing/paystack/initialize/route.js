@@ -53,7 +53,7 @@ export async function POST(request) {
     .from("subscriptions")
     .select("id")
     .eq("user_id", user.id)
-    .in("status", ["pending", "active", "past_due"])
+    .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

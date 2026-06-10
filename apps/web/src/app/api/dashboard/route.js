@@ -6,6 +6,13 @@ import { getSupabaseAdmin } from "../utils/supabase.js";
 import { accessFromPlanAndTrial, trialStateFromUser } from "../utils/trial.js";
 import { cardNfcUrl, cardQrUrl, publicCardUrl } from "../../../utils/publicUrl.js";
 
+function hasConfirmedPlanAccess(row) {
+  if (!row || !["active", "past_due"].includes(row.status)) return false;
+  if (row.plan === "free") return true;
+
+  return !["free", "free_upgrade"].includes(String(row.provider || "").toLowerCase());
+}
+
 const PERIOD_DAYS = {
   "7d": 7,
   "30d": 30,
@@ -131,9 +138,10 @@ function addAppointmentsToTrend({ trend, appointments }) {
 
 function subscriptionFromRow(row, user) {
   const trial = trialStateFromUser(user);
-  const basePlan = row?.plan || "free";
-  const features = accessFromPlanAndTrial(basePlan, trial);
-  const cardLimit = features.hasPremiumFeatures ? null : cardLimitForPlan(basePlan);
+  const billingPlan = row?.plan || "free";
+  const accessPlan = hasConfirmedPlanAccess(row) ? billingPlan : "free";
+  const features = accessFromPlanAndTrial(accessPlan, trial);
+  const cardLimit = features.hasPremiumFeatures ? null : cardLimitForPlan(accessPlan);
 
   if (!row) {
     return {
@@ -153,7 +161,8 @@ function subscriptionFromRow(row, user) {
   return {
     id: row.id,
     plan: features.effectivePlan,
-    basePlan,
+    basePlan: billingPlan,
+    accessPlan,
     billingCycle: row.billing_cycle,
     status: row.status,
     provider: row.provider || "manual",
