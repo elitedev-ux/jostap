@@ -1,4 +1,8 @@
-import { Bell, MessageSquareText, QrCode, ShoppingBag, Sparkles, Tags, Watch, Wifi } from "lucide-react";
+import { useEffect, useRef } from "react";
+import * as THREE from "three";
+import { Bell, MessageSquareText, QrCode, ShoppingBag, Tags, Watch, Wifi } from "lucide-react";
+import lagosVibesBack from "../../../assets/Lagos Vibes Back.png";
+import lagosVibesFront from "../../../assets/Lagos Vibes front.png";
 import "./shop.css";
 
 const products = [
@@ -29,6 +33,202 @@ const products = [
   },
 ];
 
+function roundedCardShape(width, height, radius) {
+  const x = -width / 2;
+  const y = -height / 2;
+  const shape = new THREE.Shape();
+
+  shape.moveTo(x + radius, y);
+  shape.lineTo(x + width - radius, y);
+  shape.quadraticCurveTo(x + width, y, x + width, y + radius);
+  shape.lineTo(x + width, y + height - radius);
+  shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  shape.lineTo(x + radius, y + height);
+  shape.quadraticCurveTo(x, y + height, x, y + height - radius);
+  shape.lineTo(x, y + radius);
+  shape.quadraticCurveTo(x, y, x + radius, y);
+
+  return shape;
+}
+
+function mapGeometryUv(geometry, width, height) {
+  const positions = geometry.attributes.position;
+  const uvs = [];
+
+  for (let index = 0; index < positions.count; index += 1) {
+    const x = positions.getX(index);
+    const y = positions.getY(index);
+    uvs.push((x + width / 2) / width, (y + height / 2) / height);
+  }
+
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+}
+
+function ShopNfcCardPreview() {
+  const mountRef = useRef(null);
+
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return undefined;
+
+    const width = 3.4;
+    const height = 2.14;
+    const depth = 0.08;
+    const shape = roundedCardShape(width, height, 0.14);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    const group = new THREE.Group();
+    const pointer = { x: 0, y: 0 };
+    let frame = 0;
+    let disposed = false;
+
+    camera.position.set(0, 0, 6);
+    renderer.setClearColor(0x000000, 0);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    mount.appendChild(renderer.domElement);
+    mount.classList.add("is-ready");
+    renderer.domElement.setAttribute("aria-label", "3D preview of Lagos Vibes NFC card");
+    renderer.domElement.setAttribute("role", "img");
+
+    const sideGeometry = new THREE.ExtrudeGeometry(shape, {
+      depth,
+      bevelEnabled: true,
+      bevelThickness: 0.012,
+      bevelSize: 0.018,
+      bevelSegments: 2,
+    });
+    sideGeometry.center();
+
+    const frontGeometry = new THREE.ShapeGeometry(shape);
+    const backGeometry = new THREE.ShapeGeometry(shape);
+    mapGeometryUv(frontGeometry, width, height);
+    mapGeometryUv(backGeometry, width, height);
+
+    const textureLoader = new THREE.TextureLoader();
+    const sideMaterial = new THREE.MeshStandardMaterial({
+      color: 0xf8fafc,
+      roughness: 0.42,
+      metalness: 0.08,
+    });
+    const capMaterial = new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    });
+    const loadingMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.55,
+    });
+
+    const sideMesh = new THREE.Mesh(sideGeometry, [capMaterial, sideMaterial]);
+    const frontMesh = new THREE.Mesh(frontGeometry, loadingMaterial.clone());
+    const backMesh = new THREE.Mesh(backGeometry, loadingMaterial.clone());
+
+    frontMesh.position.z = depth / 2 + 0.035;
+    backMesh.position.z = -(depth / 2 + 0.035);
+    backMesh.rotation.y = Math.PI;
+
+    group.add(sideMesh, frontMesh, backMesh);
+    group.rotation.set(-0.08, -0.54, 0.02);
+    scene.add(group);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
+    keyLight.position.set(1.8, 3.2, 4.5);
+    scene.add(keyLight);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.25));
+
+    const applyTexture = (url, mesh) => {
+      textureLoader.load(url, (texture) => {
+        if (disposed) {
+          texture.dispose();
+          return;
+        }
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        const material = new THREE.MeshStandardMaterial({
+          map: texture,
+          roughness: 0.36,
+          metalness: 0.05,
+          side: THREE.DoubleSide,
+        });
+        mesh.material.dispose();
+        mesh.material = material;
+      });
+    };
+
+    applyTexture(lagosVibesFront, frontMesh);
+    applyTexture(lagosVibesBack, backMesh);
+
+    const resize = () => {
+      const bounds = mount.getBoundingClientRect();
+      const nextWidth = Math.max(260, Math.floor(bounds.width));
+      const nextHeight = Math.max(240, Math.floor(bounds.height));
+      camera.aspect = nextWidth / nextHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(nextWidth, nextHeight, false);
+    };
+
+    const onPointerMove = (event) => {
+      const bounds = mount.getBoundingClientRect();
+      pointer.x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2;
+      pointer.y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2;
+    };
+
+    const onPointerLeave = () => {
+      pointer.x = 0;
+      pointer.y = 0;
+    };
+
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(mount);
+    mount.addEventListener("pointermove", onPointerMove);
+    mount.addEventListener("pointerleave", onPointerLeave);
+    resize();
+
+    const animate = () => {
+      frame = window.requestAnimationFrame(animate);
+      const time = performance.now() * 0.001;
+      group.rotation.y += ((Math.sin(time * 0.48) * 0.48 + pointer.x * 0.25) - group.rotation.y) * 0.04;
+      group.rotation.x += ((-0.08 - pointer.y * 0.12) - group.rotation.x) * 0.05;
+      group.rotation.z = Math.sin(time * 0.38) * 0.025;
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    return () => {
+      disposed = true;
+      window.cancelAnimationFrame(frame);
+      resizeObserver.disconnect();
+      mount.removeEventListener("pointermove", onPointerMove);
+      mount.removeEventListener("pointerleave", onPointerLeave);
+      sideGeometry.dispose();
+      frontGeometry.dispose();
+      backGeometry.dispose();
+      sideMaterial.dispose();
+      capMaterial.dispose();
+      frontMesh.material.map?.dispose();
+      backMesh.material.map?.dispose();
+      frontMesh.material.dispose();
+      backMesh.material.dispose();
+      renderer.dispose();
+      renderer.domElement.remove();
+      mount.classList.remove("is-ready");
+    };
+  }, []);
+
+  return (
+    <div className="shop-nfc-preview">
+      <div ref={mountRef} className="shop-nfc-preview__scene">
+        <span>Loading Lagos Vibes card preview</span>
+      </div>
+    </div>
+  );
+}
+
 export default function ShopPage() {
   return (
     <div className="shop-coming-soon">
@@ -54,24 +254,8 @@ export default function ShopPage() {
           </div>
         </div>
 
-        <div className="shop-coming-soon__showcase" aria-hidden="true">
-          <div className="shop-card-stack">
-            <div className="shop-card-stack__card shop-card-stack__card--back" />
-            <div className="shop-card-stack__card shop-card-stack__card--front">
-              <div className="shop-card-stack__brand">
-                <Sparkles size={15} />
-                JOSTAP
-              </div>
-              <div className="shop-card-stack__chip" />
-              <div className="shop-card-stack__lines">
-                <span />
-                <span />
-              </div>
-              <div className="shop-card-stack__tap">
-                <Wifi size={18} />
-              </div>
-            </div>
-          </div>
+        <div className="shop-coming-soon__showcase">
+          <ShopNfcCardPreview />
         </div>
       </section>
 

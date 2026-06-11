@@ -87,87 +87,53 @@
 .shop-coming-soon__showcase {
   display: flex;
   justify-content: center;
+  min-width: 0;
 }
 
-.shop-card-stack {
+.shop-nfc-preview {
   position: relative;
-  width: 310px;
-  height: 220px;
-}
-
-.shop-card-stack__card {
-  position: absolute;
-  inset: 0;
-  border-radius: 24px;
-  box-shadow: 0 34px 70px rgba(13, 111, 253, 0.22);
-}
-
-.shop-card-stack__card--back {
-  transform: translate(-18px, 24px) rotate(-9deg);
-  background: #ff9f0d;
-  opacity: 0.9;
-}
-
-.shop-card-stack__card--front {
-  display: flex;
-  flex-direction: column;
-  padding: 24px;
-  background:
-    radial-gradient(circle at 88% 12%, rgba(255, 255, 255, 0.42), transparent 18%),
-    linear-gradient(135deg, #0d6ffd 0%, #0b5ed7 56%, #071a3f 100%);
-  color: #ffffff;
-  box-sizing: border-box;
-}
-
-.shop-card-stack__brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15px;
-  font-weight: 900;
-}
-
-.shop-card-stack__chip {
-  width: 46px;
-  height: 34px;
-  margin-top: 44px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.26);
-  border: 1px solid rgba(255, 255, 255, 0.36);
-}
-
-.shop-card-stack__lines {
-  display: grid;
-  gap: 8px;
-  margin-top: auto;
-}
-
-.shop-card-stack__lines span {
-  display: block;
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.38);
-}
-
-.shop-card-stack__lines span:first-child {
-  width: 72%;
-}
-
-.shop-card-stack__lines span:last-child {
-  width: 44%;
-}
-
-.shop-card-stack__tap {
-  position: absolute;
-  right: 22px;
-  bottom: 22px;
-  width: 42px;
-  height: 42px;
+  width: min(100%, 380px);
+  min-height: 300px;
   display: grid;
   place-items: center;
+}
+
+.shop-nfc-preview::before {
+  content: "";
+  position: absolute;
+  inset: auto 8% 18px;
+  height: 26px;
   border-radius: 999px;
-  color: #061225;
-  background: #ffffff;
+  background: rgba(15, 23, 42, 0.18);
+  filter: blur(18px);
+  transform: scaleX(0.82);
+}
+
+.shop-nfc-preview__scene {
+  width: 100%;
+  min-height: 300px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  touch-action: pan-y;
+}
+
+.shop-nfc-preview__scene canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  display: block;
+}
+
+.shop-nfc-preview__scene span {
+  position: absolute;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.shop-nfc-preview__scene.is-ready span {
+  display: none;
 }
 
 .shop-coming-soon__grid {
@@ -257,9 +223,14 @@
     font-size: 30px;
   }
 
-  .shop-card-stack {
+  .shop-nfc-preview {
     width: min(100%, 280px);
-    height: 196px;
+    min-height: 240px;
+  }
+
+  .shop-nfc-preview__scene,
+  .shop-nfc-preview__scene canvas {
+    min-height: 240px;
   }
 
   .shop-coming-soon__grid {
