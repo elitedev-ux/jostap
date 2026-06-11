@@ -94,7 +94,7 @@ export default function PublicShopPage() {
 
             <h1>NFC products for faster business sharing.</h1>
             <p>
-              Preview available NFC cards in 3D, choose the design you want, then create your account to complete purchase.
+              Preview available NFC cards, choose the design you want, then create your account to complete purchase.
             </p>
 
             <div className="shop-page__hero-meta">
@@ -104,7 +104,7 @@ export default function PublicShopPage() {
               </span>
               <span>
                 <Sparkles size={15} />
-                3D previews included
+                Interactive card view
               </span>
             </div>
 

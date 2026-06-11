@@ -205,7 +205,7 @@ export default function ShopNfcCardPreview({ product, compact = false }) {
 
     const width = 3.4;
     const height = width / (artwork.crop.width / artwork.crop.height);
-    const faceGap = 0.006;
+    const faceGap = 0;
     const shape = roundedCardShape(width, height, 0.14);
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
@@ -224,11 +224,11 @@ export default function ShopNfcCardPreview({ product, compact = false }) {
     let loadedFaces = 0;
     let disposed = false;
 
-    camera.position.set(0, 0, compact ? 6.4 : 6);
+    camera.position.set(0, 0, compact ? 5.55 : 5.15);
     renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     mount.appendChild(renderer.domElement);
-    renderer.domElement.setAttribute("aria-label", `3D preview of ${product?.name || "NFC card"}`);
+    renderer.domElement.setAttribute("aria-label", `Preview of ${product?.name || "NFC card"}`);
     renderer.domElement.setAttribute("role", "img");
 
     const frontGeometry = new THREE.ShapeGeometry(shape);
@@ -266,7 +266,7 @@ export default function ShopNfcCardPreview({ product, compact = false }) {
       }
     };
 
-    const applyTexture = (url, mesh) => {
+    const applyTexture = (url, mesh, side) => {
       textureLoader.load(url, (texture) => {
         if (disposed) {
           texture.dispose();
@@ -294,7 +294,7 @@ export default function ShopNfcCardPreview({ product, compact = false }) {
           map: nextTexture,
           roughness: 0.36,
           metalness: 0.05,
-          side: THREE.DoubleSide,
+          side,
         });
         mesh.material.dispose();
         mesh.material = material;
@@ -305,8 +305,8 @@ export default function ShopNfcCardPreview({ product, compact = false }) {
       });
     };
 
-    applyTexture(artwork.front, frontMesh);
-    applyTexture(artwork.back, backMesh);
+    applyTexture(artwork.front, frontMesh, THREE.FrontSide);
+    applyTexture(artwork.back, backMesh, THREE.FrontSide);
 
     const resize = () => {
       const bounds = mount.getBoundingClientRect();

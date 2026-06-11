@@ -273,7 +273,7 @@ export default function AdminShopPage() {
       <div className="admin-shop__header">
         <div>
           <h1>Shop Products</h1>
-          <p>Add NFC products and publish them automatically to the customer shop with the 3D preview template.</p>
+          <p>Add NFC products and publish them automatically to the customer shop with the card preview template.</p>
         </div>
         <button type="button" onClick={loadProducts}>
           <RefreshCcw size={15} />
@@ -341,7 +341,7 @@ export default function AdminShopPage() {
             <input type="number" value={form.sortOrder} onChange={(event) => updateForm("sortOrder", event.target.value)} />
           </label>
           <label>
-            3D artwork template
+            Artwork template
             <select value={form.artworkKey} onChange={(event) => updateForm("artworkKey", event.target.value)}>
               <option value="lagos_vibes">Lagos Vibes</option>
               <option value="custom">Custom front/back URLs</option>

@@ -81,7 +81,7 @@ export default function ShopPage() {
 
           <h1>Order NFC products for your brand.</h1>
           <p>
-            Choose a card design, preview the front and back in 3D, then start your order directly from the dashboard.
+            Choose a card design, preview the front and back, then start your order directly from the dashboard.
           </p>
 
           <div className="shop-page__hero-meta">
@@ -91,7 +91,7 @@ export default function ShopPage() {
             </span>
             <span>
               <Sparkles size={15} />
-              3D previews included
+              Interactive card view
             </span>
           </div>
 
