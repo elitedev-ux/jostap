@@ -354,6 +354,28 @@ CREATE TABLE IF NOT EXISTS pricing_plans (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS shop_products (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug text NOT NULL UNIQUE,
+  name text NOT NULL,
+  subtitle text,
+  description text NOT NULL DEFAULT '',
+  badge text,
+  price_cents integer NOT NULL DEFAULT 0,
+  currency text NOT NULL DEFAULT 'NGN',
+  checkout_path text NOT NULL DEFAULT '/checkout?plan=jostap_nfc&billing=one_time',
+  artwork_key text NOT NULL DEFAULT 'lagos_vibes',
+  front_image_url text,
+  back_image_url text,
+  inventory_status text NOT NULL DEFAULT 'available' CHECK (inventory_status IN ('available', 'limited', 'sold_out', 'draft')),
+  sort_order integer NOT NULL DEFAULT 0,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS shop_products_active_sort_idx ON shop_products (is_active, sort_order, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS role_permissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   role text NOT NULL UNIQUE,
@@ -549,6 +571,48 @@ ON CONFLICT (slug) DO UPDATE SET
   is_active = EXCLUDED.is_active,
   updated_at = now();
 
+INSERT INTO shop_products (
+  slug,
+  name,
+  subtitle,
+  description,
+  badge,
+  price_cents,
+  currency,
+  checkout_path,
+  artwork_key,
+  inventory_status,
+  sort_order,
+  is_active
+)
+VALUES (
+  'lagos-vibes-nfc-card',
+  'Lagos Vibes NFC Card',
+  'Tap-to-share NFC business card',
+  'A ready-to-order NFC card with a Lagos-inspired front, QR-enabled back, and digital profile connection.',
+  'Available now',
+  4000000,
+  'NGN',
+  '/checkout?plan=jostap_nfc&billing=one_time',
+  'lagos_vibes',
+  'available',
+  10,
+  true
+)
+ON CONFLICT (slug) DO UPDATE SET
+  name = EXCLUDED.name,
+  subtitle = EXCLUDED.subtitle,
+  description = EXCLUDED.description,
+  badge = EXCLUDED.badge,
+  price_cents = EXCLUDED.price_cents,
+  currency = EXCLUDED.currency,
+  checkout_path = EXCLUDED.checkout_path,
+  artwork_key = EXCLUDED.artwork_key,
+  inventory_status = EXCLUDED.inventory_status,
+  sort_order = EXCLUDED.sort_order,
+  is_active = EXCLUDED.is_active,
+  updated_at = now();
+
 INSERT INTO role_permissions (role, description, permissions)
 VALUES
   ('admin', 'Full super admin access.', '["users:manage", "cards:manage", "billing:manage", "content:manage", "reports:export", "roles:manage", "appointments:manage", "support:manage", "announcements:manage", "notifications:manage"]'::jsonb),
@@ -626,6 +690,11 @@ CREATE TRIGGER set_pricing_plans_updated_at
 BEFORE UPDATE ON pricing_plans
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+DROP TRIGGER IF EXISTS set_shop_products_updated_at ON shop_products;
+CREATE TRIGGER set_shop_products_updated_at
+BEFORE UPDATE ON shop_products
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
 DROP TRIGGER IF EXISTS set_role_permissions_updated_at ON role_permissions;
 CREATE TRIGGER set_role_permissions_updated_at
 BEFORE UPDATE ON role_permissions
@@ -658,6 +727,7 @@ ALTER TABLE email_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE static_pages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE faqs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pricing_plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shop_products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE role_permissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
@@ -802,6 +872,7 @@ BEGIN
     'static_pages',
     'faqs',
     'pricing_plans',
+    'shop_products',
     'role_permissions',
     'admin_notifications',
     'announcements',

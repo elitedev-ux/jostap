@@ -1,37 +1,85 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { Bell, MessageSquareText, QrCode, ShoppingBag, Tags, Watch, Wifi } from "lucide-react";
+import { CheckCircle2, Package, RefreshCcw, ShoppingBag, Sparkles } from "lucide-react";
 import lagosVibesBack from "../../../assets/Lagos Vibes Back.png";
 import lagosVibesFront from "../../../assets/Lagos Vibes front.png";
 import "./shop.css";
 
-const products = [
+const DEFAULT_PRODUCTS = [
   {
-    title: "NFC Wristbands",
-    copy: "Tap-to-share wristbands for events, teams, creators, and high-movement networking moments.",
-    icon: Watch,
-  },
-  {
-    title: "Smart NFC Wristbands",
-    copy: "Advanced wristbands built for richer interactions, campaigns, and premium brand activations.",
-    icon: Wifi,
-  },
-  {
-    title: "Review / Feedback Tags",
-    copy: "Simple tap points that help customers leave reviews, feedback, and follow-up details faster.",
-    icon: MessageSquareText,
-  },
-  {
-    title: "NFC Table Stands",
-    copy: "Countertop sharing for restaurants, salons, events, offices, and front-desk experiences.",
-    icon: QrCode,
-  },
-  {
-    title: "Additional NFC Solutions",
-    copy: "More smart tags, branded touchpoints, and custom NFC tools for growing businesses.",
-    icon: Tags,
+    id: "lagos-vibes-nfc-card",
+    slug: "lagos-vibes-nfc-card",
+    name: "Lagos Vibes NFC Card",
+    subtitle: "Tap-to-share NFC business card",
+    description:
+      "A ready-to-order NFC card with a Lagos-inspired front, QR-enabled back, and digital profile connection.",
+    badge: "Available now",
+    priceCents: 4000000,
+    currency: "NGN",
+    checkoutPath: "/checkout?plan=jostap_nfc&billing=one_time",
+    artworkKey: "lagos_vibes",
+    frontImageUrl: "",
+    backImageUrl: "",
+    inventoryStatus: "available",
+    sortOrder: 10,
+    isActive: true,
   },
 ];
+
+const BUILT_IN_ARTWORK = {
+  lagos_vibes: {
+    front: lagosVibesFront,
+    back: lagosVibesBack,
+    crop: {
+      offsetX: 552 / 4000,
+      offsetY: 580 / 3000,
+      width: 2875,
+      height: 1809,
+      repeatX: 2875 / 4000,
+      repeatY: 1809 / 3000,
+    },
+  },
+};
+
+const FULL_ARTWORK_CROP = {
+  offsetX: 0,
+  offsetY: 0,
+  width: 2875,
+  height: 1809,
+  repeatX: 1,
+  repeatY: 1,
+};
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+function money(cents, currency = "NGN") {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(Number(cents || 0) / 100);
+}
+
+function inventoryLabel(status) {
+  return {
+    available: "Available",
+    limited: "Limited stock",
+    sold_out: "Sold out",
+    draft: "Draft",
+  }[status] || "Available";
+}
+
+function nearestCardFaceAngle(angle) {
+  const fullTurn = Math.PI * 2;
+  const normalized = ((angle % fullTurn) + fullTurn) % fullTurn;
+  const faceAngle = normalized > Math.PI / 2 && normalized < Math.PI * 1.5 ? Math.PI : 0;
+  let delta = faceAngle - normalized;
+
+  if (delta > Math.PI) delta -= fullTurn;
+  if (delta < -Math.PI) delta += fullTurn;
+
+  return angle + delta;
+}
 
 function roundedCardShape(width, height, radius) {
   const x = -width / 2;
@@ -64,38 +112,27 @@ function mapGeometryUv(geometry, width, height) {
   geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
 }
 
-const lagosVibesTextureCrop = {
-  offsetX: 552 / 4000,
-  offsetY: 580 / 3000,
-  width: 2875,
-  height: 1809,
-  repeatX: 2875 / 4000,
-  repeatY: 1809 / 3000,
-};
+function artworkForProduct(product) {
+  const builtIn = BUILT_IN_ARTWORK[product?.artworkKey] || BUILT_IN_ARTWORK.lagos_vibes;
+  const hasCustomArtwork = product?.frontImageUrl && product?.backImageUrl;
 
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
-function nearestCardFaceAngle(angle) {
-  const fullTurn = Math.PI * 2;
-  const normalized = ((angle % fullTurn) + fullTurn) % fullTurn;
-  const faceAngle = normalized > Math.PI / 2 && normalized < Math.PI * 1.5 ? Math.PI : 0;
-  let delta = faceAngle - normalized;
-
-  if (delta > Math.PI) delta -= fullTurn;
-  if (delta < -Math.PI) delta += fullTurn;
-
-  return angle + delta;
+  return {
+    front: hasCustomArtwork ? product.frontImageUrl : builtIn.front,
+    back: hasCustomArtwork ? product.backImageUrl : builtIn.back,
+    crop: hasCustomArtwork ? FULL_ARTWORK_CROP : builtIn.crop,
+  };
 }
 
-function ShopNfcCardPreview() {
+function ShopNfcCardPreview({ product, compact = false }) {
   const mountRef = useRef(null);
+  const artwork = useMemo(() => artworkForProduct(product), [product]);
 
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return undefined;
 
     const width = 3.4;
-    const height = width / (lagosVibesTextureCrop.width / lagosVibesTextureCrop.height);
+    const height = width / (artwork.crop.width / artwork.crop.height);
     const faceGap = 0.006;
     const shape = roundedCardShape(width, height, 0.14);
     const scene = new THREE.Scene();
@@ -114,12 +151,12 @@ function ShopNfcCardPreview() {
     let frame = 0;
     let disposed = false;
 
-    camera.position.set(0, 0, 6);
+    camera.position.set(0, 0, compact ? 6.4 : 6);
     renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     mount.appendChild(renderer.domElement);
     mount.classList.add("is-ready");
-    renderer.domElement.setAttribute("aria-label", "3D preview of Lagos Vibes NFC card");
+    renderer.domElement.setAttribute("aria-label", `3D preview of ${product?.name || "NFC card"}`);
     renderer.domElement.setAttribute("role", "img");
 
     const frontGeometry = new THREE.ShapeGeometry(shape);
@@ -128,6 +165,7 @@ function ShopNfcCardPreview() {
     mapGeometryUv(backGeometry, width, height);
 
     const textureLoader = new THREE.TextureLoader();
+    textureLoader.setCrossOrigin("anonymous");
     const loadingMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       roughness: 0.55,
@@ -144,10 +182,10 @@ function ShopNfcCardPreview() {
     group.rotation.set(interaction.targetX, interaction.targetY, 0.02);
     scene.add(group);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.35);
     keyLight.position.set(1.8, 3.2, 4.5);
     scene.add(keyLight);
-    scene.add(new THREE.AmbientLight(0xffffff, 1.25));
+    scene.add(new THREE.AmbientLight(0xffffff, 1.18));
 
     const applyTexture = (url, mesh) => {
       textureLoader.load(url, (texture) => {
@@ -159,8 +197,8 @@ function ShopNfcCardPreview() {
         texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
-        texture.offset.set(lagosVibesTextureCrop.offsetX, lagosVibesTextureCrop.offsetY);
-        texture.repeat.set(lagosVibesTextureCrop.repeatX, lagosVibesTextureCrop.repeatY);
+        texture.offset.set(artwork.crop.offsetX, artwork.crop.offsetY);
+        texture.repeat.set(artwork.crop.repeatX, artwork.crop.repeatY);
         texture.minFilter = THREE.LinearMipmapLinearFilter;
         texture.magFilter = THREE.LinearFilter;
         const material = new THREE.MeshStandardMaterial({
@@ -174,13 +212,13 @@ function ShopNfcCardPreview() {
       });
     };
 
-    applyTexture(lagosVibesFront, frontMesh);
-    applyTexture(lagosVibesBack, backMesh);
+    applyTexture(artwork.front, frontMesh);
+    applyTexture(artwork.back, backMesh);
 
     const resize = () => {
       const bounds = mount.getBoundingClientRect();
-      const nextWidth = Math.max(260, Math.floor(bounds.width));
-      const nextHeight = Math.max(240, Math.floor(bounds.height));
+      const nextWidth = Math.max(compact ? 220 : 260, Math.floor(bounds.width));
+      const nextHeight = Math.max(compact ? 190 : 240, Math.floor(bounds.height));
       camera.aspect = nextWidth / nextHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(nextWidth, nextHeight, false);
@@ -237,7 +275,6 @@ function ShopNfcCardPreview() {
     const animate = () => {
       frame = window.requestAnimationFrame(animate);
       const time = performance.now() * 0.001;
-
       const hoverTiltY = interaction.dragging ? 0 : interaction.hoverX * 0.18;
       const hoverTiltX = interaction.dragging ? 0 : -interaction.hoverY * 0.1;
       group.rotation.y += ((interaction.targetY + hoverTiltY + Math.sin(time * 0.28) * 0.04) - group.rotation.y) * 0.12;
@@ -267,60 +304,126 @@ function ShopNfcCardPreview() {
       renderer.domElement.remove();
       mount.classList.remove("is-ready");
     };
-  }, []);
+  }, [artwork, compact, product?.name]);
 
   return (
-    <div className="shop-nfc-preview">
+    <div className={compact ? "shop-nfc-preview shop-nfc-preview--compact" : "shop-nfc-preview"}>
       <div ref={mountRef} className="shop-nfc-preview__scene">
-        <span>Loading Lagos Vibes card preview</span>
+        <span>Loading card preview</span>
       </div>
     </div>
   );
 }
 
 export default function ShopPage() {
+  const [products, setProducts] = useState(DEFAULT_PRODUCTS);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  async function loadProducts() {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const response = await fetch("/api/shop/products", { credentials: "same-origin" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to load shop products.");
+      setProducts((data.products?.length ? data.products : DEFAULT_PRODUCTS).filter((product) => product.isActive !== false));
+    } catch (error) {
+      setProducts(DEFAULT_PRODUCTS);
+      setLoadError(error.message || "Unable to load shop products.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const featuredProduct = products[0] || DEFAULT_PRODUCTS[0];
+  const availableCount = products.filter((product) => product.inventoryStatus !== "sold_out").length;
+
   return (
-    <div className="shop-coming-soon">
-      <section className="shop-coming-soon__hero">
-        <div className="shop-coming-soon__content">
-          <span className="shop-coming-soon__eyebrow">
+    <div className="shop-page">
+      <section className="shop-page__hero">
+        <div className="shop-page__content">
+          <span className="shop-page__eyebrow">
             <ShoppingBag size={15} />
             JOSTAP Shop
           </span>
 
-          <h1>More NFC products are coming soon.</h1>
+          <h1>Order NFC products for your brand.</h1>
           <p>
-            JOSTAP is expanding beyond NFC cards with wearable, tabletop,
-            review, and custom NFC solutions designed for everyday business moments.
+            Choose a card design, preview the front and back in 3D, then start your order directly from the dashboard.
           </p>
 
-          <div className="shop-coming-soon__actions">
-            <button type="button" disabled>
-              <Bell size={16} />
-              Coming Soon
-            </button>
-            <span>Launch updates will appear in your dashboard.</span>
+          <div className="shop-page__hero-meta">
+            <span>
+              <CheckCircle2 size={15} />
+              {availableCount} available
+            </span>
+            <span>
+              <Sparkles size={15} />
+              3D previews included
+            </span>
           </div>
+
+          {loadError && (
+            <button type="button" className="shop-page__retry" onClick={loadProducts}>
+              <RefreshCcw size={14} />
+              Retry product sync
+            </button>
+          )}
         </div>
 
-        <div className="shop-coming-soon__showcase">
-          <ShopNfcCardPreview />
+        <div className="shop-page__feature">
+          <ShopNfcCardPreview product={featuredProduct} />
+          <div className="shop-page__feature-copy">
+            <span>{featuredProduct.badge || inventoryLabel(featuredProduct.inventoryStatus)}</span>
+            <h2>{featuredProduct.name}</h2>
+            <p>{featuredProduct.subtitle || featuredProduct.description}</p>
+            <strong>{money(featuredProduct.priceCents, featuredProduct.currency)}</strong>
+          </div>
         </div>
       </section>
 
-      <section className="shop-coming-soon__grid" aria-label="Upcoming shop products">
-        {products.map(({ title, copy, icon: Icon }) => (
-          <article className="shop-coming-soon__tile" key={title}>
-            <div className="shop-coming-soon__tile-top">
-              <span>
-                <Icon size={18} />
-              </span>
-              <strong>Coming Soon</strong>
-            </div>
-            <h2>{title}</h2>
-            <p>{copy}</p>
-          </article>
-        ))}
+      <section className="shop-page__toolbar" aria-label="Shop status">
+        <div>
+          <Package size={16} />
+          <span>{loading ? "Loading products..." : `${products.length} product${products.length === 1 ? "" : "s"} listed`}</span>
+        </div>
+        <button type="button" onClick={loadProducts}>
+          <RefreshCcw size={14} />
+          Refresh
+        </button>
+      </section>
+
+      <section className="shop-page__grid" aria-label="Available shop products">
+        {products.map((product) => {
+          const soldOut = product.inventoryStatus === "sold_out";
+          return (
+            <article className="shop-product" key={product.id || product.slug}>
+              <div className="shop-product__preview">
+                <ShopNfcCardPreview product={product} compact />
+              </div>
+              <div className="shop-product__body">
+                <div className="shop-product__topline">
+                  <span>{product.badge || inventoryLabel(product.inventoryStatus)}</span>
+                  <strong>{money(product.priceCents, product.currency)}</strong>
+                </div>
+                <h2>{product.name}</h2>
+                <p>{product.description}</p>
+                <a
+                  className={soldOut ? "shop-product__cta is-disabled" : "shop-product__cta"}
+                  href={soldOut ? undefined : product.checkoutPath || "/checkout?plan=jostap_nfc&billing=one_time"}
+                  aria-disabled={soldOut}
+                >
+                  {soldOut ? "Sold out" : "Order card"}
+                </a>
+              </div>
+            </article>
+          );
+        })}
       </section>
     </div>
   );

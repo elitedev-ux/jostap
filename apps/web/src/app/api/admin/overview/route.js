@@ -1,6 +1,12 @@
 import { json } from "../../utils/http.js";
 import { requireAdmin, fullName, money } from "../../utils/admin.js";
 import { getSupabaseAdmin } from "../../utils/supabase.js";
+import {
+  SHOP_PRODUCTS_PAGE_SLUG,
+  parseShopProductsContent,
+  shopProductFromRow,
+  sortShopProducts,
+} from "../../utils/shopProducts.js";
 import { toCdnStorageUrl } from "../../utils/storageUrls.js";
 import { cardNfcUrl, publicCardUrl, cardQrUrl } from "../../../../utils/publicUrl.js";
 
@@ -22,6 +28,10 @@ function dateTimeLabel(value) {
 
 function sum(rows, key) {
   return (rows || []).reduce((total, row) => total + Number(row[key] || 0), 0);
+}
+
+function isMissingTableError(error, tableName) {
+  return error?.code === "42P01" || new RegExp(tableName, "i").test(error?.message || "");
 }
 
 const DEFAULT_PLAN_PRICE_KOBO = {
@@ -92,6 +102,7 @@ export async function GET(request) {
     staticPagesResult,
     faqsResult,
     pricingPlansResult,
+    shopProductsResult,
     notificationsResult,
     announcementsResult,
     supportTicketsResult,
@@ -112,6 +123,7 @@ export async function GET(request) {
     supabase.from("static_pages").select("*").order("created_at", { ascending: false }),
     supabase.from("faqs").select("*").order("sort_order", { ascending: true }),
     supabase.from("pricing_plans").select("*").order("monthly_cents", { ascending: true }),
+    supabase.from("shop_products").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
     supabase.from("admin_notifications").select("*").order("created_at", { ascending: false }),
     supabase.from("announcements").select("*").order("published_at", { ascending: false }),
     supabase.from("support_tickets").select("*, users(email, first_name, last_name)").order("created_at", { ascending: false }),
@@ -134,6 +146,7 @@ export async function GET(request) {
     staticPagesResult.error ||
     faqsResult.error ||
     pricingPlansResult.error ||
+    (isMissingTableError(shopProductsResult.error, "shop_products") ? null : shopProductsResult.error) ||
     notificationsResult.error ||
     announcementsResult.error ||
     supportTicketsResult.error ||
@@ -158,6 +171,12 @@ export async function GET(request) {
   const staticPages = staticPagesResult.data || [];
   const faqs = faqsResult.data || [];
   const pricingPlans = pricingPlansResult.data || [];
+  const staticShopProducts = parseShopProductsContent(
+    staticPages.find((page) => page.slug === SHOP_PRODUCTS_PAGE_SLUG)?.content,
+  );
+  const shopProducts = isMissingTableError(shopProductsResult.error, "shop_products")
+    ? sortShopProducts(staticShopProducts)
+    : shopProductsResult.data || [];
   const rawNotifications = notificationsResult.data || [];
   const announcements = announcementsResult.data || [];
   const supportTickets = supportTicketsResult.data || [];
@@ -287,6 +306,8 @@ export async function GET(request) {
       staticPages: staticPages.length,
       faqs: faqs.length,
       pricingPlans: pricingPlans.length,
+      shopProducts: shopProducts.length,
+      activeShopProducts: shopProducts.filter((product) => product.is_active ?? product.isActive).length,
       unreadNotifications: adminNotifications.filter((item) => !item.is_read).length,
       announcements: announcements.length,
       supportTickets: supportTickets.length,
@@ -398,6 +419,9 @@ export async function GET(request) {
     staticPages,
     faqs,
     pricingPlans,
+    shopProducts: isMissingTableError(shopProductsResult.error, "shop_products")
+      ? shopProducts
+      : shopProducts.map(shopProductFromRow),
     notifications: adminNotifications,
     announcements,
     supportTickets: supportTickets.map((ticket) => {
