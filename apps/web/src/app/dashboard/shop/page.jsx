@@ -50,6 +50,8 @@ const FULL_ARTWORK_CROP = {
   repeatY: 1,
 };
 
+const CUSTOM_ARTWORK_CANVAS_WIDTH = 2048;
+
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 function money(cents, currency = "NGN") {
@@ -112,6 +114,111 @@ function mapGeometryUv(geometry, width, height) {
   geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
 }
 
+function isTrimmedAwayPixel(data, index) {
+  const red = data[index];
+  const green = data[index + 1];
+  const blue = data[index + 2];
+  const alpha = data[index + 3];
+  const brightest = Math.max(red, green, blue);
+  const darkest = Math.min(red, green, blue);
+
+  return alpha < 24 || (red > 242 && green > 242 && blue > 242 && brightest - darkest < 24);
+}
+
+function detectArtworkBounds(image) {
+  const sourceWidth = image.naturalWidth || image.width;
+  const sourceHeight = image.naturalHeight || image.height;
+  const maxAnalysisSize = 720;
+  const scale = Math.min(1, maxAnalysisSize / Math.max(sourceWidth, sourceHeight));
+  const width = Math.max(1, Math.round(sourceWidth * scale));
+  const height = Math.max(1, Math.round(sourceHeight * scale));
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+
+  if (!context) {
+    return { x: 0, y: 0, width: sourceWidth, height: sourceHeight };
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  context.drawImage(image, 0, 0, width, height);
+
+  const pixels = context.getImageData(0, 0, width, height).data;
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const index = (y * width + x) * 4;
+      if (!isTrimmedAwayPixel(pixels, index)) {
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+  }
+
+  if (maxX < minX || maxY < minY) {
+    return { x: 0, y: 0, width: sourceWidth, height: sourceHeight };
+  }
+
+  const padding = Math.max(1, Math.round(Math.max(width, height) * 0.004));
+  minX = Math.max(0, minX - padding);
+  minY = Math.max(0, minY - padding);
+  maxX = Math.min(width - 1, maxX + padding);
+  maxY = Math.min(height - 1, maxY + padding);
+
+  return {
+    x: Math.round(minX / scale),
+    y: Math.round(minY / scale),
+    width: Math.max(1, Math.round((maxX - minX + 1) / scale)),
+    height: Math.max(1, Math.round((maxY - minY + 1) / scale)),
+  };
+}
+
+function cropBoundsToAspect(bounds, targetAspect) {
+  const next = { ...bounds };
+  const boundsAspect = next.width / next.height;
+
+  if (Math.abs(boundsAspect - targetAspect) < 0.01) {
+    return next;
+  }
+
+  if (boundsAspect > targetAspect) {
+    const width = next.height * targetAspect;
+    next.x += (next.width - width) / 2;
+    next.width = width;
+  } else {
+    const height = next.width / targetAspect;
+    next.y += (next.height - height) / 2;
+    next.height = height;
+  }
+
+  return next;
+}
+
+function trimmedArtworkTexture(image, targetAspect) {
+  const sourceBounds = detectArtworkBounds(image);
+  const bounds = cropBoundsToAspect(sourceBounds, targetAspect);
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  const width = CUSTOM_ARTWORK_CANVAS_WIDTH;
+  const height = Math.round(width / targetAspect);
+
+  if (!context) {
+    throw new Error("Canvas is unavailable.");
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  context.drawImage(image, bounds.x, bounds.y, bounds.width, bounds.height, 0, 0, width, height);
+
+  return new THREE.CanvasTexture(canvas);
+}
+
 function artworkForProduct(product) {
   const builtIn = BUILT_IN_ARTWORK[product?.artworkKey] || BUILT_IN_ARTWORK.lagos_vibes;
   const hasCustomArtwork = product?.frontImageUrl && product?.backImageUrl;
@@ -120,6 +227,7 @@ function artworkForProduct(product) {
     front: hasCustomArtwork ? product.frontImageUrl : builtIn.front,
     back: hasCustomArtwork ? product.backImageUrl : builtIn.back,
     crop: hasCustomArtwork ? FULL_ARTWORK_CROP : builtIn.crop,
+    autoTrim: Boolean(hasCustomArtwork),
   };
 }
 
@@ -193,16 +301,26 @@ function ShopNfcCardPreview({ product, compact = false }) {
           texture.dispose();
           return;
         }
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-        texture.wrapS = THREE.ClampToEdgeWrapping;
-        texture.wrapT = THREE.ClampToEdgeWrapping;
-        texture.offset.set(artwork.crop.offsetX, artwork.crop.offsetY);
-        texture.repeat.set(artwork.crop.repeatX, artwork.crop.repeatY);
-        texture.minFilter = THREE.LinearMipmapLinearFilter;
-        texture.magFilter = THREE.LinearFilter;
+        let nextTexture = texture;
+        if (artwork.autoTrim) {
+          try {
+            nextTexture = trimmedArtworkTexture(texture.image, artwork.crop.width / artwork.crop.height);
+            texture.dispose();
+          } catch {
+            nextTexture = texture;
+          }
+        }
+        nextTexture.colorSpace = THREE.SRGBColorSpace;
+        nextTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        nextTexture.wrapS = THREE.ClampToEdgeWrapping;
+        nextTexture.wrapT = THREE.ClampToEdgeWrapping;
+        nextTexture.offset.set(artwork.autoTrim ? 0 : artwork.crop.offsetX, artwork.autoTrim ? 0 : artwork.crop.offsetY);
+        nextTexture.repeat.set(artwork.autoTrim ? 1 : artwork.crop.repeatX, artwork.autoTrim ? 1 : artwork.crop.repeatY);
+        nextTexture.minFilter = THREE.LinearMipmapLinearFilter;
+        nextTexture.magFilter = THREE.LinearFilter;
+        nextTexture.needsUpdate = true;
         const material = new THREE.MeshStandardMaterial({
-          map: texture,
+          map: nextTexture,
           roughness: 0.36,
           metalness: 0.05,
           side: THREE.DoubleSide,
