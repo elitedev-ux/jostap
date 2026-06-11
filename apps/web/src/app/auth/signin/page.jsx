@@ -240,7 +240,7 @@ export default function SignInPage() {
         <img className="auth-form__logo" src={logo} alt="JOSTAP" />
         <h1>Welcome to JOSTAP.</h1>
         <p className="auth-form__switch">
-          Need an account? <a href="/auth/signup">Create one free</a>
+          Need an account? <a href={callbackUrl ? `/auth/signup?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/auth/signup"}>Create one free</a>
         </p>
 
         {error && <div className="auth-error">{error}</div>}

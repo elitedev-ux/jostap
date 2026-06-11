@@ -12,6 +12,7 @@ export default function Navbar() {
   }, []);
 
   const links = [
+    { label: "Shop", href: "/shop" },
     { label: "Pricing", href: "/pricing" },
     { label: "FAQ", href: "/faq" },
     { label: "About", href: "/about" },

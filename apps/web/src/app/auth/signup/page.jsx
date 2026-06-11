@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import logo from "../../../assets/jostap logo.png3.png";
 import authMockup from "../../../assets/JOSTAP Design (5).png";
@@ -9,6 +9,7 @@ import {
   PASSWORD_PATTERN,
   PASSWORD_RULES,
 } from "../../../utils/passwordPolicy";
+import { clearDashboardDataCache } from "../../../utils/dashboardDataStore";
 
 function GoogleIcon() {
   return (
@@ -33,7 +34,24 @@ function GoogleIcon() {
   );
 }
 
+function safeCallbackUrl(value) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "";
+  }
+
+  return value;
+}
+
+function destinationAfterSignup(callbackUrl) {
+  const safeCallback = safeCallbackUrl(callbackUrl);
+  return safeCallback && safeCallback !== "/dashboard" ? safeCallback : "/kyc";
+}
+
 export default function SignUpPage() {
+  const callbackUrl =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("callbackUrl") || ""
+      : "";
   const initialError =
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("error") || ""
@@ -53,6 +71,33 @@ export default function SignUpPage() {
   const [error, setError] = useState(initialError);
   const [verificationCode, setVerificationCode] = useState("");
   const [awaitingVerification, setAwaitingVerification] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function redirectAuthenticatedUser() {
+      const destination = destinationAfterSignup(callbackUrl);
+      if (destination === "/kyc") return;
+
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "same-origin" });
+        const data = await response.json().catch(() => ({}));
+
+        if (active && response.ok && data.user) {
+          clearDashboardDataCache();
+          window.location.replace(destination);
+        }
+      } catch {
+        // Let the normal signup form handle unauthenticated visitors.
+      }
+    }
+
+    redirectAuthenticatedUser();
+
+    return () => {
+      active = false;
+    };
+  }, [callbackUrl]);
 
   const update = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -104,7 +149,8 @@ export default function SignUpPage() {
         return;
       }
 
-      window.location.href = "/kyc";
+      clearDashboardDataCache();
+      window.location.href = destinationAfterSignup(callbackUrl);
     } catch (error) {
       setError(error.message || "Something went wrong. Please try again.");
     } finally {
@@ -130,7 +176,8 @@ export default function SignUpPage() {
         throw new Error(data.error || "Unable to verify your account.");
       }
 
-      window.location.href = "/kyc";
+      clearDashboardDataCache();
+      window.location.href = destinationAfterSignup(callbackUrl);
     } catch (error) {
       setError(error.message || "Unable to verify your account.");
     } finally {
@@ -170,7 +217,7 @@ export default function SignUpPage() {
         <img className="auth-form__logo" src={logo} alt="JOSTAP" />
         <h1>Welcome to JOSTAP.</h1>
         <p className="auth-form__switch">
-          Already have an account? <a href="/auth/signin">Log in</a>
+          Already have an account? <a href={callbackUrl ? `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/auth/signin"}>Log in</a>
         </p>
 
         {error && <div className="auth-error">{error}</div>}
@@ -320,7 +367,7 @@ export default function SignUpPage() {
           <button
             type="button"
             onClick={() => {
-              window.location.href = `/api/auth/google?intent=signup&callbackUrl=${encodeURIComponent("/kyc")}`;
+              window.location.href = `/api/auth/google?intent=signup&callbackUrl=${encodeURIComponent(destinationAfterSignup(callbackUrl))}`;
             }}
           >
             <GoogleIcon />

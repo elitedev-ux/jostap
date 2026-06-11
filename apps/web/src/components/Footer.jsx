@@ -3,7 +3,10 @@ import "./Footer.css";
 
 export default function Footer() {
   const groups = {
-    Product: [["Pricing", "/pricing"]],
+    Product: [
+      ["Shop", "/shop"],
+      ["Pricing", "/pricing"],
+    ],
     Company: [
       ["About", "/about"],
       ["Blog", "/blog"],
