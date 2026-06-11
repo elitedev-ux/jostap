@@ -39,16 +39,20 @@ export async function POST(request) {
   if (error) throw error;
   if (!user || user.status !== "active") return unauthorized("Invalid or expired reset code.");
 
-  const result = await verifyPasswordResetChallenge(supabase, user.id, code);
+  const result = await verifyPasswordResetChallenge(supabase, user.id, code, { consume: false });
   if (!result.ok) return badRequest(result.error);
 
   const passwordHash = await hashPassword(password);
-  const [{ error: updateError }, { error: sessionError }] = await Promise.all([
+  const [{ error: updateError }, { error: sessionError }, { error: challengeError }] = await Promise.all([
     supabase.from("users").update({ password_hash: passwordHash }).eq("id", user.id),
     supabase.from("sessions").delete().eq("user_id", user.id),
+    supabase
+      .from("auth_challenges")
+      .update({ consumed_at: new Date().toISOString() })
+      .eq("id", result.challengeId),
   ]);
 
-  if (updateError || sessionError) throw updateError || sessionError;
+  if (updateError || sessionError || challengeError) throw updateError || sessionError || challengeError;
 
   return json({ message: "Password reset successfully. Please sign in with your new password." });
 }

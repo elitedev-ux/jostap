@@ -6,7 +6,6 @@ import AuthShell from "../../../components/auth/AuthShell";
 import PasswordRequirements from "../../../components/auth/PasswordRequirements";
 import {
   isValidPassword,
-  PASSWORD_PATTERN,
   PASSWORD_RULES,
 } from "../../../utils/passwordPolicy";
 
@@ -122,8 +121,6 @@ export default function ForgotPasswordPage() {
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="New password"
                   required
-                  minLength={8}
-                  pattern={PASSWORD_PATTERN}
                   title={PASSWORD_RULES}
                 />
                 <button

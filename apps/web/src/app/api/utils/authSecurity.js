@@ -86,7 +86,7 @@ export async function createPasswordResetChallenge(supabase, user) {
   return data;
 }
 
-export async function verifyPasswordResetChallenge(supabase, userId, code) {
+export async function verifyPasswordResetChallenge(supabase, userId, code, { consume = true } = {}) {
   const { data: challenge, error } = await supabase
     .from("auth_challenges")
     .select("*")
@@ -119,12 +119,14 @@ export async function verifyPasswordResetChallenge(supabase, userId, code) {
     return { ok: false, error: "Invalid reset code." };
   }
 
-  await supabase
-    .from("auth_challenges")
-    .update({ consumed_at: new Date().toISOString() })
-    .eq("id", challenge.id);
+  if (consume) {
+    await supabase
+      .from("auth_challenges")
+      .update({ consumed_at: new Date().toISOString() })
+      .eq("id", challenge.id);
+  }
 
-  return { ok: true };
+  return { ok: true, challengeId: challenge.id };
 }
 
 export async function verifyEmailChallenge(supabase, userId, code) {
