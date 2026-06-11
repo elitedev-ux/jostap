@@ -65,10 +65,12 @@ function mapGeometryUv(geometry, width, height) {
 }
 
 const lagosVibesTextureCrop = {
-  offsetX: 212 / 4000,
-  offsetY: 232 / 3000,
-  repeatX: 3405 / 4000,
-  repeatY: 2337 / 3000,
+  offsetX: 552 / 4000,
+  offsetY: 580 / 3000,
+  width: 2875,
+  height: 1809,
+  repeatX: 2875 / 4000,
+  repeatY: 1809 / 3000,
 };
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
@@ -93,8 +95,8 @@ function ShopNfcCardPreview() {
     if (!mount) return undefined;
 
     const width = 3.4;
-    const height = width * (lagosVibesTextureCrop.repeatY / lagosVibesTextureCrop.repeatX);
-    const depth = 0.07;
+    const height = width / (lagosVibesTextureCrop.width / lagosVibesTextureCrop.height);
+    const faceGap = 0.006;
     const shape = roundedCardShape(width, height, 0.14);
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
@@ -120,45 +122,25 @@ function ShopNfcCardPreview() {
     renderer.domElement.setAttribute("aria-label", "3D preview of Lagos Vibes NFC card");
     renderer.domElement.setAttribute("role", "img");
 
-    const sideGeometry = new THREE.ExtrudeGeometry(shape, {
-      depth,
-      bevelEnabled: true,
-      bevelThickness: 0.012,
-      bevelSize: 0.018,
-      bevelSegments: 2,
-    });
-    sideGeometry.center();
-
     const frontGeometry = new THREE.ShapeGeometry(shape);
     const backGeometry = new THREE.ShapeGeometry(shape);
     mapGeometryUv(frontGeometry, width, height);
     mapGeometryUv(backGeometry, width, height);
 
     const textureLoader = new THREE.TextureLoader();
-    const sideMaterial = new THREE.MeshStandardMaterial({
-      color: 0x050505,
-      roughness: 0.5,
-      metalness: 0.12,
-    });
-    const capMaterial = new THREE.MeshBasicMaterial({
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-    });
     const loadingMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       roughness: 0.55,
     });
 
-    const sideMesh = new THREE.Mesh(sideGeometry, [capMaterial, sideMaterial]);
     const frontMesh = new THREE.Mesh(frontGeometry, loadingMaterial.clone());
     const backMesh = new THREE.Mesh(backGeometry, loadingMaterial.clone());
 
-    frontMesh.position.z = depth / 2 + 0.035;
-    backMesh.position.z = -(depth / 2 + 0.035);
+    frontMesh.position.z = faceGap;
+    backMesh.position.z = -faceGap;
     backMesh.rotation.y = Math.PI;
 
-    group.add(sideMesh, frontMesh, backMesh);
+    group.add(frontMesh, backMesh);
     group.rotation.set(interaction.targetX, interaction.targetY, 0.02);
     scene.add(group);
 
@@ -275,11 +257,8 @@ function ShopNfcCardPreview() {
       mount.removeEventListener("pointerup", onPointerUp);
       mount.removeEventListener("pointercancel", onPointerUp);
       mount.removeEventListener("pointerleave", onPointerLeave);
-      sideGeometry.dispose();
       frontGeometry.dispose();
       backGeometry.dispose();
-      sideMaterial.dispose();
-      capMaterial.dispose();
       frontMesh.material.map?.dispose();
       backMesh.material.map?.dispose();
       frontMesh.material.dispose();
