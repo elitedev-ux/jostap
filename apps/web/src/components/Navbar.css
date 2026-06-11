@@ -20,6 +20,10 @@
   box-shadow: 0 1px 0 rgba(16, 24, 40, 0.02);
 }
 
+.site-navbar--menu-open {
+  z-index: 3000;
+}
+
 .site-navbar__inner {
   display: flex;
   width: 100%;
@@ -108,21 +112,171 @@
   box-shadow: 0 6px 14px rgba(13, 111, 253, 0.18);
 }
 
+.site-navbar__menu-button {
+  display: none;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(219, 227, 239, 0.95);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-text);
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.site-navbar__menu-button:hover {
+  border-color: rgba(13, 111, 253, 0.28);
+  background: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+}
+
+.site-navbar__drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 98;
+  border: 0;
+  background: rgba(6, 18, 37, 0.34);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+}
+
+.site-navbar__drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  z-index: 99;
+  width: min(86vw, 360px);
+  min-width: 280px;
+  height: 100vh;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: rgba(255, 255, 255, 0.98);
+  border-left: 1px solid rgba(219, 227, 239, 0.95);
+  box-shadow: -24px 0 50px rgba(15, 23, 42, 0.18);
+  transform: translateX(105%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms ease;
+}
+
+.site-navbar__drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.site-navbar__drawer-head img {
+  width: 104px;
+  height: 42px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.site-navbar__drawer-head button {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.site-navbar__drawer-links {
+  display: grid;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.site-navbar__drawer-links a,
+.site-navbar__drawer-signin,
+.site-navbar__drawer-cta {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.site-navbar__drawer-links a {
+  padding: 0 14px;
+  color: var(--color-text);
+}
+
+.site-navbar__drawer-links a:hover {
+  background: #f5f8ff;
+  color: var(--color-primary);
+}
+
+.site-navbar__drawer-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid #eef2f7;
+}
+
+.site-navbar__drawer-signin {
+  justify-content: center;
+  border: 1px solid #dbe3ef;
+  color: var(--color-text);
+  background: #ffffff;
+}
+
+.site-navbar__drawer-cta {
+  justify-content: center;
+  background: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(13, 111, 253, 0.18);
+}
+
+.site-navbar--menu-open .site-navbar__drawer-backdrop,
+.site-navbar--menu-open .site-navbar__drawer {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.site-navbar--menu-open .site-navbar__drawer {
+  transform: translateX(0);
+}
+
+body.site-navbar-menu-open {
+  overflow: hidden;
+}
+
 @media (max-width: 768px) {
   .site-navbar__inner {
     height: 60px;
   }
 
-  .site-navbar-links {
+  .site-navbar-links,
+  .site-navbar-actions {
     display: none;
   }
 
-  .site-navbar__signin {
-    display: none;
-  }
-
-  .site-navbar__cta {
-    padding-inline: 14px;
+  .site-navbar__menu-button {
+    display: inline-flex;
   }
 }
 
@@ -135,8 +289,15 @@
     width: 96px;
   }
 
-  .site-navbar__cta {
-    font-size: 13px;
-    padding-inline: 12px;
+  .site-navbar__menu-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+  }
+
+  .site-navbar__drawer {
+    width: 88vw;
+    min-width: 0;
+    padding: 16px;
   }
 }
