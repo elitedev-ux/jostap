@@ -81,8 +81,11 @@ function isTrimmedAwayPixel(data, index) {
   const alpha = data[index + 3];
   const brightest = Math.max(red, green, blue);
   const darkest = Math.min(red, green, blue);
+  const isNeutral = brightest - darkest < 28;
+  const isWhiteBorder = red > 242 && green > 242 && blue > 242 && isNeutral;
+  const isBlackBorder = brightest < 38 && isNeutral;
 
-  return alpha < 24 || (red > 242 && green > 242 && blue > 242 && brightest - darkest < 24);
+  return alpha < 24 || isWhiteBorder || isBlackBorder;
 }
 
 function detectArtworkBounds(image) {
@@ -124,12 +127,6 @@ function detectArtworkBounds(image) {
   if (maxX < minX || maxY < minY) {
     return { x: 0, y: 0, width: sourceWidth, height: sourceHeight };
   }
-
-  const padding = Math.max(1, Math.round(Math.max(width, height) * 0.004));
-  minX = Math.max(0, minX - padding);
-  minY = Math.max(0, minY - padding);
-  maxX = Math.min(width - 1, maxX + padding);
-  maxY = Math.min(height - 1, maxY + padding);
 
   return {
     x: Math.round(minX / scale),
