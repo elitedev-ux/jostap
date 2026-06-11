@@ -19,6 +19,8 @@ const emptyForm = {
   isActive: true,
 };
 
+const PRODUCT_ARTWORK_MAX_BYTES = 10 * 1024 * 1024;
+
 function slugFromName(value) {
   return String(value || "")
     .toLowerCase()
@@ -72,6 +74,18 @@ function payloadFromForm(form) {
     sortOrder: Math.round(Number(form.sortOrder || 0)),
     isActive: form.isActive,
   };
+}
+
+async function readErrorMessage(response, fallback) {
+  const text = await response.text().catch(() => "");
+  if (!text) return fallback;
+
+  try {
+    const data = JSON.parse(text);
+    return data.error || data.message || fallback;
+  } catch {
+    return text.slice(0, 240) || fallback;
+  }
 }
 
 export default function AdminShopPage() {
@@ -160,15 +174,44 @@ export default function AdminShopPage() {
     setNotice("");
 
     try {
-      const body = new FormData();
-      body.append("file", file);
+      if (file.size > PRODUCT_ARTWORK_MAX_BYTES) {
+        throw new Error("Product artwork must be 10MB or smaller.");
+      }
+
       const response = await fetch("/api/admin/shop-products/media", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body,
+        body: JSON.stringify({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        }),
       });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "Unable to upload artwork.");
+
+      const data = response.ok ? await response.json() : null;
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response, "Unable to prepare artwork upload."));
+      }
+
+      if (!data?.signedUrl || !data?.url) {
+        throw new Error("Upload could not be prepared. Please try again.");
+      }
+
+      const uploadBody = new FormData();
+      uploadBody.append("cacheControl", "31536000");
+      uploadBody.append("", file);
+
+      const uploadResponse = await fetch(data.signedUrl, {
+        method: "PUT",
+        headers: { "x-upsert": "true" },
+        body: uploadBody,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(await readErrorMessage(uploadResponse, "Unable to upload artwork to storage."));
+      }
+
       updateForm(field, data.url || "");
       setNotice("Artwork uploaded.");
     } catch (uploadError) {

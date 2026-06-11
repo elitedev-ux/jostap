@@ -8,94 +8,87 @@ const BUCKET = "shop-product-media";
 const MAX_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(PROFILE_IMAGE_TYPES);
 
+function cleanFilename(value) {
+  return String(value || "product-artwork")
+    .toLowerCase()
+    .replace(/\.[^.]+$/, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "product-artwork";
+}
+
 function extensionFor(type) {
   if (type === "image/png") return "png";
   if (type === "image/webp") return "webp";
   return "jpg";
 }
 
-function detectedImageType(bytes) {
-  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
-    return "image/jpeg";
-  }
-
-  if (
-    bytes[0] === 0x89 &&
-    bytes[1] === 0x50 &&
-    bytes[2] === 0x4e &&
-    bytes[3] === 0x47 &&
-    bytes[4] === 0x0d &&
-    bytes[5] === 0x0a &&
-    bytes[6] === 0x1a &&
-    bytes[7] === 0x0a
-  ) {
-    return "image/png";
-  }
-
-  const riff = String.fromCharCode(...bytes.slice(0, 4));
-  const webp = String.fromCharCode(...bytes.slice(8, 12));
-  if (riff === "RIFF" && webp === "WEBP") {
-    return "image/webp";
-  }
-
-  return "";
-}
-
 async function ensureBucket(supabase) {
-  const { error } = await supabase.storage.getBucket(BUCKET);
-  if (!error) return;
-
-  const { error: createError } = await supabase.storage.createBucket(BUCKET, {
+  const bucketOptions = {
     public: true,
     fileSizeLimit: MAX_BYTES,
     allowedMimeTypes: Array.from(ALLOWED_TYPES),
-  });
+  };
+  const { error } = await supabase.storage.getBucket(BUCKET);
+  if (!error) {
+    const { error: updateError } = await supabase.storage.updateBucket(BUCKET, bucketOptions);
+    if (updateError) throw updateError;
+    return;
+  }
+
+  const { error: createError } = await supabase.storage.createBucket(BUCKET, bucketOptions);
 
   if (createError && !/already exists/i.test(createError.message || "")) {
     throw createError;
   }
+
+  if (createError) {
+    const { error: updateError } = await supabase.storage.updateBucket(BUCKET, bucketOptions);
+    if (updateError) throw updateError;
+  }
 }
 
 export async function POST(request) {
-  const { user: adminUser, response } = await requireAdmin(request, "content:manage");
-  if (response) return response;
+  try {
+    const { user: adminUser, response } = await requireAdmin(request, "content:manage");
+    if (response) return response;
 
-  const form = await request.formData();
-  const file = form.get("file");
+    const body = await request.json().catch(() => null);
+    const fileName = cleanFilename(body?.name);
+    const fileType = String(body?.type || "");
+    const fileSize = Number(body?.size || 0);
 
-  if (!file || typeof file.arrayBuffer !== "function") {
-    return json({ error: "Choose a product image to upload." }, { status: 400 });
-  }
+    if (!fileName || !fileType || !fileSize) {
+      return json({ error: "Choose a product image to upload." }, { status: 400 });
+    }
 
-  if (!ALLOWED_TYPES.has(file.type)) {
-    return json({ error: "Upload a JPG, PNG, or WebP image." }, { status: 400 });
-  }
+    if (!ALLOWED_TYPES.has(fileType)) {
+      return json({ error: "Upload a JPG, PNG, or WebP image." }, { status: 400 });
+    }
 
-  if (file.size > MAX_BYTES) {
-    return json({ error: "Product artwork must be 10MB or smaller." }, { status: 400 });
-  }
+    if (fileSize > MAX_BYTES) {
+      return json({ error: "Product artwork must be 10MB or smaller." }, { status: 400 });
+    }
 
-  const supabase = getSupabaseAdmin();
-  await ensureBucket(supabase);
+    const supabase = getSupabaseAdmin();
+    await ensureBucket(supabase);
 
-  const buffer = await file.arrayBuffer();
-  const detectedType = detectedImageType(new Uint8Array(buffer.slice(0, 16)));
+    const path = `${adminUser.id}/${fileName}-${Date.now()}.${extensionFor(fileType)}`;
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUploadUrl(path, { upsert: true });
 
-  if (detectedType !== file.type) {
-    return json({ error: "The uploaded file content does not match the image type." }, { status: 400 });
-  }
+    if (error) throw error;
 
-  const path = `${adminUser.id}/product-artwork-${Date.now()}.${extensionFor(detectedType)}`;
-  const { error: uploadError } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, buffer, {
-      contentType: detectedType,
-      cacheControl: "31536000",
-      upsert: true,
+    const { data: publicUrl } = supabase.storage.from(BUCKET).getPublicUrl(path);
+    return json({
+      signedUrl: data.signedUrl,
+      path: data.path || path,
+      token: data.token,
+      url: toCdnStorageUrl(publicUrl.publicUrl),
+      maxBytes: MAX_BYTES,
     });
-
-  if (uploadError) throw uploadError;
-
-  const { data: publicUrl } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return json({ url: toCdnStorageUrl(publicUrl.publicUrl) });
+  } catch (error) {
+    return json({ error: error?.message || "Unable to prepare product artwork upload." }, { status: 500 });
+  }
 }
