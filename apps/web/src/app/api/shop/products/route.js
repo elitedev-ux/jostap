@@ -18,10 +18,12 @@ async function readStaticProducts(supabase) {
 
   if (error) throw error;
 
-  const products = sortShopProducts(parseShopProductsContent(data?.content))
-    .filter((product) => product.isActive !== false && product.inventoryStatus !== "draft");
+  if (data?.content == null) {
+    return [DEFAULT_SHOP_PRODUCT];
+  }
 
-  return products.length ? products : [DEFAULT_SHOP_PRODUCT];
+  return sortShopProducts(parseShopProductsContent(data.content))
+    .filter((product) => product.isActive !== false && product.inventoryStatus !== "draft");
 }
 
 export async function GET() {
@@ -46,5 +48,5 @@ export async function GET() {
   }
 
   const products = (data || []).map(shopProductFromRow);
-  return json({ products: products.length ? products : [DEFAULT_SHOP_PRODUCT] });
+  return json({ products });
 }

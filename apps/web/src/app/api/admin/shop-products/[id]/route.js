@@ -22,8 +22,11 @@ async function readStaticProducts(supabase) {
 
   if (error) throw error;
 
-  const products = parseShopProductsContent(data?.content);
-  return products.length ? sortShopProducts(products) : [DEFAULT_SHOP_PRODUCT];
+  if (data?.content != null) {
+    return sortShopProducts(parseShopProductsContent(data.content));
+  }
+
+  return [DEFAULT_SHOP_PRODUCT];
 }
 
 async function writeStaticProducts(supabase, products) {
@@ -101,4 +104,48 @@ export async function PATCH(request, { params }) {
   await logAdminAction(supabase, adminUser, "shop_products.updated", "shop_products", params.id, payload);
 
   return json({ product: shopProductFromRow(data) });
+}
+
+export async function DELETE(request, { params }) {
+  const { user: adminUser, response } = await requireAdmin(request, "content:manage");
+  if (response) return response;
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("shop_products")
+    .delete()
+    .eq("id", params.id)
+    .select("id,slug,name")
+    .maybeSingle();
+
+  if (isMissingShopProductsTable(error)) {
+    const products = await readStaticProducts(supabase);
+    const product = products.find((item) => item.id === params.id);
+
+    if (!product) {
+      return json({ error: "Shop product not found." }, { status: 404 });
+    }
+
+    await writeStaticProducts(supabase, products.filter((item) => item.id !== params.id));
+    await logAdminAction(supabase, adminUser, "shop_products.deleted", "shop_products", params.id, {
+      slug: product.slug,
+      name: product.name,
+      storage: "static_pages",
+    });
+
+    return json({ deleted: true });
+  }
+
+  if (error) throw error;
+
+  if (!data) {
+    return json({ error: "Shop product not found." }, { status: 404 });
+  }
+
+  await logAdminAction(supabase, adminUser, "shop_products.deleted", "shop_products", params.id, {
+    slug: data.slug,
+    name: data.name,
+  });
+
+  return json({ deleted: true });
 }

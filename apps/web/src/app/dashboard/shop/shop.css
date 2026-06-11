@@ -145,6 +145,34 @@
   font-weight: 900;
 }
 
+.shop-page__empty-feature {
+  width: min(100%, 340px);
+  min-height: 250px;
+  justify-self: center;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  color: #64748b;
+  text-align: center;
+}
+
+.shop-page__empty-feature h2,
+.shop-page__empty h2 {
+  margin: 0;
+  color: #061225;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.shop-page__empty-feature p,
+.shop-page__empty p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .shop-nfc-preview {
   position: relative;
   width: min(100%, 400px);
@@ -230,6 +258,17 @@
 
 .shop-page__toolbar button {
   padding: 0 12px;
+}
+
+.shop-page__empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0d6ffd;
 }
 
 .shop-page__grid {

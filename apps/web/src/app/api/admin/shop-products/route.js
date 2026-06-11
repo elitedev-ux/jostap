@@ -23,8 +23,11 @@ async function readStaticProducts(supabase) {
 
   if (error) throw error;
 
-  const products = parseShopProductsContent(data?.content);
-  return products.length ? sortShopProducts(products) : [DEFAULT_SHOP_PRODUCT];
+  if (data?.content != null) {
+    return sortShopProducts(parseShopProductsContent(data.content));
+  }
+
+  return [DEFAULT_SHOP_PRODUCT];
 }
 
 async function writeStaticProducts(supabase, products) {

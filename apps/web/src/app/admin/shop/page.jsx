@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Edit3, ImagePlus, PackagePlus, RefreshCcw, Save, ShoppingBag, ToggleLeft, ToggleRight, X } from "lucide-react";
+import { Edit3, ImagePlus, PackagePlus, RefreshCcw, Save, ShoppingBag, ToggleLeft, ToggleRight, Trash2, X } from "lucide-react";
 
 const emptyForm = {
   id: "",
@@ -83,6 +83,7 @@ export default function AdminShopPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingField, setUploadingField] = useState("");
+  const [deletingId, setDeletingId] = useState("");
 
   const filteredProducts = useMemo(() => {
     const search = query.trim().toLowerCase();
@@ -161,7 +162,7 @@ export default function AdminShopPage() {
     try {
       const body = new FormData();
       body.append("file", file);
-      const response = await fetch("/api/cards/media", {
+      const response = await fetch("/api/admin/shop-products/media", {
         method: "POST",
         credentials: "same-origin",
         body,
@@ -193,6 +194,34 @@ export default function AdminShopPage() {
       await loadProducts();
     } catch (toggleError) {
       setError(toggleError.message || "Unable to update product.");
+    }
+  }
+
+  async function deleteProduct(product) {
+    const confirmed = window.confirm(`Delete ${product.name}? This removes it from the shop catalog.`);
+    if (!confirmed) return;
+
+    setDeletingId(product.id);
+    setError("");
+    setNotice("");
+
+    try {
+      const response = await fetch(`/api/admin/shop-products/${product.id}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to delete product.");
+
+      if (form.id === product.id) {
+        setForm(emptyForm);
+      }
+      setNotice("Product deleted.");
+      await loadProducts();
+    } catch (deleteError) {
+      setError(deleteError.message || "Unable to delete product.");
+    } finally {
+      setDeletingId("");
     }
   }
 
@@ -372,6 +401,10 @@ export default function AdminShopPage() {
                       {product.isActive ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
                       {product.isActive ? "Hide" : "Publish"}
                     </button>
+                    <button type="button" className="admin-shop__danger" onClick={() => deleteProduct(product)} disabled={deletingId === product.id}>
+                      <Trash2 size={14} />
+                      {deletingId === product.id ? "Deleting" : "Delete"}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -427,6 +460,8 @@ export default function AdminShopPage() {
         .admin-shop__table strong { color: #111827; font-weight: 900; }
         .admin-shop__table span { color: #64748b; font-size: 12px; margin-top: 3px; }
         .admin-shop__table td:last-child { display: flex; gap: 8px; }
+        .admin-shop__table button:disabled { opacity: 0.65; cursor: wait; }
+        .admin-shop__table .admin-shop__danger { color: #dc2626; border-color: #fecaca; background: #fff7f7; }
         @media (max-width: 1080px) {
           .admin-shop__form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }

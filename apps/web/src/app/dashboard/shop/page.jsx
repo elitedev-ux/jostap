@@ -327,7 +327,8 @@ export default function ShopPage() {
       const response = await fetch("/api/shop/products", { credentials: "same-origin" });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Unable to load shop products.");
-      setProducts((data.products?.length ? data.products : DEFAULT_PRODUCTS).filter((product) => product.isActive !== false));
+      const nextProducts = Array.isArray(data.products) ? data.products : DEFAULT_PRODUCTS;
+      setProducts(nextProducts.filter((product) => product.isActive !== false));
     } catch (error) {
       setProducts(DEFAULT_PRODUCTS);
       setLoadError(error.message || "Unable to load shop products.");
@@ -340,7 +341,7 @@ export default function ShopPage() {
     loadProducts();
   }, []);
 
-  const featuredProduct = products[0] || DEFAULT_PRODUCTS[0];
+  const featuredProduct = products[0] || null;
   const availableCount = products.filter((product) => product.inventoryStatus !== "sold_out").length;
 
   return (
@@ -377,15 +378,35 @@ export default function ShopPage() {
         </div>
 
         <div className="shop-page__feature">
-          <ShopNfcCardPreview product={featuredProduct} />
-          <div className="shop-page__feature-copy">
-            <span>{featuredProduct.badge || inventoryLabel(featuredProduct.inventoryStatus)}</span>
-            <h2>{featuredProduct.name}</h2>
-            <p>{featuredProduct.subtitle || featuredProduct.description}</p>
-            <strong>{money(featuredProduct.priceCents, featuredProduct.currency)}</strong>
-          </div>
+          {featuredProduct ? (
+            <>
+              <ShopNfcCardPreview product={featuredProduct} />
+              <div className="shop-page__feature-copy">
+                <span>{featuredProduct.badge || inventoryLabel(featuredProduct.inventoryStatus)}</span>
+                <h2>{featuredProduct.name}</h2>
+                <p>{featuredProduct.subtitle || featuredProduct.description}</p>
+                <strong>{money(featuredProduct.priceCents, featuredProduct.currency)}</strong>
+              </div>
+            </>
+          ) : (
+            <div className="shop-page__empty-feature">
+              <ShoppingBag size={24} />
+              <h2>No products listed</h2>
+              <p>Published products will appear here after an admin adds them.</p>
+            </div>
+          )}
         </div>
       </section>
+
+      {products.length === 0 && (
+        <div className="shop-page__empty">
+          <ShoppingBag size={22} />
+          <div>
+            <h2>No shop products available</h2>
+            <p>Check back after products are published by the admin team.</p>
+          </div>
+        </div>
+      )}
 
       <section className="shop-page__toolbar" aria-label="Shop status">
         <div>
