@@ -159,8 +159,9 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f5f5f5" }}>
+    <div className="checkout-page" style={{ minHeight: "100vh", background: "#f5f5f5" }}>
       <header
+        className="checkout-header"
         style={{
           height: 72,
           borderBottom: "1px solid #E5E7EB",
@@ -181,6 +182,7 @@ export default function CheckoutPage() {
         </a>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span
+            className="checkout-secure"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -196,6 +198,7 @@ export default function CheckoutPage() {
       </header>
 
       <main
+        className="checkout-main"
         style={{
           maxWidth: 1180,
           margin: "0 auto",
@@ -219,6 +222,7 @@ export default function CheckoutPage() {
         </a>
 
         <div
+          className="checkout-layout"
           style={{
             display: "grid",
             gridTemplateColumns: "minmax(0,1fr) 360px",
@@ -226,8 +230,9 @@ export default function CheckoutPage() {
             alignItems: "start",
           }}
         >
-          <form onSubmit={handleSubmit}>
+          <form className="checkout-form" onSubmit={handleSubmit}>
             <div
+              className="checkout-panel"
               style={{
                 background: "#fff",
                 border: "1px solid #E5E7EB",
@@ -271,6 +276,7 @@ export default function CheckoutPage() {
               </div>
 
               <div
+                className="checkout-plan-grid"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
@@ -317,6 +323,7 @@ export default function CheckoutPage() {
             </div>
 
             <div
+              className="checkout-panel"
               style={{
                 background: "#fff",
                 border: "1px solid #E5E7EB",
@@ -336,6 +343,7 @@ export default function CheckoutPage() {
                 Account details
               </h2>
               <div
+                className="checkout-account-grid"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",
@@ -376,6 +384,7 @@ export default function CheckoutPage() {
             </div>
 
             <div
+              className="checkout-panel"
               style={{
                 background: "#fff",
                 border: "1px solid #E5E7EB",
@@ -462,6 +471,7 @@ export default function CheckoutPage() {
           </form>
 
           <aside
+            className="checkout-summary"
             style={{
               position: "sticky",
               top: 96,
@@ -483,6 +493,7 @@ export default function CheckoutPage() {
             </h2>
 
             <div
+              className="checkout-summary-card"
               style={{
                 border: "1px solid #E5E7EB",
                 borderRadius: 12,
@@ -504,11 +515,12 @@ export default function CheckoutPage() {
                 {plan.name}
               </p>
               <p
+                className="checkout-summary-price"
                 style={{
                   color: "#111827",
                   fontSize: 30,
                   fontWeight: 800,
-                  letterSpacing: "-0.03em",
+                  letterSpacing: 0,
                 }}
               >
                 {plan.displayPrice || `\u20A6${plan.price}`}
@@ -601,19 +613,84 @@ export default function CheckoutPage() {
       </main>
 
       <style jsx global>{`
+        .checkout-page,
+        .checkout-page * {
+          box-sizing: border-box;
+        }
+
+        .checkout-layout,
+        .checkout-form,
+        .checkout-panel,
+        .checkout-summary {
+          min-width: 0;
+        }
+
         @media (max-width: 980px) {
-          div[style*="grid-template-columns: minmax(0,1fr) 360px"] {
+          .checkout-layout {
             grid-template-columns: 1fr !important;
           }
 
-          aside[style*="position: sticky"] {
+          .checkout-summary {
             position: static !important;
+            width: 100% !important;
+            max-width: 100% !important;
           }
         }
 
         @media (max-width: 640px) {
-          div[style*="grid-template-columns: 1fr 1fr"] {
+          .checkout-page {
+            overflow-x: hidden;
+          }
+
+          .checkout-header {
+            height: 64px !important;
+            padding: 0 16px !important;
+          }
+
+          .checkout-header img {
+            width: 104px !important;
+          }
+
+          .checkout-secure {
+            font-size: 12px !important;
+            gap: 5px !important;
+          }
+
+          .checkout-main {
+            width: 100% !important;
+            padding: 24px 14px 56px !important;
+          }
+
+          .checkout-layout {
+            gap: 14px !important;
+          }
+
+          .checkout-panel,
+          .checkout-summary {
+            border-radius: 12px !important;
+            padding: 18px !important;
+          }
+
+          .checkout-plan-grid,
+          .checkout-account-grid {
             grid-template-columns: 1fr !important;
+          }
+
+          .checkout-summary {
+            order: -1;
+          }
+
+          .checkout-summary h2 {
+            font-size: 20px !important;
+          }
+
+          .checkout-summary-card {
+            padding: 18px !important;
+          }
+
+          .checkout-summary-price {
+            font-size: 34px !important;
+            line-height: 1.05 !important;
           }
         }
       `}</style>

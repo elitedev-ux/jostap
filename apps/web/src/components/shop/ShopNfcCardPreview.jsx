@@ -186,8 +186,6 @@ function artworkForProduct(product) {
   return {
     front: hasCustomArtwork ? product.frontImageUrl : builtIn.front,
     back: hasCustomArtwork ? product.backImageUrl : builtIn.back,
-    fallbackFront: builtIn.front,
-    fallbackBack: builtIn.back,
     crop: hasCustomArtwork ? FULL_ARTWORK_CROP : builtIn.crop,
     autoTrim: Boolean(hasCustomArtwork),
   };
@@ -195,7 +193,11 @@ function artworkForProduct(product) {
 
 export default function ShopNfcCardPreview({ product, compact = false }) {
   const mountRef = useRef(null);
-  const artwork = useMemo(() => artworkForProduct(product), [product]);
+  const artwork = useMemo(() => artworkForProduct(product), [
+    product?.artworkKey,
+    product?.frontImageUrl,
+    product?.backImageUrl,
+  ]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -264,23 +266,12 @@ export default function ShopNfcCardPreview({ product, compact = false }) {
       }
     };
 
-    const applyTexture = (url, mesh, fallbackUrl = "") => {
-      let settled = false;
-      const timeout = fallbackUrl
-        ? window.setTimeout(() => {
-          if (settled || disposed) return;
-          settled = true;
-          applyTexture(fallbackUrl, mesh);
-        }, 8000)
-        : 0;
-
+    const applyTexture = (url, mesh) => {
       textureLoader.load(url, (texture) => {
-        if (disposed || settled) {
+        if (disposed) {
           texture.dispose();
           return;
         }
-        settled = true;
-        if (timeout) window.clearTimeout(timeout);
         let nextTexture = texture;
         if (artwork.autoTrim) {
           try {
@@ -309,19 +300,13 @@ export default function ShopNfcCardPreview({ product, compact = false }) {
         mesh.material = material;
         markFaceReady();
       }, undefined, () => {
-        if (disposed || settled) return;
-        settled = true;
-        if (timeout) window.clearTimeout(timeout);
-        if (fallbackUrl && fallbackUrl !== url) {
-          applyTexture(fallbackUrl, mesh);
-          return;
-        }
+        if (disposed) return;
         markFaceReady();
       });
     };
 
-    applyTexture(artwork.front, frontMesh, artwork.fallbackFront);
-    applyTexture(artwork.back, backMesh, artwork.fallbackBack);
+    applyTexture(artwork.front, frontMesh);
+    applyTexture(artwork.back, backMesh);
 
     const resize = () => {
       const bounds = mount.getBoundingClientRect();
