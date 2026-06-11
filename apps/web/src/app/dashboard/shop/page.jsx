@@ -64,6 +64,27 @@ function mapGeometryUv(geometry, width, height) {
   geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
 }
 
+const lagosVibesTextureCrop = {
+  offsetX: 212 / 4000,
+  offsetY: 232 / 3000,
+  repeatX: 3405 / 4000,
+  repeatY: 2337 / 3000,
+};
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+function nearestCardFaceAngle(angle) {
+  const fullTurn = Math.PI * 2;
+  const normalized = ((angle % fullTurn) + fullTurn) % fullTurn;
+  const faceAngle = normalized > Math.PI / 2 && normalized < Math.PI * 1.5 ? Math.PI : 0;
+  let delta = faceAngle - normalized;
+
+  if (delta > Math.PI) delta -= fullTurn;
+  if (delta < -Math.PI) delta += fullTurn;
+
+  return angle + delta;
+}
+
 function ShopNfcCardPreview() {
   const mountRef = useRef(null);
 
@@ -72,14 +93,22 @@ function ShopNfcCardPreview() {
     if (!mount) return undefined;
 
     const width = 3.4;
-    const height = 2.14;
-    const depth = 0.08;
+    const height = width * (lagosVibesTextureCrop.repeatY / lagosVibesTextureCrop.repeatX);
+    const depth = 0.07;
     const shape = roundedCardShape(width, height, 0.14);
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     const group = new THREE.Group();
-    const pointer = { x: 0, y: 0 };
+    const interaction = {
+      dragging: false,
+      lastX: 0,
+      lastY: 0,
+      targetX: -0.08,
+      targetY: -0.48,
+      hoverX: 0,
+      hoverY: 0,
+    };
     let frame = 0;
     let disposed = false;
 
@@ -107,9 +136,9 @@ function ShopNfcCardPreview() {
 
     const textureLoader = new THREE.TextureLoader();
     const sideMaterial = new THREE.MeshStandardMaterial({
-      color: 0xf8fafc,
-      roughness: 0.42,
-      metalness: 0.08,
+      color: 0x050505,
+      roughness: 0.5,
+      metalness: 0.12,
     });
     const capMaterial = new THREE.MeshBasicMaterial({
       transparent: true,
@@ -130,7 +159,7 @@ function ShopNfcCardPreview() {
     backMesh.rotation.y = Math.PI;
 
     group.add(sideMesh, frontMesh, backMesh);
-    group.rotation.set(-0.08, -0.54, 0.02);
+    group.rotation.set(interaction.targetX, interaction.targetY, 0.02);
     scene.add(group);
 
     const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
@@ -146,6 +175,10 @@ function ShopNfcCardPreview() {
         }
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.offset.set(lagosVibesTextureCrop.offsetX, lagosVibesTextureCrop.offsetY);
+        texture.repeat.set(lagosVibesTextureCrop.repeatX, lagosVibesTextureCrop.repeatY);
         texture.minFilter = THREE.LinearMipmapLinearFilter;
         texture.magFilter = THREE.LinearFilter;
         const material = new THREE.MeshStandardMaterial({
@@ -171,28 +204,62 @@ function ShopNfcCardPreview() {
       renderer.setSize(nextWidth, nextHeight, false);
     };
 
-    const onPointerMove = (event) => {
+    const setHoverTarget = (event) => {
       const bounds = mount.getBoundingClientRect();
-      pointer.x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2;
-      pointer.y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2;
+      interaction.hoverX = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2;
+      interaction.hoverY = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2;
     };
 
-    const onPointerLeave = () => {
-      pointer.x = 0;
-      pointer.y = 0;
+    const onPointerDown = (event) => {
+      interaction.dragging = true;
+      interaction.lastX = event.clientX;
+      interaction.lastY = event.clientY;
+      mount.classList.add("is-dragging");
+      mount.setPointerCapture?.(event.pointerId);
+    };
+
+    const onPointerMove = (event) => {
+      setHoverTarget(event);
+      if (!interaction.dragging) return;
+
+      const deltaX = event.clientX - interaction.lastX;
+      const deltaY = event.clientY - interaction.lastY;
+      interaction.targetY += deltaX * 0.012;
+      interaction.targetX = clamp(interaction.targetX + deltaY * 0.006, -0.5, 0.5);
+      interaction.lastX = event.clientX;
+      interaction.lastY = event.clientY;
+    };
+
+    const onPointerUp = (event) => {
+      interaction.dragging = false;
+      interaction.targetY = nearestCardFaceAngle(interaction.targetY);
+      mount.classList.remove("is-dragging");
+      mount.releasePointerCapture?.(event.pointerId);
+    };
+
+    const onPointerLeave = (event) => {
+      interaction.hoverX = 0;
+      interaction.hoverY = 0;
+      if (interaction.dragging) onPointerUp(event);
     };
 
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(mount);
+    mount.addEventListener("pointerdown", onPointerDown);
     mount.addEventListener("pointermove", onPointerMove);
+    mount.addEventListener("pointerup", onPointerUp);
+    mount.addEventListener("pointercancel", onPointerUp);
     mount.addEventListener("pointerleave", onPointerLeave);
     resize();
 
     const animate = () => {
       frame = window.requestAnimationFrame(animate);
       const time = performance.now() * 0.001;
-      group.rotation.y += ((Math.sin(time * 0.48) * 0.48 + pointer.x * 0.25) - group.rotation.y) * 0.04;
-      group.rotation.x += ((-0.08 - pointer.y * 0.12) - group.rotation.x) * 0.05;
+
+      const hoverTiltY = interaction.dragging ? 0 : interaction.hoverX * 0.18;
+      const hoverTiltX = interaction.dragging ? 0 : -interaction.hoverY * 0.1;
+      group.rotation.y += ((interaction.targetY + hoverTiltY + Math.sin(time * 0.28) * 0.04) - group.rotation.y) * 0.12;
+      group.rotation.x += ((interaction.targetX + hoverTiltX) - group.rotation.x) * 0.12;
       group.rotation.z = Math.sin(time * 0.38) * 0.025;
       renderer.render(scene, camera);
     };
@@ -203,7 +270,10 @@ function ShopNfcCardPreview() {
       disposed = true;
       window.cancelAnimationFrame(frame);
       resizeObserver.disconnect();
+      mount.removeEventListener("pointerdown", onPointerDown);
       mount.removeEventListener("pointermove", onPointerMove);
+      mount.removeEventListener("pointerup", onPointerUp);
+      mount.removeEventListener("pointercancel", onPointerUp);
       mount.removeEventListener("pointerleave", onPointerLeave);
       sideGeometry.dispose();
       frontGeometry.dispose();

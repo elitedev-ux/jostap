@@ -115,7 +115,13 @@
   display: grid;
   place-items: center;
   position: relative;
-  touch-action: pan-y;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.shop-nfc-preview__scene.is-dragging {
+  cursor: grabbing;
 }
 
 .shop-nfc-preview__scene canvas {
