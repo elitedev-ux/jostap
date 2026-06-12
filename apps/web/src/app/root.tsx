@@ -4,6 +4,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
   useAsyncError,
   useLocation,
   useRouteError,
@@ -35,6 +36,12 @@ import FloatingWhatsapp from '../components/FloatingWhatsapp';
 import type { Route } from './+types/root';
 
 export const links = () => [];
+
+export async function loader({ request }: Route.LoaderArgs) {
+  return {
+    nonce: request.headers.get('x-csp-nonce') || undefined,
+  };
+}
 
 if (globalThis.window && globalThis.window !== undefined) {
   globalThis.window.fetch = fetch;
@@ -402,6 +409,7 @@ export const useHandleScreenshotRequest = () => {
   }, []);
 };
 export function Layout({ children }: { children: ReactNode }) {
+  const { nonce } = useLoaderData<typeof loader>();
   useHandshakeParent();
   useHandleScreenshotRequest();
   useDevServerHeartbeat();
@@ -439,10 +447,10 @@ export function Layout({ children }: { children: ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <style dangerouslySetInnerHTML={{ __html: `html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; scroll-behavior: smooth; } body { transition: background-color 0.2s ease, color 0.2s ease; }` }} />
+        <style nonce={nonce} dangerouslySetInnerHTML={{ __html: `html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; scroll-behavior: smooth; } body { transition: background-color 0.2s ease, color 0.2s ease; }` }} />
         <Meta />
         <Links />
-        <script type="module" src="/src/__create/dev-error-overlay.js"></script>
+        <script nonce={nonce} type="module" src="/src/__create/dev-error-overlay.js"></script>
         <link rel="icon" type="image/png" href={favicon} />
         {LoadFontsSSR ? <LoadFontsSSR /> : null}
       </head>
@@ -450,8 +458,8 @@ export function Layout({ children }: { children: ReactNode }) {
         <ClientOnly loader={() => children} />
         {showFloatingWhatsapp ? <FloatingWhatsapp /> : null}
         <Toaster position={isMobile ? 'top-center' : 'bottom-right'} />
-        <ScrollRestoration />
-        <Scripts />
+        <ScrollRestoration nonce={nonce} />
+        <Scripts nonce={nonce} />
       </body>
     </html>
   );

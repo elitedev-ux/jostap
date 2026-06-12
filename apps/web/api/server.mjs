@@ -1,4 +1,5 @@
 import { Readable } from 'node:stream';
+import { randomBytes } from 'node:crypto';
 
 let cachedHandler;
 
@@ -9,7 +10,10 @@ const securityHeaders = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
   'Cross-Origin-Opener-Policy': 'same-origin',
-  'Content-Security-Policy': [
+};
+
+function contentSecurityPolicy(nonce) {
+  return [
     "default-src 'self'",
     "base-uri 'self'",
     "object-src 'none'",
@@ -17,13 +21,17 @@ const securityHeaders = {
     "img-src 'self' data: blob: https:",
     "font-src 'self' data: https:",
     "style-src 'self' 'unsafe-inline' https:",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+    `script-src 'self' 'nonce-${nonce}'`,
     "connect-src 'self' https: wss:",
     "frame-src 'self' https:",
     "form-action 'self'",
     'upgrade-insecure-requests',
-  ].join('; '),
-};
+  ].join('; ');
+}
+
+function makeNonce() {
+  return randomBytes(16).toString('base64');
+}
 
 async function getHandler() {
   if (!cachedHandler) {
@@ -127,15 +135,19 @@ function headersFromNodeRequest(request) {
   return headers;
 }
 
-function toFetchRequest(request) {
+function toFetchRequest(request, nonce) {
   if (typeof Request !== 'undefined' && request instanceof Request) {
-    return request;
+    const headers = new Headers(request.headers);
+    headers.set('x-csp-nonce', nonce);
+    return new Request(request, { headers });
   }
 
   const url = getNodeRequestUrl(request);
+  const headers = headersFromNodeRequest(request);
+  headers.set('x-csp-nonce', nonce);
   const init = {
     method: request.method || 'GET',
-    headers: headersFromNodeRequest(request),
+    headers,
   };
 
   if (!['GET', 'HEAD'].includes(init.method.toUpperCase())) {
@@ -159,7 +171,7 @@ function getSetCookieHeaders(headers) {
   return splitSetCookieHeader(headers.get('set-cookie'));
 }
 
-async function writeNodeResponse(response, nodeResponse) {
+async function writeNodeResponse(response, nodeResponse, nonce) {
   nodeResponse.statusCode = response.status;
   nodeResponse.statusMessage = response.statusText;
 
@@ -167,6 +179,10 @@ async function writeNodeResponse(response, nodeResponse) {
     if (!response.headers.has(key)) {
       nodeResponse.setHeader(key, value);
     }
+  }
+
+  if (!response.headers.has('Content-Security-Policy')) {
+    nodeResponse.setHeader('Content-Security-Policy', contentSecurityPolicy(nonce));
   }
 
   if (process.env.NODE_ENV === 'production' && !response.headers.has('Strict-Transport-Security')) {
@@ -200,9 +216,9 @@ async function writeNodeResponse(response, nodeResponse) {
   });
 }
 
-async function handleRequest(request, context) {
+async function handleRequest(request, context, nonce) {
   const handler = await getHandler();
-  const fetchRequest = toFetchRequest(request);
+  const fetchRequest = toFetchRequest(request, nonce);
   const url = getAbsoluteRequestUrl(fetchRequest);
   const originalPath = url.searchParams.get('path') || '';
 
@@ -213,16 +229,19 @@ async function handleRequest(request, context) {
 }
 
 export default async function handler(request, response) {
+  const nonce = makeNonce();
+
   if (!isAllowedMutationOrigin(request)) {
     await writeNodeResponse(
       Response.json({ error: 'Request origin is not allowed.' }, { status: 403 }),
       response,
+      nonce,
     );
     return;
   }
 
-  const appResponse = await handleRequest(request, {});
-  await writeNodeResponse(appResponse, response);
+  const appResponse = await handleRequest(request, {}, nonce);
+  await writeNodeResponse(appResponse, response, nonce);
 }
 
 export const config = {
