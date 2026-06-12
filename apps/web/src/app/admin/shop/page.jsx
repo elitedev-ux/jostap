@@ -8,7 +8,7 @@ const emptyForm = {
   subtitle: "",
   description: "",
   badge: "Available now",
-  priceNaira: "40000",
+  priceNaira: "30000",
   currency: "NGN",
   checkoutPath: "/checkout?plan=jostap_nfc&billing=one_time",
   artworkKey: "lagos_vibes",

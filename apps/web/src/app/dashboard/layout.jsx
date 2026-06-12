@@ -120,9 +120,9 @@ export default function DashboardLayout({ children }) {
     billing?.subscription?.plan === "trial"
       ? "Free Trial"
       : billing?.subscription?.plan === "custom_nfc"
-        ? "Custom NFC"
+        ? "Custom Card"
         : billing?.subscription?.plan === "jostap_nfc"
-          ? "JOSTAP NFC"
+          ? "JOSTAP Card"
           : billing?.subscription?.plan === "premium_renewal"
             ? "Premium Renewal"
             : "Free";

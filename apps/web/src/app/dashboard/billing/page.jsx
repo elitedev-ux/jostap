@@ -2,6 +2,23 @@ import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { getDashboardData } from "../../../utils/dashboardDataStore";
 
+const PAID_CARD_FEATURES = [
+  "Physical NFC card",
+  "Digital business profile",
+  "JOSTAP branded QR code",
+  "Downloadable QR code",
+  "Contact sharing",
+  "Save contact (vCard)",
+  "Social media links",
+  "Contact save tracking",
+  "Lead capture",
+  "Appointment booking",
+  "Visitor insights",
+  "Advanced analytics",
+  "Premium features",
+  "1 year premium access included",
+];
+
 const PLANS = [
   {
     name: "Free",
@@ -21,23 +38,16 @@ const PLANS = [
   {
     name: "JOSTAP Card",
     slug: "jostap_nfc",
+    price: "\u20A630,000",
+    billing: "one_time",
+    features: PAID_CARD_FEATURES,
+  },
+  {
+    name: "Custom Card",
+    slug: "custom_nfc",
     price: "\u20A640,000",
     billing: "one_time",
-    features: [
-      "Physical NFC card",
-      "Digital business profile",
-      "JOSTAP branded QR code",
-      "Downloadable QR code",
-      "Contact sharing",
-      "Save contact (vCard)",
-      "Social media links",
-      "Lead capture",
-      "Appointment booking",
-      "Visitor insights",
-      "Advanced analytics",
-      "Premium features",
-      "1 year premium access included",
-    ],
+    features: PAID_CARD_FEATURES,
   },
 ];
 
@@ -53,6 +63,7 @@ const USAGE = [
 const PLAN_SLUGS = {
   Free: "free",
   "JOSTAP Card": "jostap_nfc",
+  "Custom Card": "custom_nfc",
 };
 
 function formatMoney(cents, currency = "usd") {
@@ -66,7 +77,7 @@ function formatMoney(cents, currency = "usd") {
 function planLabel(plan) {
   if (plan === "free") return "Free";
   if (plan === "jostap_nfc") return "JOSTAP Card";
-  if (plan === "custom_nfc") return "Custom NFC Business Card";
+  if (plan === "custom_nfc") return "Custom Card";
   if (plan === "basic_renewal") return "Basic Renewal";
   if (plan === "premium_renewal") return "Premium Features Renewal";
   return null;

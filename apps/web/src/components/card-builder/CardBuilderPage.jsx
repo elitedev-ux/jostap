@@ -387,7 +387,7 @@ export default function CardBuilderPage({ mode = "user" }) {
 
   const toggleField = (key) => {
     if (PREMIUM_ONLY_FIELDS.has(key) && !canUsePremiumFields) {
-      setMessage("Premium features like appointment booking and video unlock with a JOSTAP NFC plan.");
+      setMessage("Premium features like appointment booking and video unlock with a JOSTAP Card plan.");
       return;
     }
 

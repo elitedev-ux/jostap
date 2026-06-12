@@ -50,7 +50,7 @@ export const plans = [
   },
   {
     name: "JOSTAP Card",
-    price: "\u20A640,000",
+    price: "\u20A630,000",
     note: "",
     desc: "Best for professionals",
     features: [
@@ -62,6 +62,7 @@ export const plans = [
       "Save contact (vCard)",
       "Social media links",
       "Contact save tracking",
+      "Lead capture",
       "Appointment booking",
       "Visitor insights",
       "Advanced analytics",
@@ -72,6 +73,31 @@ export const plans = [
     href: "/checkout?plan=jostap_nfc&billing=one_time",
     highlight: true,
     badge: "Most Popular",
+  },
+  {
+    name: "Custom Card",
+    price: "\u20A640,000",
+    note: "",
+    desc: "Best for custom card designs",
+    features: [
+      "Physical NFC card",
+      "Digital business profile",
+      "JOSTAP branded QR code",
+      "Downloadable QR code",
+      "Contact sharing",
+      "Save contact (vCard)",
+      "Social media links",
+      "Contact save tracking",
+      "Lead capture",
+      "Appointment booking",
+      "Visitor insights",
+      "Advanced analytics",
+      "Premium features",
+      "1 year premium access included",
+    ],
+    cta: "Order Custom Card",
+    href: "/checkout?plan=custom_nfc&billing=one_time",
+    highlight: false,
   },
 ];
 

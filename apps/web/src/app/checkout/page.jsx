@@ -8,6 +8,23 @@ import {
 } from "lucide-react";
 import logo from "../../assets/jostap logo.png3.png";
 
+const PAID_CARD_FEATURES = [
+  "Physical NFC card",
+  "Digital business profile",
+  "JOSTAP branded QR code",
+  "Downloadable QR code",
+  "Contact sharing",
+  "Save contact (vCard)",
+  "Social media links",
+  "Contact save tracking",
+  "Lead capture",
+  "Appointment booking",
+  "Visitor insights",
+  "Advanced analytics",
+  "Premium features",
+  "1 year premium access included",
+];
+
 const PLANS = {
   free: {
     name: "Free",
@@ -20,12 +37,21 @@ const PLANS = {
   },
   jostap_nfc: {
     name: "JOSTAP Card",
+    price: 30000,
+    displayPrice: "\u20A630,000",
+    billingLabel: "One-time payment",
+    cards: "Physical NFC card",
+    trial: "Includes premium feature access",
+    features: PAID_CARD_FEATURES,
+  },
+  custom_nfc: {
+    name: "Custom Card",
     price: 40000,
     displayPrice: "\u20A640,000",
     billingLabel: "One-time payment",
     cards: "Physical NFC card",
-    trial: "Includes 1 year premium feature access",
-    features: ["Physical NFC card", "Digital business profile", "JOSTAP branded QR code", "Downloadable QR code", "Contact sharing", "Save contact (vCard)", "Social media links", "Lead capture", "Appointment booking", "Visitor insights", "Advanced analytics", "Premium features", "1 year premium access included"],
+    trial: "Includes premium feature access",
+    features: PAID_CARD_FEATURES,
   },
 };
 
@@ -271,7 +297,7 @@ export default function CheckoutPage() {
                   Start your JOSTAP plan
                 </h1>
                 <p style={{ color: "#6B7280", fontSize: 14, lineHeight: 1.6 }}>
-                  Free plans can be activated immediately. Paid JOSTAP Card orders continue through Paystack test checkout.
+                  Free plans can be activated immediately. Paid card orders continue through Paystack test checkout.
                 </p>
               </div>
 

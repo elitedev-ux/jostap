@@ -173,8 +173,8 @@ export default function AdminOverviewPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 10, marginTop: 16 }}>
             {[
               ["Free", statsData.freePlanUsers || 0],
-              ["JOSTAP NFC", statsData.jostapNfcUsers || 0],
-              ["Custom NFC", statsData.customNfcUsers || 0],
+              ["JOSTAP Card", statsData.jostapNfcUsers || 0],
+              ["Custom Card", statsData.customNfcUsers || 0],
               ["Premium Features Renewal", statsData.premiumRenewalUsers || 0],
             ].map(([label, value]) => (
               <div key={label} style={{ border: "1px solid #E5E7EB", borderRadius: 10, padding: 13 }}>

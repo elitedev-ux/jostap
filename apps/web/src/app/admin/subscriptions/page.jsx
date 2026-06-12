@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 
 function planName(plan) {
   if (plan === "free") return "Free";
-  if (plan === "jostap_nfc") return "JOSTAP NFC";
-  if (plan === "custom_nfc") return "Custom NFC";
+  if (plan === "jostap_nfc") return "JOSTAP Card";
+  if (plan === "custom_nfc") return "Custom Card";
   if (plan === "basic_renewal") return "Basic Renewal";
   if (plan === "premium_renewal") return "Premium Features Renewal";
   return plan || "Unknown";

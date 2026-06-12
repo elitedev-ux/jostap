@@ -110,8 +110,18 @@ export default function SettingsPage() {
     marketing: false,
   });
   const [showPass, setShowPass] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [updatingPassword, setUpdatingPassword] = useState(false);
 
   const update = (k, v) => setProfile((p) => ({ ...p, [k]: v }));
+  const updatePasswordField = (key, value) =>
+    setPasswordForm((current) => ({ ...current, [key]: value }));
 
   useEffect(() => {
     let active = true;
@@ -289,6 +299,57 @@ export default function SettingsPage() {
     } catch (error) {
       setSaveError(error.message || "Unable to delete your account.");
       setDeletingAccount(false);
+    }
+  };
+
+  const handlePasswordUpdate = async (event) => {
+    event.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError("Fill in your current password, new password, and confirmation.");
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("New password and confirmation do not match.");
+      return;
+    }
+
+    if (passwordForm.currentPassword === passwordForm.newPassword) {
+      setPasswordError("New password must be different from your current password.");
+      return;
+    }
+
+    setUpdatingPassword(true);
+
+    try {
+      const response = await fetch("/api/account/password", {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to update password.");
+      }
+
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setPasswordSuccess(data.message || "Password updated successfully.");
+    } catch (error) {
+      setPasswordError(error.message || "Unable to update password.");
+    } finally {
+      setUpdatingPassword(false);
     }
   };
 
@@ -869,7 +930,8 @@ export default function SettingsPage() {
           title="Change Password"
           desc="We recommend using a strong, unique password."
         >
-          <div
+          <form
+            onSubmit={handlePasswordUpdate}
             style={{
               display: "flex",
               flexDirection: "column",
@@ -878,12 +940,13 @@ export default function SettingsPage() {
             }}
           >
             {[
-              ["Current password", "currentPass"],
-              ["New password", "newPass"],
-              ["Confirm new password", "confirmPass"],
-            ].map(([label, key]) => (
+              ["Current password", "currentPassword", "current-password"],
+              ["New password", "newPassword", "new-password"],
+              ["Confirm new password", "confirmPassword", "new-password"],
+            ].map(([label, key, autoComplete]) => (
               <div key={key}>
                 <label
+                  htmlFor={`settings-${key}`}
                   style={{
                     fontSize: 13,
                     fontWeight: 500,
@@ -896,9 +959,13 @@ export default function SettingsPage() {
                 </label>
                 <div style={{ position: "relative" }}>
                   <input
+                    id={`settings-${key}`}
                     type={showPass ? "text" : "password"}
                     placeholder="••••••••"
+                    value={passwordForm[key]}
+                    autoComplete={autoComplete}
                     style={{ ...inputStyle, paddingRight: 40 }}
+                    onChange={(e) => updatePasswordField(key, e.target.value)}
                     onFocus={(e) => (e.target.style.borderColor = "#0d6ffd")}
                     onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
                   />
@@ -921,7 +988,41 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
+            {passwordError && (
+              <div
+                role="alert"
+                style={{
+                  background: "#FEF2F2",
+                  border: "1px solid #FECACA",
+                  color: "#B91C1C",
+                  borderRadius: 10,
+                  padding: "10px 12px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                {passwordError}
+              </div>
+            )}
+            {passwordSuccess && (
+              <div
+                role="status"
+                style={{
+                  background: "#ECFDF3",
+                  border: "1px solid #BBF7D0",
+                  color: "#047857",
+                  borderRadius: 10,
+                  padding: "10px 12px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                {passwordSuccess}
+              </div>
+            )}
             <button
+              type="submit"
+              disabled={updatingPassword}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -934,12 +1035,13 @@ export default function SettingsPage() {
                 border: "none",
                 borderRadius: 8,
                 padding: "9px 20px",
-                cursor: "pointer",
+                cursor: updatingPassword ? "not-allowed" : "pointer",
+                opacity: updatingPassword ? 0.72 : 1,
               }}
             >
-              <Shield size={14} /> Update Password
+              <Shield size={14} /> {updatingPassword ? "Updating..." : "Update Password"}
             </button>
-          </div>
+          </form>
         </Section>
         </>
       )}

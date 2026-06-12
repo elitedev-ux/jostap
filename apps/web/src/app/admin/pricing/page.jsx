@@ -9,8 +9,8 @@ function money(cents) {
 }
 
 const DEFAULT_PLAN_PRICE_KOBO = {
-  jostap_nfc: { monthly_cents: 4000000 },
-  custom_nfc: { monthly_cents: 5000000 },
+  jostap_nfc: { monthly_cents: 3000000 },
+  custom_nfc: { monthly_cents: 4000000 },
   basic_renewal: { yearly_cents: 120000 },
   premium_renewal: { yearly_cents: 200000 },
 };
@@ -19,7 +19,7 @@ function planPrice(row, key) {
   const fallback = DEFAULT_PLAN_PRICE_KOBO[row.slug]?.[key] || 0;
   const amount = Number(row[key] || 0);
 
-  return fallback ? Math.max(amount, fallback) : amount;
+  return fallback || amount;
 }
 
 async function updatePlan(row) {

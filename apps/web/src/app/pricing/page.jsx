@@ -3,6 +3,23 @@ import { ArrowRight, Check, X } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 
+const PAID_CARD_FEATURES = [
+  ["Physical NFC Card", true],
+  ["Digital Business Profile", true],
+  ["JOSTAP Branded QR Code", true],
+  ["Downloadable QR Code", true],
+  ["Contact Sharing", true],
+  ["Save Contact (vCard)", true],
+  ["Social Media Links", true],
+  ["Contact Save Tracking", true],
+  ["Lead Capture", true],
+  ["Appointment Booking", true],
+  ["Visitor Insights", true],
+  ["Advanced Analytics", true],
+  ["Premium Features", true],
+  ["1 Year Premium Access Included", true],
+];
+
 const PLANS = [
   {
     name: "Free",
@@ -23,27 +40,22 @@ const PLANS = [
   },
   {
     name: "JOSTAP Card",
-    price: "\u20A640,000",
+    price: "\u20A630,000",
     note: "",
     desc: "Best for professionals",
     cta: "Order Card",
     href: "/checkout?plan=jostap_nfc&billing=one_time",
     popular: true,
-    features: [
-      ["Physical NFC Card", true],
-      ["Digital Business Profile", true],
-      ["JOSTAP Branded QR Code", true],
-      ["Downloadable QR Code", true],
-      ["Contact Sharing", true],
-      ["Save Contact (vCard)", true],
-      ["Social Media Links", true],
-      ["Lead Capture", true],
-      ["Appointment Booking", true],
-      ["Visitor Insights", true],
-      ["Advanced Analytics", true],
-      ["Premium Features", true],
-      ["1 Year Premium Access Included", true],
-    ],
+    features: PAID_CARD_FEATURES,
+  },
+  {
+    name: "Custom Card",
+    price: "\u20A640,000",
+    note: "",
+    desc: "Best for custom card designs",
+    cta: "Order Custom Card",
+    href: "/checkout?plan=custom_nfc&billing=one_time",
+    features: PAID_CARD_FEATURES,
   },
 ];
 
@@ -54,11 +66,11 @@ const FAQS = [
   },
   {
     q: "Are NFC cards subscriptions?",
-    a: "No. JOSTAP Card is a one-time payment and includes 1 year premium access.",
+    a: "No. JOSTAP Card and Custom Card are one-time card payments with premium features included.",
   },
   {
-    q: "What happens after the first year?",
-    a: "Your card and profile still work. Premium features may require renewal after the included year.",
+    q: "What is the difference between JOSTAP Card and Custom Card?",
+    a: "Both include the same premium features. Custom Card is for customers who want a custom physical card design.",
   },
 ];
 
@@ -117,7 +129,7 @@ export default function PricingPage() {
             JOSTAP Pricing
           </h1>
           <p style={{ fontSize: 17, color: "#6B7280", lineHeight: 1.65 }}>
-            Start with a free digital card, then upgrade to JOSTAP Card for physical NFC sharing and premium growth features.
+            Start with a free digital card, then upgrade to JOSTAP Card or Custom Card for physical NFC sharing and premium growth features.
           </p>
         </div>
       </section>

@@ -36,8 +36,8 @@ function isMissingTableError(error, tableName) {
 
 const DEFAULT_PLAN_PRICE_KOBO = {
   free: { free: 0 },
-  jostap_nfc: { one_time: 4000000 },
-  custom_nfc: { one_time: 5000000 },
+  jostap_nfc: { one_time: 3000000 },
+  custom_nfc: { one_time: 4000000 },
   basic_renewal: { yearly: 120000 },
   premium_renewal: { yearly: 200000 },
 };
@@ -46,7 +46,7 @@ function currentPlanPrice(plan, cycle, value) {
   const fallback = DEFAULT_PLAN_PRICE_KOBO[plan]?.[cycle] || 0;
   const amount = Number(value || 0);
 
-  return fallback ? Math.max(amount, fallback) : amount;
+  return fallback || amount;
 }
 
 function priceForSubscription(subscription, pricingBySlug) {

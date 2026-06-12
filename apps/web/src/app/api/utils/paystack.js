@@ -4,8 +4,8 @@ const PAYSTACK_BASE_URL = "https://api.paystack.co";
 const DEFAULT_CURRENCY = "NGN";
 const PLAN_PRICE_KOBO = {
   free: { free: 0 },
-  jostap_nfc: { one_time: 4000000 },
-  custom_nfc: { one_time: 5000000 },
+  jostap_nfc: { one_time: 3000000 },
+  custom_nfc: { one_time: 4000000 },
   basic_renewal: { yearly: 120000 },
   premium_renewal: { yearly: 200000 },
 };
@@ -86,7 +86,7 @@ export async function planAmountKobo(supabase, plan, billingCycle) {
       ? Number(data?.yearly_cents || 0)
       : Number(data?.monthly_cents || 0);
 
-  return fallback ? Math.max(configured, fallback) : configured;
+  return fallback || configured;
 }
 
 async function paystackRequest(path, options = {}) {

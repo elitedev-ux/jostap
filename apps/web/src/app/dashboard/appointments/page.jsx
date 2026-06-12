@@ -36,7 +36,7 @@ function UpgradeGate() {
         <LockKeyhole size={18} />
       </div>
       <p className="ui-empty-state__title">Appointment booking is a premium feature</p>
-      <p className="ui-empty-state__copy">Upgrade to a JOSTAP NFC plan to receive and manage appointment requests from your public card profiles.</p>
+      <p className="ui-empty-state__copy">Upgrade to a JOSTAP Card plan to receive and manage appointment requests from your public card profiles.</p>
       <a href="/pricing" style={{ display: "inline-flex", marginTop: 16, background: "#0d6ffd", color: "#fff", borderRadius: 9, padding: "10px 16px", textDecoration: "none", fontSize: 13, fontWeight: 800 }}>
         Upgrade plan
       </a>
