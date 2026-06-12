@@ -450,7 +450,9 @@ export function Layout({ children }: { children: ReactNode }) {
         <style nonce={nonce} dangerouslySetInnerHTML={{ __html: `html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; scroll-behavior: smooth; } body { transition: background-color 0.2s ease, color 0.2s ease; }` }} />
         <Meta />
         <Links />
-        <script nonce={nonce} type="module" src="/src/__create/dev-error-overlay.js"></script>
+        {import.meta.env.DEV ? (
+          <script nonce={nonce} type="module" src="/src/__create/dev-error-overlay.js"></script>
+        ) : null}
         <link rel="icon" type="image/png" href={favicon} />
         {LoadFontsSSR ? <LoadFontsSSR /> : null}
       </head>
