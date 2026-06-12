@@ -1,6 +1,7 @@
 import { activePlanForUser, cardFromRow } from "../../../utils/cards.js";
 import { engagementTypeFromSource, recordCardEngagement } from "../../../utils/engagement.js";
 import { json } from "../../../utils/http.js";
+import { rateLimit, rateLimitKey } from "../../../utils/rateLimit.js";
 import { getSupabaseAdmin, hasSupabase } from "../../../utils/supabase.js";
 import { cardNfcUrl, publicCardUrl, cardQrUrl } from "../../../../../utils/publicUrl.js";
 
@@ -42,6 +43,18 @@ async function findPublicCard(supabase, token, select = "*") {
     .maybeSingle();
 }
 
+async function recordPublicEngagement(supabase, { card, type, request }) {
+  const limited = rateLimit(request, {
+    key: rateLimitKey(request, "public-card-engagement", [card.id, type]),
+    limit: 30,
+    windowMs: 60_000,
+  });
+
+  if (!limited) {
+    await recordCardEngagement(supabase, { card, type, request });
+  }
+}
+
 export async function GET(request, { params }) {
   if (!hasSupabase()) {
     return json({ error: "Card not found." }, { status: 404 });
@@ -57,7 +70,7 @@ export async function GET(request, { params }) {
   }
 
   const source = new URL(request.url).searchParams.get("source");
-  await recordCardEngagement(supabase, {
+  await recordPublicEngagement(supabase, {
     card: row,
     type: engagementTypeFromSource(source),
     request,
@@ -93,6 +106,13 @@ export async function POST(request, { params }) {
   if (!row) {
     return json({ error: "Card not found." }, { status: 404 });
   }
+
+  const limited = rateLimit(request, {
+    key: rateLimitKey(request, "public-card-download", [row.id]),
+    limit: 10,
+    windowMs: 60_000,
+  });
+  if (limited) return limited;
 
   await recordCardEngagement(supabase, { card: row, type: "contact_download", request });
 

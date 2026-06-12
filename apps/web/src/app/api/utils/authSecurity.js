@@ -1,13 +1,9 @@
-import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
+import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import { sendOtpEmail } from "./email.js";
 
 const OTP_MINUTES = 10;
 const PASSWORD_RESET_OTP_MINUTES = 15;
 const OTP_DIGITS = 6;
-const TOTP_STEP_SECONDS = 30;
-const TOTP_DIGITS = 6;
-const TOTP_WINDOW = 1;
-const BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 export function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
@@ -173,88 +169,4 @@ export async function verifyEmailChallenge(supabase, userId, code) {
   }
 
   return { ok: true };
-}
-
-export async function createTwoFactorLoginChallenge(supabase, userId) {
-  const { data, error } = await supabase
-    .from("auth_challenges")
-    .insert({
-      user_id: userId,
-      purpose: "two_factor_login",
-      expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-    })
-    .select("id")
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-export function generateTotpSecret() {
-  const bytes = randomBytes(20);
-  let bits = "";
-  let output = "";
-
-  for (const byte of bytes) {
-    bits += byte.toString(2).padStart(8, "0");
-  }
-
-  for (let index = 0; index + 5 <= bits.length; index += 5) {
-    output += BASE32[parseInt(bits.slice(index, index + 5), 2)];
-  }
-
-  return output;
-}
-
-function base32ToBuffer(secret) {
-  const clean = String(secret || "").replace(/=+$/g, "").toUpperCase();
-  let bits = "";
-
-  for (const char of clean) {
-    const value = BASE32.indexOf(char);
-    if (value === -1) continue;
-    bits += value.toString(2).padStart(5, "0");
-  }
-
-  const bytes = [];
-  for (let index = 0; index + 8 <= bits.length; index += 8) {
-    bytes.push(parseInt(bits.slice(index, index + 8), 2));
-  }
-
-  return Buffer.from(bytes);
-}
-
-function totpAt(secret, counter) {
-  const buffer = Buffer.alloc(8);
-  buffer.writeBigUInt64BE(BigInt(counter));
-
-  const hmac = createHmac("sha1", base32ToBuffer(secret)).update(buffer).digest();
-  const offset = hmac[hmac.length - 1] & 0xf;
-  const binary =
-    ((hmac[offset] & 0x7f) << 24) |
-    ((hmac[offset + 1] & 0xff) << 16) |
-    ((hmac[offset + 2] & 0xff) << 8) |
-    (hmac[offset + 3] & 0xff);
-
-  return String(binary % 10 ** TOTP_DIGITS).padStart(TOTP_DIGITS, "0");
-}
-
-export function verifyTotp(secret, code) {
-  const cleanCode = String(code || "").replace(/\s+/g, "");
-  const currentCounter = Math.floor(Date.now() / 1000 / TOTP_STEP_SECONDS);
-
-  for (let offset = -TOTP_WINDOW; offset <= TOTP_WINDOW; offset += 1) {
-    if (safeEqual(totpAt(secret, currentCounter + offset), cleanCode)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-export function totpUri({ email, secret }) {
-  const label = encodeURIComponent(`JOSTAP:${email}`);
-  const issuer = encodeURIComponent("JOSTAP");
-
-  return `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}&digits=${TOTP_DIGITS}&period=${TOTP_STEP_SECONDS}`;
 }

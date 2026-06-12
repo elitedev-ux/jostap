@@ -5,7 +5,6 @@ import { getSupabaseAdmin, hasSupabase } from "../../utils/supabase.js";
 import { authRateLimit } from "../../utils/rateLimit.js";
 import {
   createEmailVerificationChallenge,
-  createTwoFactorLoginChallenge,
   normalizeEmail,
 } from "../../utils/authSecurity.js";
 
@@ -35,7 +34,7 @@ export async function POST(request) {
   const supabase = getSupabaseAdmin();
   const { data: record, error } = await supabase
     .from("users")
-    .select("id, first_name, last_name, company, email, role, status, password_hash, email_verified_at, two_factor_enabled, two_factor_secret, created_at")
+    .select("id, first_name, last_name, company, email, role, status, password_hash, email_verified_at, created_at")
     .ilike("email", email)
     .maybeSingle();
 
@@ -51,7 +50,7 @@ export async function POST(request) {
     return unauthorized("This account has been suspended.");
   }
 
-  const { password_hash: _passwordHash, two_factor_secret: _secret, ...user } = record;
+  const { password_hash: _passwordHash, ...user } = record;
 
   if (!record.email_verified_at) {
     await createEmailVerificationChallenge(supabase, record);
@@ -60,17 +59,6 @@ export async function POST(request) {
       requiresVerification: true,
       email: record.email,
       message: "Enter the verification code sent to your email.",
-    });
-  }
-
-  if (record.two_factor_enabled && record.two_factor_secret) {
-    const challenge = await createTwoFactorLoginChallenge(supabase, record.id);
-
-    return json({
-      requiresTwoFactor: true,
-      challengeId: challenge.id,
-      email: record.email,
-      message: "Enter the 6-digit code from your authenticator app.",
     });
   }
 

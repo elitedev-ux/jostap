@@ -17,11 +17,11 @@ CREATE TABLE IF NOT EXISTS users (
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at timestamptz;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_enabled boolean NOT NULL DEFAULT false;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_secret text;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_verified_at timestamptz;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_prefs jsonb NOT NULL DEFAULT '{}'::jsonb;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at timestamptz;
+ALTER TABLE users DROP COLUMN IF EXISTS two_factor_enabled;
+ALTER TABLE users DROP COLUMN IF EXISTS two_factor_secret;
+ALTER TABLE users DROP COLUMN IF EXISTS two_factor_verified_at;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at timestamptz;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at timestamptz;
 UPDATE users
@@ -52,7 +52,7 @@ CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions (expires_at);
 CREATE TABLE IF NOT EXISTS auth_challenges (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  purpose text NOT NULL CHECK (purpose IN ('email_verification', 'two_factor_login')),
+  purpose text NOT NULL CHECK (purpose IN ('email_verification', 'password_reset')),
   code_hash text,
   attempts integer NOT NULL DEFAULT 0,
   expires_at timestamptz NOT NULL,
@@ -64,12 +64,14 @@ CREATE INDEX IF NOT EXISTS auth_challenges_user_id_idx ON auth_challenges (user_
 CREATE INDEX IF NOT EXISTS auth_challenges_purpose_idx ON auth_challenges (purpose);
 CREATE INDEX IF NOT EXISTS auth_challenges_expires_at_idx ON auth_challenges (expires_at);
 
+DELETE FROM auth_challenges WHERE purpose = 'two_factor_login';
+
 DO $$
 BEGIN
   ALTER TABLE auth_challenges DROP CONSTRAINT IF EXISTS auth_challenges_purpose_check;
   ALTER TABLE auth_challenges
     ADD CONSTRAINT auth_challenges_purpose_check
-    CHECK (purpose IN ('email_verification', 'two_factor_login', 'password_reset'));
+    CHECK (purpose IN ('email_verification', 'password_reset'));
 END $$;
 
 CREATE TABLE IF NOT EXISTS kyc_profiles (
@@ -558,8 +560,8 @@ ON CONFLICT DO NOTHING;
 INSERT INTO pricing_plans (slug, name, monthly_cents, yearly_cents, card_limit, features, is_active)
 VALUES
   ('free', 'Free', 0, 0, 1, '["1 Digital Business Card", "Public Profile Page", "JOSTAP Branded QR Code", "Contact Sharing", "Save Contact (vCard)", "Social Media Links", "Basic Analytics"]'::jsonb, true),
-  ('jostap_nfc', 'JOSTAP Card', 3000000, 0, 1, '["Physical NFC card", "Digital business profile", "JOSTAP branded QR code", "Downloadable QR code", "Contact sharing", "Save contact (vCard)", "Social media links", "Contact save tracking", "Lead capture", "Appointment booking", "Visitor insights", "Advanced analytics", "Premium features", "1 year premium access included"]'::jsonb, true),
-  ('custom_nfc', 'Custom Card', 4000000, 0, 1, '["Physical NFC card", "Digital business profile", "JOSTAP branded QR code", "Downloadable QR code", "Contact sharing", "Save contact (vCard)", "Social media links", "Contact save tracking", "Lead capture", "Appointment booking", "Visitor insights", "Advanced analytics", "Premium features", "1 year premium access included"]'::jsonb, true),
+  ('jostap_nfc', 'JOSTAP Card', 3000000, 0, 1, '["Physical NFC card", "Digital business profile", "Downloadable QR code", "Contact sharing", "Save contact (vCard)", "Social media links", "Contact save tracking", "Appointment booking", "Advanced analytics", "Premium features", "1 year premium access included"]'::jsonb, true),
+  ('custom_nfc', 'Custom Card', 4000000, 0, 1, '["Physical NFC card", "Digital business profile", "Downloadable QR code", "Contact sharing", "Save contact (vCard)", "Social media links", "Contact save tracking", "Appointment booking", "Advanced analytics", "Premium features", "1 year premium access included"]'::jsonb, true),
   ('basic_renewal', 'Basic Renewal', 0, 120000, 1, '["Deprecated legacy renewal plan"]'::jsonb, false),
   ('premium_renewal', 'Premium Features Renewal', 0, 200000, 1, '["Advanced Analytics", "Lead Capture", "Appointment Booking", "Visitor Insights", "Downloadable QR Code", "Catalog Section", "Testimonials", "Premium Features"]'::jsonb, true)
 ON CONFLICT (slug) DO UPDATE SET

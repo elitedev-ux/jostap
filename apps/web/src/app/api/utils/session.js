@@ -131,7 +131,7 @@ export async function getSessionUser(request) {
 
   const { data: user, error: userError } = await supabase
     .from("users")
-    .select("id, first_name, last_name, company, email, role, status, email_verified_at, two_factor_enabled, created_at")
+    .select("id, first_name, last_name, company, email, role, status, email_verified_at, created_at")
     .eq("id", session.user_id)
     .maybeSingle();
 

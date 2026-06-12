@@ -1,7 +1,7 @@
 import { badRequest, json, readJson, unauthorized } from "../../utils/http.js";
 import { hashPassword, validatePassword, verifyPassword } from "../../utils/password.js";
 import { authRateLimit } from "../../utils/rateLimit.js";
-import { getSessionUser } from "../../utils/session.js";
+import { clearSessionCookie, getSessionUser } from "../../utils/session.js";
 import { getSupabaseAdmin, hasSupabase } from "../../utils/supabase.js";
 
 export async function PATCH(request) {
@@ -56,12 +56,22 @@ export async function PATCH(request) {
   }
 
   const passwordHash = await hashPassword(newPassword);
-  const { error: updateError } = await supabase
-    .from("users")
-    .update({ password_hash: passwordHash })
-    .eq("id", user.id);
+  const [{ error: updateError }, { error: sessionError }] = await Promise.all([
+    supabase
+      .from("users")
+      .update({ password_hash: passwordHash })
+      .eq("id", user.id),
+    supabase.from("sessions").delete().eq("user_id", user.id),
+  ]);
 
-  if (updateError) throw updateError;
+  if (updateError || sessionError) throw updateError || sessionError;
 
-  return json({ message: "Password updated successfully." });
+  return json(
+    { message: "Password updated successfully. Please sign in again." },
+    {
+      headers: {
+        "Set-Cookie": clearSessionCookie(request),
+      },
+    },
+  );
 }

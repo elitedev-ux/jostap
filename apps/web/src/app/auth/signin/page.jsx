@@ -74,8 +74,6 @@ export default function SignInPage() {
   const [error, setError] = useState("");
   const [verificationEmail, setVerificationEmail] = useState(initialVerificationEmail);
   const [verificationCode, setVerificationCode] = useState("");
-  const [twoFactorChallengeId, setTwoFactorChallengeId] = useState("");
-  const [twoFactorCode, setTwoFactorCode] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -134,11 +132,6 @@ export default function SignInPage() {
 
       if (data.requiresVerification) {
         setVerificationEmail(data.email || email);
-        return;
-      }
-
-      if (data.requiresTwoFactor) {
-        setTwoFactorChallengeId(data.challengeId || "");
         return;
       }
 
@@ -201,36 +194,6 @@ export default function SignInPage() {
     }
   };
 
-  const handleTwoFactor = async (event) => {
-    event.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      const response = await fetch("/api/auth/2fa/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          challengeId: twoFactorChallengeId,
-          code: twoFactorCode,
-        }),
-      });
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.error || "Unable to verify two-factor code.");
-      }
-
-      clearDashboardDataCache();
-      window.location.href = destinationForUser(data.user, callbackUrl);
-    } catch (error) {
-      setError(error.message || "Unable to verify two-factor code.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <AuthShell
       mockup={authMockup}
@@ -273,24 +236,6 @@ export default function SignInPage() {
               style={{ marginTop: 10, background: "#eaf3ff", color: "#0d6ffd" }}
             >
               Resend Code
-            </button>
-          </form>
-        ) : twoFactorChallengeId ? (
-          <form onSubmit={handleTwoFactor}>
-            <div className="auth-fields">
-              <label className="auth-field">
-                <span>Authenticator code</span>
-                <input
-                  inputMode="numeric"
-                  value={twoFactorCode}
-                  onChange={(event) => setTwoFactorCode(event.target.value)}
-                  placeholder="6-digit code"
-                  required
-                />
-              </label>
-            </div>
-            <button className="auth-submit" disabled={loading} type="submit">
-              {loading ? "Verifying..." : "Verify Code"}
             </button>
           </form>
         ) : (
@@ -341,13 +286,13 @@ export default function SignInPage() {
         </form>
         )}
 
-        {!verificationEmail && !twoFactorChallengeId && <div className="auth-social-divider">
+        {!verificationEmail && <div className="auth-social-divider">
           <div />
           <span>or continue with</span>
           <div />
         </div>}
 
-        {!verificationEmail && !twoFactorChallengeId && <div className="auth-social-grid">
+        {!verificationEmail && <div className="auth-social-grid">
           <button
             type="button"
             disabled={loading || googleLoading || checkingSession}

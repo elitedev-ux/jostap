@@ -46,7 +46,8 @@ export async function POST(request) {
     try {
       assertPaystackConfigured();
     } catch (error) {
-      return json({ error: error.message }, { status: 503 });
+      console.error("Paystack configuration error:", error);
+      return json({ error: "Payment checkout is not available right now." }, { status: 503 });
     }
 
     const supabase = getSupabaseAdmin();
@@ -146,7 +147,12 @@ export async function POST(request) {
   } catch (error) {
     console.error("Paystack checkout initialization failed:", error);
     return json(
-      { error: error.message || "Unable to start Paystack checkout." },
+      {
+        error:
+          process.env.NODE_ENV === "production"
+            ? "Unable to start Paystack checkout."
+            : error.message || "Unable to start Paystack checkout.",
+      },
       { status: 500 },
     );
   }

@@ -70,6 +70,10 @@ export async function PATCH(request) {
     return badRequest("Enter a valid email address.");
   }
 
+  if (email !== String(user.email || "").toLowerCase()) {
+    return badRequest("Email changes require verification. Please contact support to change your account email.");
+  }
+
   if (profileSlug) {
     const { data: primaryCard, error: primaryCardError } = await supabase
       .from("cards")
