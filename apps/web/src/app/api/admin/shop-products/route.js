@@ -52,8 +52,8 @@ export async function GET(request) {
   const { data, error } = await supabase
     .from("shop_products")
     .select("*")
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("sort_order", { ascending: true });
 
   if (isMissingShopProductsTable(error)) {
     return json({ products: await readStaticProducts(supabase), storage: "static_pages" });

@@ -56,6 +56,8 @@ export function parseShopProductsContent(content) {
 
 export function sortShopProducts(products) {
   return [...(products || [])].sort((a, b) => {
+    const created = createdTime(b) - createdTime(a);
+    if (created) return created;
     const order = Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
     if (order) return order;
     return String(a.name || "").localeCompare(String(b.name || ""));
@@ -167,4 +169,9 @@ function slugFromName(value) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 100);
+}
+
+function createdTime(product) {
+  const timestamp = Date.parse(product?.createdAt || "");
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }

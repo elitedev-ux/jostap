@@ -485,6 +485,7 @@ export default function BillingPage() {
         )}
         {invoices.map((invoice) => (
           <div
+            className="billing-history-row"
             key={invoice.id}
             style={{
               display: "grid",
@@ -495,8 +496,17 @@ export default function BillingPage() {
               alignItems: "center",
             }}
           >
-            <div>
-              <p style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>
+            <div style={{ minWidth: 0 }}>
+              <p
+                className="billing-history-row__reference"
+                style={{
+                  fontSize: 14,
+                  fontWeight: 800,
+                  color: "#111827",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
+                }}
+              >
                 {invoice.invoiceNumber}
               </p>
               <p style={{ fontSize: 12, color: "#6B7280" }}>
@@ -519,6 +529,19 @@ export default function BillingPage() {
           </div>
         ))}
       </section>
+      <style jsx global>{`
+        @media (max-width: 720px) {
+          .billing-history-row {
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+            align-items: start !important;
+          }
+          .billing-history-row__reference {
+            font-size: 13px !important;
+            line-height: 1.35 !important;
+          }
+        }
+      `}</style>
     </>
   );
 }

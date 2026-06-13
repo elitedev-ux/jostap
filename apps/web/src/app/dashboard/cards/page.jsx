@@ -44,6 +44,7 @@ function CardPreview({ card }) {
 
   return (
     <div
+      className="cards-list-card-preview"
       style={{
         width: "100%",
         aspectRatio: "1.6/1",
@@ -135,6 +136,7 @@ function CardPreview({ card }) {
 
         <div style={{ minWidth: 0 }}>
           <p
+            className="cards-list-card-preview__name"
             style={{
               fontSize: 12,
               lineHeight: 1.2,
@@ -144,12 +146,13 @@ function CardPreview({ card }) {
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
-              maxWidth: 152,
+              maxWidth: "100%",
             }}
           >
             {card.name || "Untitled Card"}
           </p>
           <p
+            className="cards-list-card-preview__meta"
             style={{
               fontSize: 10,
               lineHeight: 1.25,
@@ -157,7 +160,7 @@ function CardPreview({ card }) {
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
-              maxWidth: 154,
+              maxWidth: "100%",
             }}
           >
             {[card.role || card.title || "No title", card.company].filter(Boolean).join(" - ")}
@@ -753,6 +756,16 @@ export default function CardsPage() {
           }
           .cards-list-preview {
             width: 100% !important;
+          }
+          .cards-list-card-preview {
+            aspect-ratio: 1.72 / 1 !important;
+            padding: 14px !important;
+          }
+          .cards-list-card-preview__name {
+            font-size: 13px !important;
+          }
+          .cards-list-card-preview__meta {
+            font-size: 11px !important;
           }
           .cards-list-qr,
           .cards-list-actions {

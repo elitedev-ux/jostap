@@ -37,8 +37,8 @@ export async function GET() {
     .select("*")
     .eq("is_active", true)
     .neq("inventory_status", "draft")
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("sort_order", { ascending: true });
 
   if (error) {
     if (isMissingShopProductsTable(error)) {
