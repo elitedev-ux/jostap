@@ -146,7 +146,7 @@ function subscriptionFromRow(row, user) {
   if (!row) {
     return {
       plan: features.effectivePlan,
-      basePlan,
+      basePlan: billingPlan,
       billingCycle: "free",
       status: "active",
       provider: "free",

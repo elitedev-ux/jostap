@@ -84,16 +84,8 @@ function notifyCardsChanged() {
 }
 
 export async function getCards() {
-  try {
-    const data = await requestJson("/api/cards");
-    return data.cards || [];
-  } catch (error) {
-    if (error.status === 401) {
-      return [];
-    }
-
-    throw error;
-  }
+  const data = await requestJson("/api/cards");
+  return data.cards || [];
 }
 
 export async function getCard(id) {
