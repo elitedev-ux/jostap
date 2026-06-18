@@ -20,7 +20,7 @@ export default function HeroSection() {
         <div className="landing-actions">
           <a
             className="landing-button landing-button--primary"
-            href="/checkout?plan=professional&billing=monthly"
+            href="/auth/signup"
           >
             Get Started Free <ArrowRight size={16} />
           </a>

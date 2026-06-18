@@ -15,7 +15,6 @@ import {
   isAllowedProfileImage,
 } from "../../../utils/uploadRules";
 import { IMAGE_UPLOAD_TARGETS, prepareImageForUpload } from "../../../utils/imageCompression";
-import { displayCardUrl } from "../../../utils/publicUrl";
 import { clearDashboardDataCache } from "../../../utils/dashboardDataStore";
 
 const TABS = ["Profile", "Notifications", "Security", "Integrations"];
@@ -764,7 +763,7 @@ export default function SettingsPage() {
                   marginBottom: 6,
                 }}
               >
-                Public profile URL
+                Account profile slug
               </label>
               <div
                 style={{
@@ -785,7 +784,7 @@ export default function SettingsPage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {displayCardUrl("")}/
+                  @
                 </span>
                 <input
                   value={profile.slug}

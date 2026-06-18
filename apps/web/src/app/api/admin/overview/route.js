@@ -65,6 +65,32 @@ function priceForSubscription(subscription, pricingBySlug) {
   return 0;
 }
 
+function planLabel(plan) {
+  if (plan === "free") return "Free";
+  if (plan === "jostap_nfc") return "JOSTAP Card";
+  if (plan === "custom_nfc") return "Custom Card";
+  if (plan === "basic_renewal") return "Basic Renewal";
+  if (plan === "premium_renewal") return "Premium Features Renewal";
+  return plan || "Unknown";
+}
+
+function paymentPlan(payment, subscriptionById) {
+  return payment.order_plan || subscriptionById.get(payment.subscription_id)?.plan || "";
+}
+
+function paymentOrderId(payment) {
+  return payment.order_id || payment.provider_payment_id || payment.id;
+}
+
+function paymentOrderAccount(payment, userById) {
+  const account = payment.order_account || {};
+  const user = userById.get(payment.user_id);
+  const name = account.name || fullName(user) || user?.email || "Unknown";
+  const email = account.email || user?.email || "";
+
+  return email && !String(name).includes(email) ? `${name} (${email})` : name;
+}
+
 function ticketContact(ticket) {
   return (
     fullName(ticket.users) ||
@@ -235,6 +261,7 @@ export async function GET(request) {
   const userById = new Map(users.map((user) => [user.id, user]));
   const profileByUser = new Map(profiles.map((profile) => [profile.user_id, profile]));
   const subscriptionsByUser = new Map(subscriptions.map((item) => [item.user_id, item]));
+  const subscriptionById = new Map(subscriptions.map((item) => [item.id, item]));
   const pricingBySlug = new Map(pricingPlans.map((plan) => [plan.slug, plan]));
   const activeSubscriptions = subscriptions.filter((item) => item.status === "active");
   const premiumSubscriptions = activeSubscriptions.filter((item) =>
@@ -383,14 +410,39 @@ export async function GET(request) {
         issued: dateLabel(invoice.issued_at),
       };
     }),
-    payments: payments.map((payment) => ({
-      id: payment.id,
-      userId: payment.user_id,
-      account: fullName(userById.get(payment.user_id)) || userById.get(payment.user_id)?.email || "Unknown",
-      amount: money(payment.amount_cents, payment.currency),
-      status: payment.status,
-      created: dateLabel(payment.created_at),
-    })),
+    payments: payments.map((payment) => {
+      const orderPlan = paymentPlan(payment, subscriptionById);
+
+      return {
+        id: payment.id,
+        orderId: paymentOrderId(payment),
+        userId: payment.user_id,
+        account: paymentOrderAccount(payment, userById),
+        product: payment.order_product_name || planLabel(orderPlan),
+        plan: orderPlan,
+        amount: money(payment.amount_cents, payment.currency),
+        status: payment.status,
+        created: dateLabel(payment.created_at),
+      };
+    }),
+    orders: payments
+      .filter((payment) => {
+        const orderPlan = paymentPlan(payment, subscriptionById);
+        return payment.status === "succeeded" && ["jostap_nfc", "custom_nfc"].includes(orderPlan);
+      })
+      .map((payment) => {
+        const orderPlan = paymentPlan(payment, subscriptionById);
+
+        return {
+          id: payment.id,
+          orderId: paymentOrderId(payment),
+          customer: paymentOrderAccount(payment, userById),
+          product: payment.order_product_name || planLabel(orderPlan),
+          payment: money(payment.amount_cents, payment.currency),
+          status: "paid",
+          date: dateLabel(payment.created_at),
+        };
+      }),
     leads: leads.map((lead) => {
       const owner = userById.get(lead.user_id);
       return {

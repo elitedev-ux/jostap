@@ -9,15 +9,15 @@ export default function CtaSection() {
         <div className="landing-actions">
           <a
             className="landing-button landing-button--primary"
-            href="/checkout?plan=professional&billing=monthly"
+            href="/checkout?plan=jostap_nfc&billing=one_time"
           >
-            Start Free Trial <ArrowRight size={16} />
+            Order JOSTAP Card <ArrowRight size={16} />
           </a>
           <a className="landing-button landing-button--outline" href="/contact">
             Talk to Sales
           </a>
         </div>
-        <p>14-day free trial · Cancel anytime · No setup fees</p>
+        <p>Secure Paystack checkout. Premium access included. No setup fees.</p>
       </div>
     </section>
   );

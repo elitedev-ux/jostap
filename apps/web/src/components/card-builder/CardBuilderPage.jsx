@@ -245,6 +245,7 @@ export default function CardBuilderPage({ mode = "user" }) {
   const [currentPlan, setCurrentPlan] = useState(isAdminMode ? "custom_nfc" : "free");
   const [users, setUsers] = useState([]);
   const [assignedUserId, setAssignedUserId] = useState("");
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const canUsePremiumFields = isAdminMode || hasPremiumFeatures(currentPlan);
   const canCustomizeBrand = isAdminMode || hasCustomBranding(currentPlan);
   const previewFields = useMemo(() => {
@@ -262,11 +263,25 @@ export default function CardBuilderPage({ mode = "user" }) {
       return;
     }
 
-    setCard((current) => ({
-      ...current,
-      [key]: value,
-      slug: key === "name" && !current.slug ? (editing ? slugFromName(value) : suggestedCardSlug(value, newCardSlugSuffix.current)) : current.slug,
-    }));
+    if (key === "slug") {
+      setSlugManuallyEdited(true);
+      setCard((current) => ({ ...current, slug: slugFromName(value) }));
+      return;
+    }
+
+    setCard((current) => {
+      const next = { ...current, [key]: value };
+
+      if (key === "name") {
+        if (editing) {
+          next.slug = current.slug || slugFromName(value);
+        } else if (!slugManuallyEdited) {
+          next.slug = suggestedCardSlug(value, newCardSlugSuffix.current);
+        }
+      }
+
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -312,6 +327,7 @@ export default function CardBuilderPage({ mode = "user" }) {
             return;
           }
           setCard({ ...EMPTY_CARD, brandColor: COLORS[8], coverUrl: "", ...found, title: found.title || found.role || "" });
+          setSlugManuallyEdited(true);
           if (Array.isArray(found.activeFields) && found.activeFields.length) {
             setActiveFields(new Set(found.activeFields));
           } else {
@@ -434,7 +450,7 @@ export default function CardBuilderPage({ mode = "user" }) {
     }
     const slug = card.slug || slugFromName(card.name);
     if (!slug) {
-      setMessage("Add a public profile slug before continuing.");
+      setMessage("Add a public card slug before continuing.");
       return;
     }
     setSaving(true);
@@ -619,7 +635,7 @@ export default function CardBuilderPage({ mode = "user" }) {
             <h2>Public profile</h2>
             <div className="card-builder-slug">
               <span>{displayCardUrl("")}/</span>
-              <input value={card.slug || ""} onChange={(event) => update("slug", slugFromName(event.target.value))} placeholder="your-name" />
+              <input value={card.slug || ""} onChange={(event) => update("slug", event.target.value)} placeholder="card-name" />
             </div>
           </section>
 

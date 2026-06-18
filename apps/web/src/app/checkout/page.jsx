@@ -52,10 +52,22 @@ const PLANS = {
   },
 };
 
+const PLAN_ALIASES = {
+  professional: "jostap_nfc",
+  business: "custom_nfc",
+  starter: "free",
+};
+
+const BILLING_ALIASES = {
+  monthly: "one_time",
+};
+
 const getCheckoutFromUrl = () => {
   const params = new URLSearchParams(window.location.search);
-  const plan = params.get("plan") || "jostap_nfc";
-  const billing = params.get("billing") || "monthly";
+  const rawPlan = (params.get("plan") || "jostap_nfc").toLowerCase();
+  const rawBilling = (params.get("billing") || "one_time").toLowerCase();
+  const plan = PLAN_ALIASES[rawPlan] || rawPlan;
+  const billing = BILLING_ALIASES[rawBilling] || rawBilling;
 
   return {
     plan: PLANS[plan] ? plan : "jostap_nfc",
@@ -294,7 +306,7 @@ export default function CheckoutPage() {
                   Start your JOSTAP plan
                 </h1>
                 <p style={{ color: "#6B7280", fontSize: 14, lineHeight: 1.6 }}>
-                  Free plans can be activated immediately. Paid card orders continue through Paystack test checkout.
+                  Free plans can be activated immediately. Paid card orders continue through Paystack secure checkout.
                 </p>
               </div>
 
@@ -442,10 +454,10 @@ export default function CheckoutPage() {
                   }}
                 >
                   <p style={{ color: "#111827", fontSize: 14, fontWeight: 800, marginBottom: 6 }}>
-                    Paystack test checkout
+                    Paystack checkout
                   </p>
                   <p style={{ color: "#6B7280", fontSize: 13, lineHeight: 1.6 }}>
-                    Card details are collected by Paystack. After a successful test payment, your JOSTAP plan will activate automatically.
+                    Card details are collected by Paystack. After a successful payment, your JOSTAP plan will activate automatically.
                   </p>
                 </div>
               </div>
@@ -488,7 +500,7 @@ export default function CheckoutPage() {
                     : "Redirecting to Paystack..."
                   : isFreePlan
                     ? "Activate free plan"
-                    : "Pay with Paystack test mode"}
+                    : "Pay with Paystack"}
               </button>
             </div>
           </form>
@@ -628,7 +640,7 @@ export default function CheckoutPage() {
             >
               <ShieldCheck size={16} style={{ flexShrink: 0, marginTop: 1 }} />
               <span>
-                Paystack test mode is enabled. Use Paystack test cards from your Paystack dashboard to complete checkout.
+                Paystack processes your card details securely and returns you to JOSTAP after payment.
               </span>
             </div>
           </aside>

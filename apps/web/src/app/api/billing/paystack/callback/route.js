@@ -25,7 +25,15 @@ export async function GET(request) {
       return redirectTo(request, `/checkout?payment=failed&reference=${encodeURIComponent(reference)}`);
     }
 
-    return redirectTo(request, "/dashboard/billing?payment=success");
+    const orderParams = new URLSearchParams({ payment: "success" });
+    if (result.payment?.order_id) {
+      orderParams.set("order", result.payment.order_id);
+    }
+    if (result.payment?.order_product_name) {
+      orderParams.set("product", result.payment.order_product_name);
+    }
+
+    return redirectTo(request, `/dashboard/billing?${orderParams.toString()}`);
   } catch (error) {
     console.error("Paystack callback verification failed:", error);
     return redirectTo(request, `/checkout?payment=error&reference=${encodeURIComponent(reference)}`);

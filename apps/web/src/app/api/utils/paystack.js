@@ -12,6 +12,14 @@ const PLAN_PRICE_KOBO = {
 
 export const PAYSTACK_PROVIDER = "paystack";
 
+export const PAYSTACK_PLAN_NAMES = {
+  free: "Free",
+  jostap_nfc: "JOSTAP Card",
+  custom_nfc: "Custom Card",
+  basic_renewal: "Basic Renewal",
+  premium_renewal: "Premium Features Renewal",
+};
+
 function secretKey() {
   return process.env.PAYSTACK_SECRET_KEY || "";
 }
@@ -38,7 +46,7 @@ export function assertPaystackConfigured() {
   }
 
   if (paystackMode() === "test" && !key.startsWith("sk_test_")) {
-    throw new Error("Paystack test mode requires an sk_test_ secret key.");
+    throw new Error("Paystack mode requires a matching secret key prefix.");
   }
 
   if (paystackMode() === "live" && !key.startsWith("sk_live_")) {
@@ -49,6 +57,16 @@ export function assertPaystackConfigured() {
 export function makePaystackReference(userId) {
   const suffix = randomBytes(8).toString("hex");
   return `jostap_${String(userId || "user").slice(0, 8)}_${Date.now()}_${suffix}`;
+}
+
+export function makePaystackOrderId() {
+  const date = new Date().toISOString().slice(2, 10).replace(/-/g, "");
+  const suffix = randomBytes(3).toString("hex").toUpperCase();
+  return `JST-${date}-${suffix}`;
+}
+
+export function paystackPlanName(plan) {
+  return PAYSTACK_PLAN_NAMES[plan] || plan || "JOSTAP order";
 }
 
 export function callbackUrlForRequest(request) {
@@ -236,7 +254,7 @@ export async function applyPaystackTransaction(supabase, transaction) {
     const { error: invoiceError } = await supabase.from("invoices").insert({
       user_id: payment.user_id,
       subscription_id: payment.subscription_id,
-      invoice_number: reference,
+      invoice_number: payment.order_id || reference,
       amount_cents: updatedPayment.amount_cents,
       currency: updatedPayment.currency,
       status: "paid",

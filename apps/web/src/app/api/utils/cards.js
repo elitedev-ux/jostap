@@ -285,7 +285,7 @@ export function cardFromRow(row) {
 }
 
 export function cardPayload(body) {
-  const slug = normalizeSlug(body.slug);
+  const slug = normalizeSlug(body.slug || body.name);
 
   return {
     name: normalizeText(body.name, 120),

@@ -16,18 +16,18 @@ export default function AdminOrdersPage() {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || "Unable to load orders.");
 
-        const rows = (data.invoices || []).map((invoice) => [
-          invoice.invoiceNumber,
-          invoice.account,
-          "Digital/NFC plan",
-          invoice.amount,
-          invoice.status,
-          invoice.issued,
+        const rows = (data.orders || []).map((order) => [
+          order.orderId,
+          order.customer,
+          order.product,
+          order.payment,
+          order.status,
+          order.date,
         ]);
 
         if (active) {
           setOrders(rows);
-          setStats(data.stats || {});
+          setStats({ ...(data.stats || {}), nfcOrders: rows.length });
         }
       } catch (error) {
         if (active) setLoadError(error.message || "Unable to load orders.");
@@ -61,7 +61,7 @@ export default function AdminOrdersPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 20 }}>
         {[
-          ["Open Orders", stats.openInvoices || 0, Package, "#0d6ffd", "#eaf3ff"],
+          ["Paid Orders", stats.nfcOrders || 0, Package, "#0d6ffd", "#eaf3ff"],
           ["In Production", 0, Clock, "#D97706", "#FFFBEB"],
           ["Shipped Today", "0", Truck, "#ff9f0d", "#F5F3FF"],
           ["Delivered", "0", CheckCircle2, "#059669", "#ECFDF5"],

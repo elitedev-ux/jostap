@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, MessageCircle } from "lucide-react";
 import { getDashboardData } from "../../../utils/dashboardDataStore";
 
 const PAID_CARD_FEATURES = [
@@ -49,6 +49,7 @@ const PLANS = [
 ];
 
 const INVOICES = [];
+const WHATSAPP_NUMBER = "2348066613437";
 
 const USAGE = [
   ["Cards", 0, 0, "#0d6ffd"],
@@ -80,10 +81,23 @@ function planLabel(plan) {
   return null;
 }
 
+function whatsappOrderUrl(orderId, product) {
+  const message = [
+    "Hi JOSTAP, I just paid for my NFC card.",
+    orderId ? `Order ID: ${orderId}` : "",
+    product ? `Product: ${product}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}
+
 export default function BillingPage() {
   const [billing, setBilling] = useState("monthly");
   const [billingData, setBillingData] = useState(null);
   const [loadError, setLoadError] = useState("");
+  const [orderConfirmation, setOrderConfirmation] = useState(null);
   const currentPlan = planLabel(billingData?.subscription?.plan);
   const subscription = billingData?.subscription;
   const usage = billingData?.usage || {};
@@ -91,6 +105,14 @@ export default function BillingPage() {
 
   useEffect(() => {
     let active = true;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") {
+      setOrderConfirmation({
+        orderId: params.get("order") || "",
+        product: params.get("product") || "",
+      });
+    }
 
     async function loadBilling() {
       try {
@@ -156,6 +178,54 @@ export default function BillingPage() {
         >
           {loadError}
         </div>
+      )}
+
+      {orderConfirmation && (
+        <section
+          style={{
+            background: "#ECFDF5",
+            border: "1px solid #A7F3D0",
+            borderRadius: 12,
+            padding: "16px 18px",
+            marginBottom: 20,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 14,
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 800, color: "#065F46", marginBottom: 4 }}>
+              Payment successful
+            </p>
+            <p style={{ fontSize: 13, color: "#047857", lineHeight: 1.5 }}>
+              {orderConfirmation.orderId
+                ? `Your order ID is ${orderConfirmation.orderId}. Send it to us on WhatsApp so we can process your ${orderConfirmation.product || "NFC card"}.`
+                : "Your payment was successful. Send your payment details to us on WhatsApp so we can process your NFC card."}
+            </p>
+          </div>
+          <a
+            href={whatsappOrderUrl(orderConfirmation.orderId, orderConfirmation.product)}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              borderRadius: 9,
+              background: "#25D366",
+              color: "#fff",
+              textDecoration: "none",
+              fontSize: 13,
+              fontWeight: 800,
+              padding: "10px 13px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <MessageCircle size={15} /> Send on WhatsApp
+          </a>
+        </section>
       )}
 
       <section

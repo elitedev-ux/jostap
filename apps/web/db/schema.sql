@@ -265,12 +265,22 @@ CREATE TABLE IF NOT EXISTS payments (
   status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'succeeded', 'failed', 'refunded')),
   provider text,
   provider_payment_id text,
+  order_id text,
+  order_plan text,
+  order_product_name text,
+  order_account jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS payments_user_id_idx ON payments (user_id);
 CREATE INDEX IF NOT EXISTS payments_user_created_idx ON payments (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS payments_subscription_id_idx ON payments (subscription_id);
+
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS order_id text;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS order_plan text;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS order_product_name text;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS order_account jsonb NOT NULL DEFAULT '{}'::jsonb;
+CREATE UNIQUE INDEX IF NOT EXISTS payments_order_id_key ON payments (order_id) WHERE order_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS invoices (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

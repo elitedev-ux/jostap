@@ -60,7 +60,6 @@ export async function PATCH(request) {
   const primaryGoal =
     clean(body.primaryGoal) || "Share my digital business card";
   const supabase = getSupabaseAdmin();
-  let primaryCardId = null;
 
   if (!name || !email || !title || !company || !phone || !country || !city) {
     return badRequest("Name, email, job title, company, phone, country, and city are required.");
@@ -72,36 +71,6 @@ export async function PATCH(request) {
 
   if (email !== String(user.email || "").toLowerCase()) {
     return badRequest("Email changes require verification. Please contact support to change your account email.");
-  }
-
-  if (profileSlug) {
-    const { data: primaryCard, error: primaryCardError } = await supabase
-      .from("cards")
-      .select("id, slug")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (primaryCardError) {
-      throw primaryCardError;
-    }
-
-    primaryCardId = primaryCard?.id || null;
-
-    const { data: slugMatches, error: slugLookupError } = await supabase
-      .from("cards")
-      .select("id")
-      .eq("slug", profileSlug)
-      .limit(2);
-
-    if (slugLookupError) {
-      throw slugLookupError;
-    }
-
-    if ((slugMatches || []).some((card) => card.id !== primaryCardId)) {
-      return badRequest("This public slug is already in use.");
-    }
   }
 
   const { firstName, lastName } = splitFullName(name);
@@ -150,22 +119,6 @@ export async function PATCH(request) {
 
   if (profileError) {
     throw profileError;
-  }
-
-  if (profileSlug && primaryCardId) {
-    const { error: cardSlugError } = await supabase
-      .from("cards")
-      .update({ slug: profileSlug })
-      .eq("id", primaryCardId)
-      .eq("user_id", user.id);
-
-    if (isUniqueViolation(cardSlugError)) {
-      return badRequest("This public slug is already in use.");
-    }
-
-    if (cardSlugError) {
-      throw cardSlugError;
-    }
   }
 
   return json({ user: accountFromUserAndKyc(updatedUser, profile) });

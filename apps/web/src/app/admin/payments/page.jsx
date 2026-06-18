@@ -9,7 +9,9 @@ function money(cents) {
 }
 
 const columns = [
+  { label: "Order ID", key: "orderId", strong: true },
   { label: "Account", key: "account", strong: true },
+  { label: "Product", key: "product" },
   { label: "Amount", key: "amount" },
   { label: "Status", key: "status" },
   { label: "Created", key: "created" },

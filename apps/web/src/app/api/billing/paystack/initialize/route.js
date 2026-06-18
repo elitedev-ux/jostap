@@ -5,14 +5,29 @@ import {
   assertPaystackConfigured,
   callbackUrlForRequest,
   initializePaystackTransaction,
+  makePaystackOrderId,
   makePaystackReference,
   PAYSTACK_PROVIDER,
   paystackCurrency,
+  paystackPlanName,
   planAmountKobo,
 } from "../../../utils/paystack.js";
 
 const PLANS = new Set(["jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
 const CYCLES = new Set(["one_time", "yearly"]);
+const PLAN_ALIASES = {
+  professional: "jostap_nfc",
+  business: "custom_nfc",
+};
+
+function normalizePlan(value) {
+  const plan = String(value || "jostap_nfc").toLowerCase();
+  return PLAN_ALIASES[plan] || plan;
+}
+
+function cleanText(value, maxLength = 160) {
+  return String(value || "").trim().slice(0, maxLength);
+}
 
 function hasConfirmedPaidAccess(row) {
   if (!row || !["active", "past_due"].includes(row.status)) return false;
@@ -36,8 +51,9 @@ export async function POST(request) {
     }
 
     const body = await request.json().catch(() => null);
-    const plan = String(body?.plan || "jostap_nfc").toLowerCase();
+    const plan = normalizePlan(body?.plan);
     const billingCycle = String(body?.billingCycle || body?.billing || "one_time").toLowerCase();
+    const account = body?.account || {};
 
     if (!PLANS.has(plan) || !CYCLES.has(billingCycle)) {
       return badRequest("Choose a valid paid plan and billing cycle.");
@@ -98,6 +114,13 @@ export async function POST(request) {
     }
 
     const reference = makePaystackReference(user.id);
+    const orderId = makePaystackOrderId();
+    const productName = paystackPlanName(plan);
+    const orderAccount = {
+      name: cleanText(account.name || user.name),
+      email: cleanText(account.email || user.email),
+      company: cleanText(account.company),
+    };
     const { data: payment, error: paymentError } = await supabase
       .from("payments")
       .insert({
@@ -108,6 +131,10 @@ export async function POST(request) {
         status: "pending",
         provider: PAYSTACK_PROVIDER,
         provider_payment_id: reference,
+        order_id: orderId,
+        order_plan: plan,
+        order_product_name: productName,
+        order_account: orderAccount,
       })
       .select("*")
       .single();
@@ -127,6 +154,8 @@ export async function POST(request) {
         user_id: user.id,
         subscription_id: subscription.id,
         payment_id: payment.id,
+        order_id: orderId,
+        product_name: productName,
         plan,
         billing_cycle: billingCycle,
       },
@@ -143,6 +172,7 @@ export async function POST(request) {
       authorizationUrl: authorization.authorization_url,
       accessCode: authorization.access_code || "",
       reference,
+      orderId,
     });
   } catch (error) {
     console.error("Paystack checkout initialization failed:", error);
