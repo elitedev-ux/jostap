@@ -117,6 +117,7 @@ export default function SettingsPage() {
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [hasPassword, setHasPassword] = useState(true);
 
   const update = (k, v) => setProfile((p) => ({ ...p, [k]: v }));
   const updatePasswordField = (key, value) =>
@@ -146,6 +147,7 @@ export default function SettingsPage() {
         const kyc = user.kyc || {};
 
         if (active) {
+          setHasPassword(user.auth?.hasPassword !== false);
           setProfile((current) => ({
             ...current,
             name: user.name || current.name,
@@ -306,8 +308,8 @@ export default function SettingsPage() {
     setPasswordError("");
     setPasswordSuccess("");
 
-    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      setPasswordError("Fill in your current password, new password, and confirmation.");
+    if ((!hasPassword && !passwordForm.newPassword) || (hasPassword && !passwordForm.currentPassword) || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError(hasPassword ? "Fill in your current password, new password, and confirmation." : "Fill in your new password and confirmation.");
       return;
     }
 
@@ -316,7 +318,7 @@ export default function SettingsPage() {
       return;
     }
 
-    if (passwordForm.currentPassword === passwordForm.newPassword) {
+    if (hasPassword && passwordForm.currentPassword === passwordForm.newPassword) {
       setPasswordError("New password must be different from your current password.");
       return;
     }
@@ -329,8 +331,9 @@ export default function SettingsPage() {
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          currentPassword: passwordForm.currentPassword,
+          currentPassword: hasPassword ? passwordForm.currentPassword : "",
           newPassword: passwordForm.newPassword,
+          createPassword: !hasPassword,
         }),
       });
       const data = await response.json().catch(() => ({}));
@@ -345,6 +348,7 @@ export default function SettingsPage() {
         confirmPassword: "",
       });
       setPasswordSuccess(data.message || "Password updated successfully.");
+      setHasPassword(true);
     } catch (error) {
       setPasswordError(error.message || "Unable to update password.");
     } finally {
@@ -926,8 +930,8 @@ export default function SettingsPage() {
       {activeTab === "Security" && (
         <>
         <Section
-          title="Change Password"
-          desc="We recommend using a strong, unique password."
+          title={hasPassword ? "Change Password" : "Create Password"}
+          desc={hasPassword ? "We recommend using a strong, unique password." : "You signed in with Google. Create a JOSTAP password if you also want to sign in with email and password."}
         >
           <form
             onSubmit={handlePasswordUpdate}
@@ -939,7 +943,7 @@ export default function SettingsPage() {
             }}
           >
             {[
-              ["Current password", "currentPassword", "current-password"],
+              ...(hasPassword ? [["Current password", "currentPassword", "current-password"]] : []),
               ["New password", "newPassword", "new-password"],
               ["Confirm new password", "confirmPassword", "new-password"],
             ].map(([label, key, autoComplete]) => (
@@ -1038,7 +1042,7 @@ export default function SettingsPage() {
                 opacity: updatingPassword ? 0.72 : 1,
               }}
             >
-              <Shield size={14} /> {updatingPassword ? "Updating..." : "Update Password"}
+              <Shield size={14} /> {updatingPassword ? (hasPassword ? "Updating..." : "Creating...") : hasPassword ? "Update Password" : "Create Password"}
             </button>
           </form>
         </Section>

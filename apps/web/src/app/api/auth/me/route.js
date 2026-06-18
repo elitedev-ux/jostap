@@ -11,17 +11,36 @@ export async function GET(request) {
   }
 
   const supabase = getSupabaseAdmin();
-  const { data: profile, error } = await supabase
-    .from("kyc_profiles")
-    .select("*")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const [
+    { data: profile, error: profileError },
+    { data: authUser, error: authUserError },
+  ] = await Promise.all([
+    supabase
+      .from("kyc_profiles")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("users")
+      .select("password_hash")
+      .eq("id", user.id)
+      .maybeSingle(),
+  ]);
 
-  if (error) {
-    throw error;
+  if (profileError || authUserError) {
+    throw profileError || authUserError;
   }
 
+  const passwordHash = String(authUser?.password_hash || "");
+  const hasPassword = passwordHash.startsWith("scrypt:");
+
   return json({
-    user: accountFromUserAndKyc(user, profile),
+    user: {
+      ...accountFromUserAndKyc(user, profile),
+      auth: {
+        hasPassword,
+        passwordProvider: hasPassword ? "password" : "google",
+      },
+    },
   });
 }

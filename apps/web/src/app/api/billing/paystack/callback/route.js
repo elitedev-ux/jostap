@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "../../../utils/supabase.js";
+import { sendOrderConfirmationEmail } from "../../../utils/orderEmails.js";
 import {
   applyPaystackTransaction,
   verifyPaystackTransaction,
@@ -24,6 +25,8 @@ export async function GET(request) {
     if (result.payment?.status !== "succeeded") {
       return redirectTo(request, `/checkout?payment=failed&reference=${encodeURIComponent(reference)}`);
     }
+
+    await sendOrderConfirmationEmail({ supabase, payment: result.payment });
 
     const orderParams = new URLSearchParams({ payment: "success" });
     if (result.payment?.order_id) {

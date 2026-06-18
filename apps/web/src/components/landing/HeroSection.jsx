@@ -1,20 +1,34 @@
-import { ArrowRight, Wifi } from "lucide-react";
+import { ArrowRight, BarChart3, CalendarDays, QrCode, Sparkles, Wifi } from "lucide-react";
 import heroMockup from "../../assets/JOSTAP Design.png";
 import { previewStats } from "./landingData";
 
 export default function HeroSection() {
+  const heroSignals = [
+    { icon: <Wifi size={17} />, label: "NFC tap sharing" },
+    { icon: <QrCode size={17} />, label: "QR profile backup" },
+    { icon: <CalendarDays size={17} />, label: "Bookings built in" },
+    { icon: <BarChart3 size={17} />, label: "Live analytics" },
+  ];
+
   return (
     <section className="landing-hero">
+      <div className="landing-hero__shape landing-hero__shape--left" aria-hidden="true" />
+      <div className="landing-hero__shape landing-hero__shape--right" aria-hidden="true" />
+
       <div className="landing-hero__copy">
+        <span className="landing-eyebrow landing-eyebrow--blue">
+          <Sparkles size={14} /> Smart NFC identity
+        </span>
+
         <h1 className="landing-hero__title">
-          Your smart digital
+          Share your brand.
           <br />
-          identity, <span>one tap away.</span>
+          Create real <span>connections.</span>
         </h1>
 
         <p className="landing-hero__text">
-          JOSTAP gives you a polished digital business card, real-time
-          analytics, appointment booking, and contact sharing, all from one smart card.
+          JOSTAP turns one premium NFC card into your live digital profile,
+          contact saver, booking link, and networking dashboard.
         </p>
 
         <div className="landing-actions">
@@ -26,6 +40,16 @@ export default function HeroSection() {
           </a>
           <a className="landing-button landing-button--secondary" href="/pricing">
             View Pricing
+          </a>
+        </div>
+
+        <div className="landing-hero-command" aria-label="JOSTAP quick benefits">
+          <div className="landing-hero-command__icon">
+            <Wifi size={18} />
+          </div>
+          <span>Tap to share your profile, socials, WhatsApp, and contact card</span>
+          <a href="/shop" aria-label="Shop JOSTAP cards">
+            <ArrowRight size={16} />
           </a>
         </div>
       </div>
@@ -69,6 +93,15 @@ export default function HeroSection() {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="landing-hero-signals">
+          {heroSignals.map((signal) => (
+            <div className="landing-hero-signal" key={signal.label}>
+              {signal.icon}
+              <span>{signal.label}</span>
+            </div>
+          ))}
         </div>
       </div>
     </section>

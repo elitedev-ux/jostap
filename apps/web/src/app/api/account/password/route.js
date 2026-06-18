@@ -29,8 +29,9 @@ export async function PATCH(request) {
 
   const currentPassword = String(body.currentPassword || "");
   const newPassword = String(body.newPassword || "");
+  const createPassword = Boolean(body.createPassword);
 
-  if (!currentPassword || !newPassword) {
+  if (!newPassword || (!createPassword && !currentPassword)) {
     return badRequest("Current password and new password are required.");
   }
 
@@ -38,7 +39,7 @@ export async function PATCH(request) {
     return badRequest("Password must include at least 8 characters, 1 capital letter, 1 number, and 1 symbol.");
   }
 
-  if (currentPassword === newPassword) {
+  if (!createPassword && currentPassword === newPassword) {
     return badRequest("New password must be different from your current password.");
   }
 
@@ -51,7 +52,10 @@ export async function PATCH(request) {
 
   if (lookupError) throw lookupError;
 
-  if (!record || !(await verifyPassword(record.password_hash, currentPassword))) {
+  const hasPassword = String(record?.password_hash || "").startsWith("scrypt:");
+  const canCreateFirstPassword = createPassword && record && !hasPassword;
+
+  if (!record || (!canCreateFirstPassword && !(await verifyPassword(record.password_hash, currentPassword)))) {
     return unauthorized("Current password is incorrect.");
   }
 
@@ -67,7 +71,7 @@ export async function PATCH(request) {
   if (updateError || sessionError) throw updateError || sessionError;
 
   return json(
-    { message: "Password updated successfully. Please sign in again." },
+    { message: canCreateFirstPassword ? "Password created successfully. Please sign in again." : "Password updated successfully. Please sign in again." },
     {
       headers: {
         "Set-Cookie": clearSessionCookie(request),

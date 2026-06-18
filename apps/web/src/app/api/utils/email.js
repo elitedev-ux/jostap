@@ -6,7 +6,7 @@ function configuredFrom() {
   return process.env.EMAIL_FROM || process.env.POSTMARK_FROM_EMAIL || DEFAULT_FROM;
 }
 
-function escapeHtml(value) {
+export function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -23,7 +23,6 @@ export function brandedEmailHtml({ title, eyebrow = "JOSTAP", preheader = "", bo
   const safeEyebrow = escapeHtml(eyebrow);
   const safePreheader = escapeHtml(preheader);
   const siteUrl = appUrl("/");
-  const logoUrl = appUrl("/jostap-logo.png");
 
   return `<!doctype html>
 <html>
@@ -36,27 +35,27 @@ export function brandedEmailHtml({ title, eyebrow = "JOSTAP", preheader = "", bo
   </head>
   <body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
     ${safePreheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${safePreheader}</div>` : ""}
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#ffffff;margin:0;padding:0;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc;margin:0;padding:24px 12px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;background:#ffffff;border:0;border-radius:0;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;">
             <tr>
-              <td style="padding:18px 22px;border-bottom:1px solid #e5e7eb;background:#ffffff;">
+              <td style="padding:18px 22px;border-bottom:1px solid #e5e7eb;background:#ffffff;border-radius:8px 8px 0 0;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                   <tr>
                     <td>
-                      <a href="${siteUrl}" style="text-decoration:none;display:inline-block;">
-                        <img src="${logoUrl}" width="132" alt="JOSTAP" style="display:block;width:132px;max-width:132px;height:auto;border:0;outline:none;text-decoration:none;">
+                      <a href="${siteUrl}" style="text-decoration:none;display:inline-block;color:#111827;font-size:18px;line-height:1;font-weight:800;letter-spacing:0;">
+                        JOSTAP
                       </a>
                     </td>
-                    <td align="right" style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">${safeEyebrow}</td>
+                    <td align="right" style="color:#6b7280;font-size:12px;font-weight:700;text-transform:uppercase;">${safeEyebrow}</td>
                   </tr>
                 </table>
               </td>
             </tr>
             <tr>
-              <td style="padding:26px 22px 8px;">
-                <h1 style="margin:0 0 14px;font-size:24px;line-height:1.25;color:#0f172a;font-weight:800;">${safeTitle}</h1>
+              <td style="padding:26px 22px 10px;">
+                <h1 style="margin:0 0 14px;font-size:22px;line-height:1.3;color:#111827;font-weight:800;">${safeTitle}</h1>
                 <div style="font-size:15px;line-height:1.65;color:#374151;">${body}</div>
               </td>
             </tr>

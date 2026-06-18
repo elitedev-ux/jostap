@@ -54,5 +54,5 @@ export async function POST(request) {
 
   if (updateError || sessionError || challengeError) throw updateError || sessionError || challengeError;
 
-  return json({ message: "Password reset successfully. Please sign in with your new password." });
+  return json({ message: "Password set successfully. Please sign in with your new password." });
 }

@@ -64,7 +64,7 @@ export default function ForgotPasswordPage() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Unable to reset password.");
 
-      setNotice(data.message || "Password reset successfully.");
+      setNotice(data.message || "Password set successfully.");
       setCode("");
       setPassword("");
       setStep("done");
@@ -82,6 +82,9 @@ export default function ForgotPasswordPage() {
         <h1>Reset your password.</h1>
         <p className="auth-form__switch">
           Remembered it? <a href="/auth/signin">Sign in</a>
+        </p>
+        <p className="auth-form__switch" style={{ marginTop: -8 }}>
+          Used Google before? Enter that same email to create a JOSTAP password.
         </p>
 
         {error && <div className="auth-error">{error}</div>}
@@ -135,7 +138,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             <button className="auth-submit" disabled={loading} type="submit">
-              {loading ? "Resetting..." : "Reset Password"}
+              {loading ? "Saving..." : "Save Password"}
             </button>
             <p className="auth-bottom-link">
               Did not get a code?{" "}
@@ -164,7 +167,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             <button className="auth-submit" disabled={loading} type="submit" style={{ marginTop: 18 }}>
-              {loading ? "Sending..." : "Send Reset Code"}
+              {loading ? "Sending..." : "Send Code"}
             </button>
           </form>
         )}

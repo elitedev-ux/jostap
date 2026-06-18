@@ -269,6 +269,7 @@ CREATE TABLE IF NOT EXISTS payments (
   order_plan text,
   order_product_name text,
   order_account jsonb NOT NULL DEFAULT '{}'::jsonb,
+  order_email_sent_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -280,6 +281,7 @@ ALTER TABLE payments ADD COLUMN IF NOT EXISTS order_id text;
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS order_plan text;
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS order_product_name text;
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS order_account jsonb NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS order_email_sent_at timestamptz;
 CREATE UNIQUE INDEX IF NOT EXISTS payments_order_id_key ON payments (order_id) WHERE order_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS invoices (

@@ -42,7 +42,15 @@ export async function POST(request) {
     throw error;
   }
 
-  if (!record || !(await verifyPassword(record.password_hash, password))) {
+  if (!record) {
+    return unauthorized("Invalid email or password.");
+  }
+
+  if (!String(record.password_hash || "").startsWith("scrypt:")) {
+    return unauthorized("This account uses Google sign-in. Continue with Google or use forgot password to create a JOSTAP password.");
+  }
+
+  if (!(await verifyPassword(record.password_hash, password))) {
     return unauthorized("Invalid email or password.");
   }
 

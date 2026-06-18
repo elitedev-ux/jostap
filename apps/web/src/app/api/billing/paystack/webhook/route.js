@@ -1,5 +1,6 @@
 import { json } from "../../../utils/http.js";
 import { getSupabaseAdmin } from "../../../utils/supabase.js";
+import { sendOrderConfirmationEmail } from "../../../utils/orderEmails.js";
 import {
   applyPaystackTransaction,
   verifyPaystackSignature,
@@ -20,7 +21,8 @@ export async function POST(request) {
   }
 
   const supabase = getSupabaseAdmin();
-  await applyPaystackTransaction(supabase, event.data);
+  const result = await applyPaystackTransaction(supabase, event.data);
+  await sendOrderConfirmationEmail({ supabase, payment: result.payment });
 
   return json({ received: true });
 }
