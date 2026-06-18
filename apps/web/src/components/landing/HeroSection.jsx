@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, CalendarDays, QrCode, Sparkles, Wifi } from "lucide-react";
+import { ArrowRight, BarChart3, CalendarDays, QrCode, Wifi } from "lucide-react";
 import heroMockup from "../../assets/JOSTAP Design.png";
 import { previewStats } from "./landingData";
 
@@ -16,15 +16,13 @@ export default function HeroSection() {
       <div className="landing-hero__shape landing-hero__shape--right" aria-hidden="true" />
 
       <div className="landing-hero__copy">
-        <span className="landing-eyebrow landing-eyebrow--blue">
-          <Sparkles size={14} /> Smart NFC identity
-        </span>
-
         <h1 className="landing-hero__title">
-          Share your brand.
+          Your smart digital
           <br />
-          Create real <span>connections.</span>
+          identity
         </h1>
+
+        <p className="landing-hero__tagline">one tap away.</p>
 
         <p className="landing-hero__text">
           JOSTAP turns one premium NFC card into your live digital profile,

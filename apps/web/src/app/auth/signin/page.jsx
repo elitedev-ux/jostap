@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import logo from "../../../assets/jostap logo.png3.png";
-import authMockup from "../../../assets/JOSTAP Design (5).png";
+import authMockup from "../../../assets/loginmockup.png";
 import AuthShell from "../../../components/auth/AuthShell";
 import PasswordRequirements from "../../../components/auth/PasswordRequirements";
 import {
