@@ -40,16 +40,6 @@ export default function HeroSection() {
             View Pricing
           </a>
         </div>
-
-        <div className="landing-hero-command" aria-label="JOSTAP quick benefits">
-          <div className="landing-hero-command__icon">
-            <Wifi size={18} />
-          </div>
-          <span>Tap to share your profile, socials, WhatsApp, and contact card</span>
-          <a href="/shop" aria-label="Shop JOSTAP cards">
-            <ArrowRight size={16} />
-          </a>
-        </div>
       </div>
 
       <div className="landing-hero__preview">

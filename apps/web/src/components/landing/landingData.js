@@ -1,10 +1,3 @@
-export const stats = [
-  { value: "48K+", label: "Active Cards" },
-  { value: "2.4M", label: "Profile Views" },
-  { value: "190+", label: "Countries" },
-  { value: "99.9%", label: "Uptime" },
-];
-
 export const previewStats = [
   ["847", "Profile views this month"],
   ["124", "NFC taps"],
