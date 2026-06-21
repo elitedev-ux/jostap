@@ -7,8 +7,9 @@ export default function HowItWorksSection() {
       <div className="landing-section__inner landing-how">
         <div className="landing-how__content">
           <div className="landing-section-heading">
+            <span className="landing-section-kicker">How it works</span>
             <h2>Up and running in minutes</h2>
-            <p>Three steps from unboxing to sharing.</p>
+            <p>Order your card, build your profile, and start sharing it everywhere your business goes.</p>
           </div>
 
           <div className="landing-steps">

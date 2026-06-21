@@ -1,8 +1,14 @@
-import { ArrowRight, Wifi } from "lucide-react";
+import { ArrowRight, BarChart3, CalendarDays, QrCode, Wifi } from "lucide-react";
 import heroMockup from "../../assets/JOSTAP Design.png";
-import { previewStats } from "./landingData";
 
 export default function HeroSection() {
+  const heroSignals = [
+    { icon: <Wifi size={17} />, label: "NFC tap sharing" },
+    { icon: <QrCode size={17} />, label: "QR profile backup" },
+    { icon: <CalendarDays size={17} />, label: "Bookings built in" },
+    { icon: <BarChart3 size={17} />, label: "Live analytics" },
+  ];
+
   return (
     <section className="landing-hero">
       <div className="landing-hero__shape landing-hero__shape--left" aria-hidden="true" />
@@ -10,9 +16,7 @@ export default function HeroSection() {
 
       <div className="landing-hero__copy">
         <h1 className="landing-hero__title">
-          Your smart digital
-          <br />
-          identity
+          Your smart digital identity
         </h1>
 
         <p className="landing-hero__tagline">one tap away.</p>
@@ -65,15 +69,14 @@ export default function HeroSection() {
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="landing-preview-stats">
-          {previewStats.map(([value, label]) => (
-            <div className="landing-preview-stat" key={label}>
-              <span>{value}</span>
-              <span>{label}</span>
-            </div>
-          ))}
+          <div className="landing-hero-signals">
+            {heroSignals.map((signal) => (
+              <div className="landing-hero-signal" key={signal.label}>
+                {signal.icon}
+                <span>{signal.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
