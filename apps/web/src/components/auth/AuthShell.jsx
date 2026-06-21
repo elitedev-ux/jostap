@@ -12,7 +12,7 @@ export default function AuthShell({
       <div className={`auth-card${reverse ? " auth-card--reverse" : ""}`}>
         <section className="auth-visual">
           <div className="auth-visual__mockup">
-            <img src={mockup} alt={mockupAlt} loading="lazy" decoding="async" />
+            <img src={mockup} alt={mockupAlt} loading="eager" decoding="async" />
           </div>
         </section>
 

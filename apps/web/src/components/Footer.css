@@ -1,11 +1,13 @@
 .site-footer {
   width: 100%;
-  border-top: 1px solid var(--color-border);
-  background: var(--color-surface);
+  border-top: 0;
+  background:
+    linear-gradient(180deg, rgba(122, 176, 255, 0.48), rgba(75, 145, 246, 0.88));
 }
 
 .site-footer__inner {
   width: 100%;
+  max-width: none;
   margin: 0 auto;
   padding: 56px var(--space-page) 32px;
 }
@@ -15,6 +17,11 @@
   grid-template-columns: minmax(220px, 2fr) repeat(4, minmax(120px, 1fr));
   gap: clamp(26px, 4vw, 48px);
   margin-bottom: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.22);
+  padding: 30px;
+  box-shadow: 0 22px 50px rgba(21, 73, 149, 0.12);
 }
 
 .site-footer__brand {
@@ -35,14 +42,14 @@
 .site-footer__summary {
   max-width: 220px;
   margin: 0;
-  color: var(--color-muted);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 13px;
   line-height: 1.65;
 }
 
 .site-footer__heading {
   margin: 0 0 14px;
-  color: var(--color-text);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -56,7 +63,7 @@
 }
 
 .site-footer__links a {
-  color: var(--color-muted);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
@@ -64,7 +71,7 @@
 }
 
 .site-footer__links a:hover {
-  color: var(--color-text);
+  color: #ffffff;
 }
 
 .site-footer__bottom {
@@ -73,13 +80,13 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
   padding-top: 24px;
 }
 
 .site-footer__bottom p {
   margin: 0;
-  color: var(--color-faint);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 13px;
 }
 
@@ -101,6 +108,7 @@
   .site-footer-grid {
     grid-template-columns: 1fr;
     margin-bottom: 34px;
+    padding: 24px;
   }
 
   .site-footer__bottom {
