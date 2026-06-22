@@ -12,6 +12,11 @@ import {
   paystackPlanName,
   planAmountKobo,
 } from "../../../utils/paystack.js";
+import {
+  DEFAULT_SHOP_PRODUCT,
+  isMissingShopProductsTable,
+  shopProductFromRow,
+} from "../../../utils/shopProducts.js";
 
 const PLANS = new Set(["jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
 const CYCLES = new Set(["one_time", "yearly"]);
@@ -25,8 +30,54 @@ function normalizePlan(value) {
   return PLAN_ALIASES[plan] || plan;
 }
 
+function cleanSlug(value) {
+  const slug = String(value || "").trim().toLowerCase();
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ? slug : "";
+}
+
 function cleanText(value, maxLength = 160) {
   return String(value || "").trim().slice(0, maxLength);
+}
+
+function checkoutFromPath(path) {
+  try {
+    const url = new URL(path || "", "https://jostap.com");
+    const plan = normalizePlan(url.searchParams.get("plan"));
+    const billingCycle = String(url.searchParams.get("billing") || "one_time").toLowerCase();
+
+    return {
+      plan: PLANS.has(plan) ? plan : "jostap_nfc",
+      billingCycle: CYCLES.has(billingCycle) ? billingCycle : "one_time",
+    };
+  } catch {
+    return { plan: "jostap_nfc", billingCycle: "one_time" };
+  }
+}
+
+async function findShopProduct(supabase, slug) {
+  if (!slug) return null;
+
+  const { data, error } = await supabase
+    .from("shop_products")
+    .select("*")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (isMissingShopProductsTable(error)) {
+    return DEFAULT_SHOP_PRODUCT.slug === slug ? DEFAULT_SHOP_PRODUCT : null;
+  }
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const product = shopProductFromRow(data);
+
+  if (product.inventoryStatus === "sold_out" || product.inventoryStatus === "draft") {
+    return null;
+  }
+
+  return product;
 }
 
 function hasConfirmedPaidAccess(row) {
@@ -51,9 +102,22 @@ export async function POST(request) {
     }
 
     const body = await request.json().catch(() => null);
-    const plan = normalizePlan(body?.plan);
-    const billingCycle = String(body?.billingCycle || body?.billing || "one_time").toLowerCase();
+    const productSlug = cleanSlug(body?.productSlug || body?.product);
     const account = body?.account || {};
+    const supabase = getSupabaseAdmin();
+    const selectedProduct = await findShopProduct(supabase, productSlug);
+
+    if (productSlug && !selectedProduct) {
+      return badRequest("Choose an available card from the shop before paying.");
+    }
+
+    const productCheckout = selectedProduct
+      ? checkoutFromPath(selectedProduct.checkoutPath)
+      : null;
+    const plan = normalizePlan(productCheckout?.plan || body?.plan);
+    const billingCycle = String(
+      productCheckout?.billingCycle || body?.billingCycle || body?.billing || "one_time",
+    ).toLowerCase();
 
     if (!PLANS.has(plan) || !CYCLES.has(billingCycle)) {
       return badRequest("Choose a valid paid plan and billing cycle.");
@@ -66,11 +130,19 @@ export async function POST(request) {
       return json({ error: "Payment checkout is not available right now." }, { status: 503 });
     }
 
-    const supabase = getSupabaseAdmin();
-    const amountKobo = await planAmountKobo(supabase, plan, billingCycle);
+    const currency = paystackCurrency().toUpperCase();
+    const productCurrency = String(selectedProduct?.currency || currency).toUpperCase();
+
+    if (selectedProduct && productCurrency !== currency) {
+      return badRequest("This card currency is not available for Paystack checkout right now.");
+    }
+
+    const amountKobo = selectedProduct
+      ? Math.max(0, Math.round(Number(selectedProduct.priceCents || 0)))
+      : await planAmountKobo(supabase, plan, billingCycle);
 
     if (!amountKobo) {
-      return badRequest("This plan does not have a configured Paystack amount.");
+      return badRequest("This card does not have a configured Paystack amount.");
     }
 
     const now = new Date().toISOString();
@@ -115,7 +187,7 @@ export async function POST(request) {
 
     const reference = makePaystackReference(user.id);
     const orderId = makePaystackOrderId();
-    const productName = paystackPlanName(plan);
+    const productName = selectedProduct?.name || paystackPlanName(plan);
     const orderAccount = {
       name: cleanText(account.name || user.name),
       email: cleanText(account.email || user.email),
@@ -127,7 +199,7 @@ export async function POST(request) {
         user_id: user.id,
         subscription_id: subscription.id,
         amount_cents: amountKobo,
-        currency: paystackCurrency().toLowerCase(),
+        currency: currency.toLowerCase(),
         status: "pending",
         provider: PAYSTACK_PROVIDER,
         provider_payment_id: reference,
@@ -147,6 +219,7 @@ export async function POST(request) {
     const authorization = await initializePaystackTransaction({
       email: user.email,
       amountKobo,
+      currency,
       reference,
       callbackUrl,
       metadata: {
@@ -156,6 +229,7 @@ export async function POST(request) {
         payment_id: payment.id,
         order_id: orderId,
         product_name: productName,
+        product_slug: selectedProduct?.slug || "",
         plan,
         billing_cycle: billingCycle,
       },

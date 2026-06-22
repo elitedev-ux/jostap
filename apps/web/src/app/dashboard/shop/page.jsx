@@ -41,6 +41,15 @@ function inventoryLabel(status) {
   }[status] || "Available";
 }
 
+function checkoutPathFor(product) {
+  const slug = String(product?.slug || product?.id || "").trim();
+  if (slug) {
+    return `/checkout?product=${encodeURIComponent(slug)}`;
+  }
+
+  return product.checkoutPath || "/checkout?plan=jostap_nfc&billing=one_time";
+}
+
 export default function ShopPage() {
   const [products, setProducts] = useState(DEFAULT_PRODUCTS);
   const [loading, setLoading] = useState(true);
@@ -162,7 +171,7 @@ export default function ShopPage() {
                 <p>{product.description}</p>
                 <a
                   className={soldOut ? "shop-product__cta is-disabled" : "shop-product__cta"}
-                  href={soldOut ? undefined : product.checkoutPath || "/checkout?plan=jostap_nfc&billing=one_time"}
+                  href={soldOut ? undefined : checkoutPathFor(product)}
                   aria-disabled={soldOut}
                 >
                   {soldOut ? "Sold out" : "Order card"}

@@ -107,7 +107,7 @@ export async function planAmountKobo(supabase, plan, billingCycle) {
       ? Number(data?.yearly_cents || 0)
       : Number(data?.monthly_cents || 0);
 
-  return fallback || configured;
+  return configured || fallback;
 }
 
 async function paystackRequest(path, options = {}) {
@@ -133,6 +133,7 @@ async function paystackRequest(path, options = {}) {
 export async function initializePaystackTransaction({
   email,
   amountKobo,
+  currency,
   reference,
   callbackUrl,
   metadata,
@@ -142,7 +143,7 @@ export async function initializePaystackTransaction({
     body: JSON.stringify({
       email,
       amount: amountKobo,
-      currency: paystackCurrency(),
+      currency: currency || paystackCurrency(),
       reference,
       callback_url: callbackUrl,
       metadata,

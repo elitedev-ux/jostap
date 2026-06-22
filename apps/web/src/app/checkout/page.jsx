@@ -62,6 +62,31 @@ const BILLING_ALIASES = {
   monthly: "one_time",
 };
 
+function money(cents, currency = "NGN") {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(Number(cents || 0) / 100);
+}
+
+function checkoutFromPath(path) {
+  try {
+    const url = new URL(path || "", window.location.origin);
+    const rawPlan = (url.searchParams.get("plan") || "jostap_nfc").toLowerCase();
+    const rawBilling = (url.searchParams.get("billing") || "one_time").toLowerCase();
+    const plan = PLAN_ALIASES[rawPlan] || rawPlan;
+    const billing = BILLING_ALIASES[rawBilling] || rawBilling;
+
+    return {
+      plan: PLANS[plan] ? plan : "jostap_nfc",
+      billing: ["one_time", "yearly", "free"].includes(billing) ? billing : "one_time",
+    };
+  } catch {
+    return { plan: "jostap_nfc", billing: "one_time" };
+  }
+}
+
 const getCheckoutFromUrl = () => {
   const params = new URLSearchParams(window.location.search);
   const rawPlan = (params.get("plan") || "jostap_nfc").toLowerCase();
@@ -72,6 +97,7 @@ const getCheckoutFromUrl = () => {
   return {
     plan: PLANS[plan] ? plan : "jostap_nfc",
     billing: ["one_time", "yearly", "free"].includes(billing) ? billing : "one_time",
+    productSlug: String(params.get("product") || params.get("productSlug") || "").trim(),
   };
 };
 
@@ -122,6 +148,9 @@ function Field({ label, children }) {
 export default function CheckoutPage() {
   const [planKey, setPlanKey] = useState("jostap_nfc");
   const [billing, setBilling] = useState("one_time");
+  const [productSlug, setProductSlug] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [loadingProduct, setLoadingProduct] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState("");
   const [account, setAccount] = useState({
@@ -134,6 +163,7 @@ export default function CheckoutPage() {
     const checkout = getCheckoutFromUrl();
     setPlanKey(checkout.plan);
     setBilling(checkout.billing);
+    setProductSlug(checkout.productSlug);
 
     const params = new URLSearchParams(window.location.search);
     const payment = params.get("payment");
@@ -146,11 +176,66 @@ export default function CheckoutPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!productSlug) {
+      setSelectedProduct(null);
+      return;
+    }
+
+    let active = true;
+
+    async function loadSelectedProduct() {
+      setLoadingProduct(true);
+      try {
+        const response = await fetch("/api/shop/products", { credentials: "same-origin" });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Unable to load selected product.");
+
+        const product = (Array.isArray(data.products) ? data.products : []).find(
+          (item) => String(item.slug || item.id) === productSlug,
+        );
+
+        if (!active) return;
+
+        if (!product || product.inventoryStatus === "sold_out") {
+          setSelectedProduct(null);
+          setNotice("That card is not available right now. Please choose another card from the shop.");
+          return;
+        }
+
+        const checkout = checkoutFromPath(product.checkoutPath);
+        setSelectedProduct(product);
+        setPlanKey(checkout.plan);
+        setBilling(checkout.billing);
+      } catch (error) {
+        if (active) {
+          setSelectedProduct(null);
+          setNotice(error.message || "Unable to load selected product.");
+        }
+      } finally {
+        if (active) {
+          setLoadingProduct(false);
+        }
+      }
+    }
+
+    loadSelectedProduct();
+
+    return () => {
+      active = false;
+    };
+  }, [productSlug]);
+
   const plan = PLANS[planKey];
   const isFreePlan = planKey === "free" || billing === "free";
-  const billedToday = isFreePlan ? "\u20A60" : plan.displayPrice || `\u20A6${plan.price}`;
+  const selectedProductPrice = selectedProduct
+    ? money(selectedProduct.priceCents, selectedProduct.currency)
+    : "";
+  const orderName = selectedProduct?.name || plan.name;
+  const orderPrice = selectedProductPrice || plan.displayPrice || `\u20A6${plan.price}`;
+  const billedToday = isFreePlan ? "\u20A60" : orderPrice;
   const nextChargeLabel =
-    billing === "yearly" ? `${plan.displayPrice || `\u20A6${plan.price}`}/year` : billing === "free" ? "\u20A60" : "No recurring charge";
+    billing === "yearly" ? `${orderPrice}/year` : billing === "free" ? "\u20A60" : "No recurring charge";
 
   const updateAccount = (key, value) => {
     setAccount((current) => ({ ...current, [key]: value }));
@@ -169,7 +254,12 @@ export default function CheckoutPage() {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planKey, billingCycle: billing, account }),
+        body: JSON.stringify({
+          plan: planKey,
+          billingCycle: billing,
+          productSlug,
+          account,
+        }),
       });
       const data = await responseBody(response);
 
@@ -310,51 +400,85 @@ export default function CheckoutPage() {
                 </p>
               </div>
 
-              <div
-                className="checkout-plan-grid"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
-                  gap: 12,
-                  marginBottom: 24,
-                }}
-              >
-                {Object.entries(PLANS).map(([key, item]) => (
-                  <button
-                    key={key}
-                    onClick={() => setPlanKey(key)}
-                    type="button"
+              {selectedProduct ? (
+                <div
+                  style={{
+                    border: "2px solid #0d6ffd",
+                    borderRadius: 12,
+                    background: "#FAFBFF",
+                    padding: 16,
+                    marginBottom: 24,
+                  }}
+                >
+                  <span
                     style={{
-                      textAlign: "left",
-                      border:
-                        planKey === key
-                          ? "2px solid #0d6ffd"
-                          : "1px solid #E5E7EB",
-                      borderRadius: 12,
-                      background: planKey === key ? "#FAFBFF" : "#fff",
-                      padding: 14,
-                      cursor: "pointer",
+                      display: "block",
+                      color: "#0d6ffd",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      marginBottom: 6,
                     }}
                   >
-                    <span
+                    Selected card
+                  </span>
+                  <strong style={{ display: "block", color: "#111827", fontSize: 17, marginBottom: 4 }}>
+                    {selectedProduct.name}
+                  </strong>
+                  <span style={{ color: "#6B7280", fontSize: 13 }}>
+                    {selectedProductPrice} - {selectedProduct.subtitle || plan.billingLabel}
+                  </span>
+                </div>
+              ) : (
+                <div
+                  className="checkout-plan-grid"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+                    gap: 12,
+                    marginBottom: 24,
+                  }}
+                >
+                  {Object.entries(PLANS).map(([key, item]) => (
+                    <button
+                      key={key}
+                      onClick={() => setPlanKey(key)}
+                      type="button"
                       style={{
-                        display: "block",
-                        color: planKey === key ? "#0d6ffd" : "#111827",
-                        fontSize: 14,
-                        fontWeight: 700,
-                        marginBottom: 4,
+                        textAlign: "left",
+                        border:
+                          planKey === key
+                            ? "2px solid #0d6ffd"
+                            : "1px solid #E5E7EB",
+                        borderRadius: 12,
+                        background: planKey === key ? "#FAFBFF" : "#fff",
+                        padding: 14,
+                        cursor: "pointer",
                       }}
                     >
-                      {item.name}
-                    </span>
-                    <span style={{ color: "#6B7280", fontSize: 12 }}>
-                      {(item.displayPrice || `\u20A6${item.price}`)} - {item.billingLabel}
-                    </span>
-                  </button>
-                ))}
-              </div>
+                      <span
+                        style={{
+                          display: "block",
+                          color: planKey === key ? "#0d6ffd" : "#111827",
+                          fontSize: 14,
+                          fontWeight: 700,
+                          marginBottom: 4,
+                        }}
+                      >
+                        {item.name}
+                      </span>
+                      <span style={{ color: "#6B7280", fontSize: 12 }}>
+                        {(item.displayPrice || `\u20A6${item.price}`)} - {item.billingLabel}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
 
-              <p style={{ fontSize: 13, color: "#6B7280" }}>{plan.billingLabel}</p>
+              <p style={{ fontSize: 13, color: "#6B7280" }}>
+                {loadingProduct ? "Confirming selected card..." : plan.billingLabel}
+              </p>
             </div>
 
             <div
@@ -547,7 +671,7 @@ export default function CheckoutPage() {
                   marginBottom: 5,
                 }}
               >
-                {plan.name}
+                {orderName}
               </p>
               <p
                 className="checkout-summary-price"
@@ -558,7 +682,7 @@ export default function CheckoutPage() {
                   letterSpacing: 0,
                 }}
               >
-                {plan.displayPrice || `\u20A6${plan.price}`}
+                {orderPrice}
               </p>
               {plan.previousPrice && (
                 <p style={{ color: "#6B7280", fontSize: 12, fontWeight: 700, marginTop: 4 }}>
@@ -566,7 +690,7 @@ export default function CheckoutPage() {
                 </p>
               )}
               <p style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>
-                {plan.billingLabel} - {plan.cards}
+                {selectedProduct?.subtitle || `${plan.billingLabel} - ${plan.cards}`}
               </p>
             </div>
 

@@ -45,6 +45,11 @@ function inventoryLabel(status) {
 }
 
 function checkoutPathFor(product) {
+  const slug = String(product?.slug || product?.id || "").trim();
+  if (slug) {
+    return `/checkout?product=${encodeURIComponent(slug)}`;
+  }
+
   return product.checkoutPath || "/checkout?plan=jostap_nfc&billing=one_time";
 }
 
