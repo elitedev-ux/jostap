@@ -20,6 +20,18 @@ export function badRequest(message, details) {
   return json({ error: message, details }, { status: 400 });
 }
 
+export function payloadTooLarge(message = "Uploaded file is too large.") {
+  return json({ error: message }, { status: 413 });
+}
+
+export function contentLengthExceeds(request, maxBytes) {
+  const value = request.headers.get("content-length");
+  if (!value) return false;
+
+  const contentLength = Number(value);
+  return Number.isFinite(contentLength) && contentLength > maxBytes;
+}
+
 export function unauthorized(message = "Unauthorized") {
   return json({ error: message }, { status: 401 });
 }

@@ -33,7 +33,10 @@ export function paystackCurrency() {
 }
 
 export function paystackMode() {
-  return String(process.env.PAYSTACK_MODE || "test").toLowerCase();
+  const configured = String(process.env.PAYSTACK_MODE || "").trim().toLowerCase();
+  if (configured) return configured;
+
+  return secretKey().startsWith("sk_test_") ? "test" : "live";
 }
 
 export function assertPaystackConfigured() {
@@ -46,7 +49,7 @@ export function assertPaystackConfigured() {
   }
 
   if (paystackMode() === "test" && !key.startsWith("sk_test_")) {
-    throw new Error("Paystack mode requires a matching secret key prefix.");
+    throw new Error("Configured Paystack mode requires a matching secret key prefix.");
   }
 
   if (paystackMode() === "live" && !key.startsWith("sk_live_")) {

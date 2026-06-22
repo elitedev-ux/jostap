@@ -8,6 +8,8 @@ import {
 } from '@react-router/dev/routes';
 
 const appRoutesDirectory = fileURLToPath(new URL('.', import.meta.url));
+const includeCreateRoutes =
+	import.meta.env.DEV || process.env.NEXT_PUBLIC_CREATE_ENV === 'DEVELOPMENT';
 
 type Tree = {
 	path: string;
@@ -45,6 +47,10 @@ function buildRouteTree(dir: string, basePath = ''): Tree {
 	}
 
 	for (const file of files) {
+		if (file === '__create' && !includeCreateRoutes) {
+			continue;
+		}
+
 		const filePath = join(dir, file);
 		const stat = statSync(filePath);
 

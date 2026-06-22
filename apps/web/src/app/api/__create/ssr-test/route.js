@@ -5,6 +5,13 @@ import routes from '../../../routes';
 import { serializeError } from 'serialize-error';
 import cleanStack from 'clean-stack';
 
+function isDevelopment() {
+	return (
+		process.env.NODE_ENV !== 'production' &&
+		process.env.NEXT_PUBLIC_CREATE_ENV === 'DEVELOPMENT'
+	);
+}
+
 function serializeClean(err) {
 	// if we want to clean this more, maybe we should look at the file where it
 	// is imported and above.
@@ -30,6 +37,10 @@ const getHTMLOrError = (component) => {
 	}
 };
 export async function GET(request) {
+	if (!isDevelopment()) {
+		return Response.json({ error: 'not found' }, { status: 404 });
+	}
+
 	const results = await Promise.allSettled(
 		routes.map(async (route) => {
 			let component = null;

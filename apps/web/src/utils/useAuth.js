@@ -1,15 +1,10 @@
 import { useCallback } from 'react';
 
-function isDevIframe() {
-  try {
-    return typeof window !== 'undefined' && window.self !== window.top;
-  } catch { return true; }
-}
-
-function devSocialShim(provider, callbackUrl) {
-  const params = new URLSearchParams({ provider });
+function redirectToOAuth(provider, callbackUrl) {
+  const params = new URLSearchParams();
   if (callbackUrl) params.set('callbackUrl', callbackUrl);
-  window.location.href = '/__create/social-dev-shim?' + params;
+  const query = params.toString();
+  window.location.href = `/api/auth/${provider}${query ? `?${query}` : ""}`;
 }
 
 function useAuth() {
@@ -41,20 +36,19 @@ function useAuth() {
 
   const signInWithGoogle = useCallback((options) => {
     const cb = callbackUrl ?? options?.callbackUrl;
-    if (isDevIframe()) return devSocialShim("google", cb);
-    window.location.href = `/api/auth/google?callbackUrl=${encodeURIComponent(cb || "/dashboard")}`;
+    return redirectToOAuth("google", cb || "/dashboard");
   }, [callbackUrl]);
   const signInWithFacebook = useCallback((options) => {
     const cb = options?.callbackUrl;
-    return devSocialShim("facebook", cb);
+    return redirectToOAuth("facebook", cb);
   }, []);
   const signInWithTwitter = useCallback((options) => {
     const cb = options?.callbackUrl;
-    return devSocialShim("twitter", cb);
+    return redirectToOAuth("twitter", cb);
   }, []);
   const signInWithApple = useCallback((options) => {
     const cb = callbackUrl ?? options?.callbackUrl;
-    return devSocialShim("apple", cb);
+    return redirectToOAuth("apple", cb);
   }, [callbackUrl]);
 
   const signOut = useCallback(() => {

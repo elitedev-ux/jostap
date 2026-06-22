@@ -1,4 +1,4 @@
-import { createHash, randomInt, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import { sendOtpEmail } from "./email.js";
 
 const OTP_MINUTES = 10;
@@ -13,10 +13,32 @@ export function generateOtp() {
   return String(randomInt(0, 10 ** OTP_DIGITS)).padStart(OTP_DIGITS, "0");
 }
 
-function hashCode(code) {
+function codeHashSecret() {
+  return (
+    process.env.AUTH_CODE_SECRET ||
+    process.env.SESSION_SECRET ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.GOOGLE_CLIENT_SECRET ||
+    ""
+  );
+}
+
+function legacyHashCode(code) {
   return createHash("sha256")
     .update(String(code || ""))
     .digest("hex");
+}
+
+function hashCode(code) {
+  const secret = codeHashSecret();
+
+  if (!secret) {
+    return legacyHashCode(code);
+  }
+
+  return `hmac-sha256:${createHmac("sha256", secret)
+    .update(String(code || ""))
+    .digest("hex")}`;
 }
 
 function safeEqual(a, b) {
@@ -24,6 +46,10 @@ function safeEqual(a, b) {
   const right = Buffer.from(String(b || ""));
 
   return left.length === right.length && timingSafeEqual(left, right);
+}
+
+function verifyCodeHash(storedHash, code) {
+  return safeEqual(storedHash, hashCode(code)) || safeEqual(storedHash, legacyHashCode(code));
 }
 
 export async function createEmailVerificationChallenge(supabase, user) {
@@ -104,7 +130,7 @@ export async function verifyPasswordResetChallenge(supabase, userId, code, { con
     return { ok: false, error: "Too many attempts. Request a new reset code." };
   }
 
-  const ok = safeEqual(challenge.code_hash, hashCode(code));
+  const ok = verifyCodeHash(challenge.code_hash, code);
 
   if (!ok) {
     await supabase
@@ -147,7 +173,7 @@ export async function verifyEmailChallenge(supabase, userId, code) {
     return { ok: false, error: "Too many attempts. Request a new code." };
   }
 
-  const ok = safeEqual(challenge.code_hash, hashCode(code));
+  const ok = verifyCodeHash(challenge.code_hash, code);
 
   if (!ok) {
     await supabase

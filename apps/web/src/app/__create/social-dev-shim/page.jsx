@@ -70,9 +70,9 @@ export default function SocialDevShimPage() {
 		<div className="min-h-screen flex items-center justify-center font-sans bg-gray-100">
 			<div className="bg-white rounded-xl p-8 w-full max-w-[400px] shadow-md">
 				<div className="bg-amber-50 border border-amber-400 rounded-lg p-3 mb-4 text-[13px] text-amber-800">
-					<strong>Development Mode</strong> — This is a simulated{' '}
-					{label} sign-in. In production, users will see the real{' '}
-					{label} OAuth screen.
+					<strong>Local OAuth Preview</strong> — This local {label}{' '}
+					sign-in helper is only available while building. Live users
+					will see the real {label} OAuth screen.
 				</div>
 
 				{error && (
@@ -111,7 +111,7 @@ export default function SocialDevShimPage() {
 							required
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
-							placeholder="test@example.com"
+							placeholder="you@company.com"
 							className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm"
 						/>
 					</label>
@@ -125,7 +125,7 @@ export default function SocialDevShimPage() {
 							type="text"
 							value={name}
 							onChange={(e) => setName(e.target.value)}
-							placeholder="Test User"
+							placeholder="Your Name"
 							className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm"
 						/>
 					</label>

@@ -43,11 +43,39 @@ export async function loader({ request }: Route.LoaderArgs) {
   };
 }
 
-if (globalThis.window && globalThis.window !== undefined) {
+const LoadFontsSSR = import.meta.env.SSR ? LoadFonts : null;
+const CREATE_BRIDGE_ENABLED =
+  import.meta.env.DEV || import.meta.env.NEXT_PUBLIC_CREATE_ENV === 'DEVELOPMENT';
+
+if (CREATE_BRIDGE_ENABLED && globalThis.window && globalThis.window !== undefined) {
   globalThis.window.fetch = fetch;
 }
 
-const LoadFontsSSR = import.meta.env.SSR ? LoadFonts : null;
+function canUseCreateBridge() {
+  return (
+    CREATE_BRIDGE_ENABLED &&
+    typeof window !== 'undefined' &&
+    window.parent &&
+    window.parent !== window
+  );
+}
+
+function isCreateBridgeMessage(event: MessageEvent) {
+  if (!canUseCreateBridge() || event.source !== window.parent) {
+    return false;
+  }
+
+  return import.meta.env.DEV || event.origin === window.location.origin;
+}
+
+function postCreateBridgeMessage(message: unknown) {
+  if (!canUseCreateBridge()) {
+    return;
+  }
+
+  window.parent.postMessage(message, import.meta.env.DEV ? '*' : window.location.origin);
+}
+
 if (import.meta.hot) {
   import.meta.hot.on('update-font-links', (urls: string[]) => {
     // remove old font links
@@ -104,7 +132,7 @@ function InternalErrorBoundary({ error: errorArg }: Route.ErrorBoundaryProps) {
       }
       postCountRef.current += 1;
       lastPostTimeRef.current = Date.now();
-      window.parent.postMessage({ type: 'sandbox:error:detected', error: serialized }, '*');
+      postCreateBridgeMessage({ type: 'sandbox:error:detected', error: serialized });
     };
 
     if (timeSinceLastPost < THROTTLE_MS) {
@@ -326,14 +354,14 @@ const useHandshakeParent = () => {
       supportsErrorDetected: true,
     };
     const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'sandbox:web:healthcheck') {
-        window.parent.postMessage(healthyResponse, '*');
+      if (isCreateBridgeMessage(event) && event.data?.type === 'sandbox:web:healthcheck') {
+        postCreateBridgeMessage(healthyResponse);
       }
     };
     window.addEventListener('message', handleMessage);
     // Immediately respond to the parent window with a healthy response in
     // case we missed the healthcheck message
-    window.parent.postMessage(healthyResponse, '*');
+    postCreateBridgeMessage(healthyResponse);
     return () => {
       window.removeEventListener('message', handleMessage);
     };
@@ -367,7 +395,7 @@ const waitForScreenshotReady = async () => {
 export const useHandleScreenshotRequest = () => {
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
-      if (event.data.type === 'sandbox:web:screenshot:request') {
+      if (isCreateBridgeMessage(event) && event.data?.type === 'sandbox:web:screenshot:request') {
         try {
           await waitForScreenshotReady();
 
@@ -389,14 +417,13 @@ export const useHandleScreenshotRequest = () => {
             },
           });
 
-          window.parent.postMessage({ type: 'sandbox:web:screenshot:response', dataUrl }, '*');
+          postCreateBridgeMessage({ type: 'sandbox:web:screenshot:response', dataUrl });
         } catch (error) {
-          window.parent.postMessage(
+          postCreateBridgeMessage(
             {
               type: 'sandbox:web:screenshot:error',
               error: error instanceof Error ? error.message : String(error),
-            },
-            '*'
+            }
           );
         }
       }
@@ -420,12 +447,15 @@ export function Layout({ children }: { children: ReactNode }) {
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'sandbox:navigation') {
-        navigate(event.data.pathname);
+      if (isCreateBridgeMessage(event) && event.data?.type === 'sandbox:navigation') {
+        const nextPath = String(event.data.pathname || '');
+        if (nextPath.startsWith('/') && !nextPath.startsWith('//')) {
+          navigate(nextPath);
+        }
       }
     };
     window.addEventListener('message', handleMessage);
-    window.parent.postMessage({ type: 'sandbox:web:ready' }, '*');
+    postCreateBridgeMessage({ type: 'sandbox:web:ready' });
     return () => {
       window.removeEventListener('message', handleMessage);
     };
@@ -433,13 +463,10 @@ export function Layout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (pathname) {
-      window.parent.postMessage(
-        {
-          type: 'sandbox:web:navigation',
-          pathname,
-        },
-        '*'
-      );
+      postCreateBridgeMessage({
+        type: 'sandbox:web:navigation',
+        pathname,
+      });
     }
   }, [pathname]);
   return (

@@ -1,8 +1,11 @@
 import { useIdleTimer } from 'react-idle-timer';
 
 export function useDevServerHeartbeat() {
+  const enabled =
+    import.meta.env.DEV || import.meta.env.NEXT_PUBLIC_CREATE_ENV === 'DEVELOPMENT';
+
   useIdleTimer({
-    disabled: typeof window === 'undefined',
+    disabled: typeof window === 'undefined' || !enabled,
     throttle: 60_000 * 3,
     timeout: 60_000,
     onAction: () => {

@@ -1,5 +1,6 @@
 import { getSupabaseAdmin, hasSupabase } from "../../utils/supabase.js";
 import { recordCardEngagement } from "../../utils/engagement.js";
+import { rateLimit, rateLimitKey } from "../../utils/rateLimit.js";
 import { absolutePublicUrl, publicCardPath } from "../../../../utils/publicUrl.js";
 
 function redirectTo(path, request, status = 302) {
@@ -31,7 +32,15 @@ export async function GET(request, { params }) {
     return redirectTo("/?card=not-found", request);
   }
 
-  await recordCardEngagement(supabase, { card: row, type: "qr_scan", request });
+  const limited = rateLimit(request, {
+    key: rateLimitKey(request, "qr-scan", [row.id]),
+    limit: 30,
+    windowMs: 60_000,
+  });
+
+  if (!limited) {
+    await recordCardEngagement(supabase, { card: row, type: "qr_scan", request });
+  }
 
   return redirectTo(publicCardPath(row), request);
 }

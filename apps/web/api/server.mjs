@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 let cachedHandler;
 
 const unsafeMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const DEFAULT_MAX_REQUEST_BYTES = 12 * 1024 * 1024;
 const securityHeaders = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
@@ -11,6 +12,13 @@ const securityHeaders = {
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
   'Cross-Origin-Opener-Policy': 'same-origin',
 };
+
+function maxRequestBytes() {
+  const configured = Number.parseInt(process.env.MAX_REQUEST_BYTES || '', 10);
+  return Number.isFinite(configured) && configured > 0
+    ? configured
+    : DEFAULT_MAX_REQUEST_BYTES;
+}
 
 function contentSecurityPolicy(nonce) {
   return [
@@ -119,6 +127,17 @@ function isAllowedMutationOrigin(request) {
   ].filter(Boolean));
 
   return allowed.has(origin);
+}
+
+function requestBodyTooLarge(request) {
+  const method = String(request.method || 'GET').toUpperCase();
+  if (!unsafeMethods.has(method)) return false;
+
+  const value = request.headers?.['content-length'];
+  if (!value) return false;
+
+  const contentLength = Number(value);
+  return Number.isFinite(contentLength) && contentLength > maxRequestBytes();
 }
 
 function headersFromNodeRequest(request) {
@@ -230,6 +249,15 @@ async function handleRequest(request, context, nonce) {
 
 export default async function handler(request, response) {
   const nonce = makeNonce();
+
+  if (requestBodyTooLarge(request)) {
+    await writeNodeResponse(
+      Response.json({ error: 'Request body is too large.' }, { status: 413 }),
+      response,
+      nonce,
+    );
+    return;
+  }
 
   if (!isAllowedMutationOrigin(request)) {
     await writeNodeResponse(

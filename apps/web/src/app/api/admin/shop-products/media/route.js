@@ -66,7 +66,7 @@ export async function POST(request) {
       return json({ error: "Upload a JPG, PNG, or WebP image." }, { status: 400 });
     }
 
-    if (fileSize > MAX_BYTES) {
+    if (fileSize <= 0 || fileSize > MAX_BYTES) {
       return json({ error: "Product artwork must be 10MB or smaller." }, { status: 400 });
     }
 

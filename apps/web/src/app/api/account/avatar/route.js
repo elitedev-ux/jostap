@@ -1,4 +1,4 @@
-import { json, unauthorized } from "../../utils/http.js";
+import { contentLengthExceeds, json, payloadTooLarge, unauthorized } from "../../utils/http.js";
 import { getSessionUser } from "../../utils/session.js";
 import { getSupabaseAdmin } from "../../utils/supabase.js";
 import { accountFromUserAndKyc } from "../../utils/profile.js";
@@ -7,6 +7,7 @@ import { PROFILE_IMAGE_MAX_BYTES, PROFILE_IMAGE_TYPES } from "../../../../utils/
 
 const BUCKET = "avatars";
 const MAX_BYTES = PROFILE_IMAGE_MAX_BYTES;
+const MULTIPART_OVERHEAD_BYTES = 256 * 1024;
 const ALLOWED_TYPES = new Set(PROFILE_IMAGE_TYPES);
 
 function extensionFor(type) {
@@ -71,6 +72,10 @@ export async function POST(request) {
     return unauthorized();
   }
 
+  if (contentLengthExceeds(request, MAX_BYTES + MULTIPART_OVERHEAD_BYTES)) {
+    return payloadTooLarge("Profile photo must be 2MB or smaller.");
+  }
+
   const form = await request.formData();
   const file = form.get("file");
 
@@ -82,7 +87,7 @@ export async function POST(request) {
     return json({ error: "Upload a JPG, PNG, or WebP image." }, { status: 400 });
   }
 
-  if (file.size > MAX_BYTES) {
+  if (file.size <= 0 || file.size > MAX_BYTES) {
     return json({ error: "Profile photo must be 2MB or smaller." }, { status: 400 });
   }
 
