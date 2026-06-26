@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { json } from "../../utils/http.js";
+import { appOrigin } from "../../utils/origin.js";
 
 const STATE_COOKIE = "jostap_google_state";
 const RETURN_COOKIE = "jostap_google_return_to";
@@ -65,14 +66,6 @@ function redirectWithError(request, message) {
       Location: url.toString(),
     },
   });
-}
-
-function appOrigin(request) {
-  return (
-    process.env.GOOGLE_REDIRECT_ORIGIN ||
-    process.env.APP_ORIGIN ||
-    new URL(request.url).origin
-  ).replace(/\/$/, "");
 }
 
 export async function GET(request) {

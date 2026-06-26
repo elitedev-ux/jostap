@@ -1,6 +1,7 @@
 import { createSession } from "../../../utils/session.js";
 import { getSupabaseAdmin, hasSupabase } from "../../../utils/supabase.js";
 import { createEmailVerificationChallenge } from "../../../utils/authSecurity.js";
+import { appOrigin } from "../../../utils/origin.js";
 
 const STATE_COOKIE = "jostap_google_state";
 const RETURN_COOKIE = "jostap_google_return_to";
@@ -89,14 +90,6 @@ function destinationForUser(user, returnTo, isNewUser) {
   }
 
   return user?.role === "admin" ? "/admin" : "/dashboard";
-}
-
-function appOrigin(request) {
-  return (
-    process.env.GOOGLE_REDIRECT_ORIGIN ||
-    process.env.APP_ORIGIN ||
-    new URL(request.url).origin
-  ).replace(/\/$/, "");
 }
 
 function redirectWithError(request, message) {

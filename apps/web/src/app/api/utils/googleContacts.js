@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import { appOrigin } from "./origin.js";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
@@ -44,14 +45,6 @@ export function decryptToken(value) {
     decipher.update(Buffer.from(encryptedRaw, "base64url")),
     decipher.final(),
   ]).toString("utf8");
-}
-
-export function appOrigin(request) {
-  return (
-    process.env.GOOGLE_REDIRECT_ORIGIN ||
-    process.env.APP_ORIGIN ||
-    new URL(request.url).origin
-  ).replace(/\/$/, "");
 }
 
 export function googleContactsCallbackUrl(request) {
