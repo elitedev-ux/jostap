@@ -1,27 +1,5 @@
 import { ChevronDown } from "lucide-react";
-
-const faqs = [
-  {
-    question: "How does a JOSTAP NFC card work?",
-    answer:
-      "Tap the card on a supported phone and your digital profile opens instantly. You can also share the same profile with your QR code or direct link.",
-  },
-  {
-    question: "Can I order a card for someone else?",
-    answer:
-      "Yes. During checkout, use the card name for the card you are creating. That name is used for the card slug, even if the profile belongs to someone else.",
-  },
-  {
-    question: "What happens after payment?",
-    answer:
-      "You receive an order confirmation with your order ID. Send that ID on WhatsApp so the team can match your payment, card type, and delivery details.",
-  },
-  {
-    question: "Can I update my profile after printing?",
-    answer:
-      "Yes. The card points to your live JOSTAP profile, so you can update links, phone numbers, portfolio items, and booking details without reprinting.",
-  },
-];
+import { faqs } from "./landingData";
 
 export default function FaqSection() {
   return (
@@ -40,7 +18,9 @@ export default function FaqSection() {
                 <span>{faq.question}</span>
                 <ChevronDown size={17} />
               </summary>
-              <p>{faq.answer}</p>
+              {faq.answer.split("\n\n").map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
             </details>
           ))}
         </div>

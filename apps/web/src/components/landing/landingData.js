@@ -114,3 +114,56 @@ export const testimonials = [
     score: "4.5/5",
   },
 ];
+
+export const faqs = [
+  {
+    question: "How does the JOSTAP Smart Business Card work?",
+    answer:
+      "The JOSTAP Smart Business Card is designed with NFC technology, which allows your information to be shared wirelessly. When the card is tapped on an NFC-enabled smartphone, a link containing your contact details will appear on the phone and can be saved instantly. For phones that do not support NFC, a QR code is printed on the back of the card so users can still access your information easily.",
+  },
+  {
+    question: "How do I add my details to the JOSTAP Smart Business Card?",
+    answer:
+      "After purchasing your JOSTAP Smart Business Card, you will receive access to a personal login account where you can create your profile. From your profile dashboard, you can add your contact information, social media links, business details, portfolio links, and any other important information you want to share.",
+  },
+  {
+    question: "How do I change or update my details?",
+    answer:
+      "You can update your details anytime through your online profile. Once you log in to the JOSTAP web app, you can edit your information in real time, and the changes will reflect immediately on your JOSTAP Smart Business Card.",
+  },
+  {
+    question: "Is the JOSTAP Smart Business Card secure?",
+    answer:
+      "Yes, the JOSTAP Smart Business Card is safe and secure. It only shares the information you choose to provide, such as your name, phone number, email, social media handles, and business details. The card does not collect or remove information from another person’s phone. It works only when it is held very close to a compatible device, making it a safe and modern way to share professional contact details.",
+  },
+  {
+    question: "Is there a subscription plan?",
+    answer:
+      "Yes. JOSTAP offers an annual subscription plan of $20 per year. This subscription gives you access to the full JOSTAP Smart Business Card experience, including seamless sharing of your contact details, portfolio, social media links, and other important business information.",
+  },
+  {
+    question: "Which phones are compatible?",
+    answer:
+      "Most Android phones released from 2018 upward support NFC. iPhone models from iPhone 7 to iPhone 14 also have NFC capability. For iPhone 7 to iPhone X, NFC may need to be activated manually, while iPhone XS and newer models usually have NFC enabled automatically. For older iPhones and Android devices that do not support NFC, the QR code feature can be used instead.",
+  },
+  {
+    question: "How do I turn on NFC?",
+    answer:
+      "On an Android phone, go to your phone settings, select “More” or “Connected Devices,” then look for the NFC option and switch it on. The exact steps may differ depending on the phone model.\n\nFor iPhones, NFC usually works automatically on supported models and does not need to be turned on manually.",
+  },
+  {
+    question: "What happens if I misplace the card?",
+    answer:
+      "If your JOSTAP Smart Business Card is misplaced, a replacement card can be issued. A replacement within the first three months will cost 50% of the original purchase price, while replacement after three months will cost 70% of the initial purchase price.",
+  },
+  {
+    question: "What happens if the card is stolen or damaged?",
+    answer:
+      "If your card is stolen, you can deactivate it from your user dashboard. Once deactivated, your details will no longer be active on that card. If the card is damaged, you can request a replacement according to the replacement policy.",
+  },
+  {
+    question: "How do I receive someone else’s contact information?",
+    answer:
+      "After your JOSTAP Smart Business Card is tapped on someone’s phone, the person can share their own details with you by clicking the “Exchange Contact” button and filling out the lead generation form. Their contact information will be saved automatically on your user dashboard, synced to your Google account, and can also be saved on your phone.",
+  },
+];
