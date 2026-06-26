@@ -155,6 +155,7 @@ CREATE TABLE IF NOT EXISTS leads (
   email text,
   phone text,
   company text,
+  job_title text,
   message text,
   source text,
   status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'contacted', 'qualified', 'closed')),
@@ -162,9 +163,49 @@ CREATE TABLE IF NOT EXISTS leads (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS job_title text;
+
 CREATE INDEX IF NOT EXISTS leads_user_id_idx ON leads (user_id);
 CREATE INDEX IF NOT EXISTS leads_user_created_idx ON leads (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS leads_card_id_idx ON leads (card_id);
+
+CREATE TABLE IF NOT EXISTS contact_integrations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider text NOT NULL CHECK (provider IN ('google_contacts')),
+  provider_account_email text,
+  access_token_ciphertext text NOT NULL,
+  refresh_token_ciphertext text,
+  token_expires_at timestamptz,
+  scopes text[] NOT NULL DEFAULT ARRAY[]::text[],
+  sync_enabled boolean NOT NULL DEFAULT true,
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'disabled', 'error')),
+  last_synced_at timestamptz,
+  last_error text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, provider)
+);
+
+CREATE INDEX IF NOT EXISTS contact_integrations_user_provider_idx ON contact_integrations (user_id, provider);
+CREATE INDEX IF NOT EXISTS contact_integrations_status_idx ON contact_integrations (provider, status, sync_enabled);
+
+CREATE TABLE IF NOT EXISTS lead_contact_syncs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  lead_id uuid NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+  provider text NOT NULL CHECK (provider IN ('google_contacts')),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'synced', 'failed')),
+  provider_resource_name text,
+  error text,
+  synced_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (lead_id, provider)
+);
+
+CREATE INDEX IF NOT EXISTS lead_contact_syncs_user_created_idx ON lead_contact_syncs (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS lead_contact_syncs_lead_idx ON lead_contact_syncs (lead_id);
 
 CREATE TABLE IF NOT EXISTS appointments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -664,6 +705,16 @@ CREATE TRIGGER set_leads_updated_at
 BEFORE UPDATE ON leads
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+DROP TRIGGER IF EXISTS set_contact_integrations_updated_at ON contact_integrations;
+CREATE TRIGGER set_contact_integrations_updated_at
+BEFORE UPDATE ON contact_integrations
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS set_lead_contact_syncs_updated_at ON lead_contact_syncs;
+CREATE TRIGGER set_lead_contact_syncs_updated_at
+BEFORE UPDATE ON lead_contact_syncs
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
 DROP TRIGGER IF EXISTS set_appointments_updated_at ON appointments;
 CREATE TRIGGER set_appointments_updated_at
 BEFORE UPDATE ON appointments
@@ -731,6 +782,8 @@ ALTER TABLE kyc_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE card_engagement_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contact_integrations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lead_contact_syncs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
@@ -789,6 +842,18 @@ USING ((select auth.uid()) = user_id);
 
 DROP POLICY IF EXISTS leads_own_all ON leads;
 CREATE POLICY leads_own_all ON leads
+FOR ALL TO authenticated
+USING ((select auth.uid()) = user_id)
+WITH CHECK ((select auth.uid()) = user_id);
+
+DROP POLICY IF EXISTS contact_integrations_own_all ON contact_integrations;
+CREATE POLICY contact_integrations_own_all ON contact_integrations
+FOR ALL TO authenticated
+USING ((select auth.uid()) = user_id)
+WITH CHECK ((select auth.uid()) = user_id);
+
+DROP POLICY IF EXISTS lead_contact_syncs_own_all ON lead_contact_syncs;
+CREATE POLICY lead_contact_syncs_own_all ON lead_contact_syncs
 FOR ALL TO authenticated
 USING ((select auth.uid()) = user_id)
 WITH CHECK ((select auth.uid()) = user_id);
@@ -876,6 +941,8 @@ BEGIN
     'cards',
     'card_engagement_events',
     'leads',
+    'contact_integrations',
+    'lead_contact_syncs',
     'appointments',
     'subscriptions',
     'payments',

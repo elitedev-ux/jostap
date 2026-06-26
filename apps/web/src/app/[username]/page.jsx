@@ -132,6 +132,22 @@ export function PublicCardProfile({ token }) {
     }
   };
 
+  const submitExchangeContact = async (contact) => {
+    const response = await fetch("/api/leads/public", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...contact,
+        cardSlug: card.slug || card.id,
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to share contact.");
+    }
+    return data;
+  };
+
   return (
     <main className="public-profile">
       <div className="public-profile__shell">
@@ -144,6 +160,7 @@ export function PublicCardProfile({ token }) {
               method: "POST",
             }).catch(() => {});
           }}
+          onExchangeContact={submitExchangeContact}
         />
 
         {appointmentBookingEnabled && (

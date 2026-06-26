@@ -1,4 +1,5 @@
-import { Building2, Globe, Mail, MapPin, Phone, User } from "lucide-react";
+import { useState } from "react";
+import { Building2, Globe, Mail, MapPin, Phone, Send, User, X } from "lucide-react";
 import { FaLinkedinIn, FaSkype } from "react-icons/fa";
 import {
   SiDiscord,
@@ -105,6 +106,14 @@ const EXTRA_FIELDS = [
   ["portfolio", "Portfolio", Globe],
   ["address", "Address", MapPin],
 ];
+
+const EMPTY_EXCHANGE_FORM = {
+  name: "",
+  phone: "",
+  email: "",
+  company: "",
+  jobTitle: "",
+};
 
 function normalizedValues(value) {
   if (Array.isArray(value)) {
@@ -397,8 +406,12 @@ export default function CardPhonePreview({
   compact = false,
   publicUrl,
   onSaveContact,
+  onExchangeContact,
   includeStyles = true,
 }) {
+  const [exchangeOpen, setExchangeOpen] = useState(false);
+  const [exchangeForm, setExchangeForm] = useState(EMPTY_EXCHANGE_FORM);
+  const [exchangeStatus, setExchangeStatus] = useState({ submitting: false, error: "", success: "" });
   const visibleFields = activeSetFrom(activeFields);
   const color = card?.brandColor || DEFAULT_COLOR;
   const hasCoverImage = Boolean(card?.coverUrl);
@@ -417,6 +430,7 @@ export default function CardPhonePreview({
   const resolvedQrUrl = card?.qrUrl || (card?.id ? cardQrUrl(card) : resolvedPublicUrl);
   const resolvedDisplayUrl = displayCardUrl(card?.slug || "your-slug");
   const hasVcardInfo = Boolean(card?.name || card?.company || card?.title || card?.email || card?.phone || card?.website || card?.portfolio);
+  const canExchangeContact = typeof onExchangeContact === "function";
   const Root = framed ? "div" : "section";
 
   if (compact) {
@@ -536,6 +550,39 @@ export default function CardPhonePreview({
     await onSaveContact?.();
   };
 
+  const handleExchangeChange = (field, value) => {
+    setExchangeStatus((current) => ({ ...current, error: "", success: "" }));
+    setExchangeForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const closeExchange = () => {
+    if (exchangeStatus.submitting) return;
+    setExchangeOpen(false);
+    setExchangeStatus({ submitting: false, error: "", success: "" });
+  };
+
+  const handleExchangeSubmit = async (event) => {
+    event.preventDefault();
+    if (!canExchangeContact) return;
+
+    setExchangeStatus({ submitting: true, error: "", success: "" });
+    try {
+      await onExchangeContact(exchangeForm);
+      setExchangeForm(EMPTY_EXCHANGE_FORM);
+      setExchangeStatus({
+        submitting: false,
+        error: "",
+        success: "Contact shared successfully.",
+      });
+    } catch (error) {
+      setExchangeStatus({
+        submitting: false,
+        error: error.message || "Unable to share contact.",
+        success: "",
+      });
+    }
+  };
+
   return (
     <Root className={`card-preview-wrap ${compact ? "is-compact" : ""}`}>
       <div
@@ -586,10 +633,20 @@ export default function CardPhonePreview({
               ))}
             </div>
           )}
-          {hasVcardInfo && (
-            <button className="card-preview-vcard" type="button" onClick={handleSaveContact}>
-              Save contact
-            </button>
+          {(hasVcardInfo || canExchangeContact) && (
+            <div className="card-preview-action-stack">
+              {hasVcardInfo && (
+                <button className="card-preview-vcard" type="button" onClick={handleSaveContact}>
+                  Save contact
+                </button>
+              )}
+              {canExchangeContact && (
+                <button className="card-preview-exchange" type="button" onClick={() => setExchangeOpen(true)}>
+                  <Send size={17} />
+                  Exchange contact
+                </button>
+              )}
+            </div>
           )}
           {extraDetails.length > 0 && (
             <div className="card-preview-info-list">
@@ -647,6 +704,82 @@ export default function CardPhonePreview({
           </div>
         </div>
       </div>
+
+      {canExchangeContact && exchangeOpen && (
+        <div className="card-preview-exchange-modal" role="dialog" aria-modal="true" aria-labelledby="exchange-contact-title">
+          <div className="card-preview-exchange-panel">
+            <div className="card-preview-exchange-header">
+              <div>
+                <h3 id="exchange-contact-title">Exchange contact</h3>
+                <p>Share your details with {card?.name || "this profile"}.</p>
+              </div>
+              <button type="button" onClick={closeExchange} aria-label="Close exchange contact form">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleExchangeSubmit} className="card-preview-exchange-form">
+              <label>
+                <span>Full Name</span>
+                <input
+                  required
+                  maxLength={120}
+                  value={exchangeForm.name}
+                  onChange={(event) => handleExchangeChange("name", event.target.value)}
+                  placeholder="Your full name"
+                />
+              </label>
+              <label>
+                <span>Phone Number</span>
+                <input
+                  required
+                  type="tel"
+                  maxLength={40}
+                  value={exchangeForm.phone}
+                  onChange={(event) => handleExchangeChange("phone", event.target.value)}
+                  placeholder="+234 800 000 0000"
+                />
+              </label>
+              <label>
+                <span>Email Address</span>
+                <input
+                  required
+                  type="email"
+                  maxLength={160}
+                  value={exchangeForm.email}
+                  onChange={(event) => handleExchangeChange("email", event.target.value)}
+                  placeholder="you@company.com"
+                />
+              </label>
+              <label>
+                <span>Company / Business Name <em>(Optional)</em></span>
+                <input
+                  maxLength={160}
+                  value={exchangeForm.company}
+                  onChange={(event) => handleExchangeChange("company", event.target.value)}
+                  placeholder="Company name"
+                />
+              </label>
+              <label>
+                <span>Job Title <em>(Optional)</em></span>
+                <input
+                  maxLength={120}
+                  value={exchangeForm.jobTitle}
+                  onChange={(event) => handleExchangeChange("jobTitle", event.target.value)}
+                  placeholder="Job title"
+                />
+              </label>
+
+              {exchangeStatus.error && <p className="card-preview-exchange-message is-error">{exchangeStatus.error}</p>}
+              {exchangeStatus.success && <p className="card-preview-exchange-message is-success">{exchangeStatus.success}</p>}
+
+              <button type="submit" disabled={exchangeStatus.submitting}>
+                {exchangeStatus.submitting ? "Sending..." : "Share contact"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {includeStyles && (
       <style jsx global>{`
@@ -718,7 +851,7 @@ export default function CardPhonePreview({
         .card-preview-wrap.is-compact .card-preview-social-card,
         .card-preview-wrap.is-compact .card-preview-video-card,
         .card-preview-wrap.is-compact .card-preview-qr,
-        .card-preview-wrap.is-compact .card-preview-vcard { display: none; }
+        .card-preview-wrap.is-compact .card-preview-action-stack { display: none; }
         .card-preview-quick-actions a {
           color: #0f172a;
           display: grid;
@@ -735,7 +868,14 @@ export default function CardPhonePreview({
         .card-preview-quick-actions a:hover { transform: translateY(-2px); border-color: var(--card-brand); }
         .card-preview-quick-actions span { width: 34px; height: 34px; border-radius: 999px; background: var(--card-brand-soft); color: var(--card-brand); display: inline-flex; align-items: center; justify-content: center; }
         .card-preview-quick-actions strong { font-size: 13px; line-height: 1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-        .card-preview-vcard { width: calc(100% - 44px); margin: 0 22px 22px; min-height: 48px; border-radius: 14px; border: none; background: var(--card-brand); color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 18px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 20px -5px var(--card-brand-ring); }
+        .card-preview-action-stack { margin: 0 22px 22px; display: grid; gap: 10px; }
+        .card-preview-vcard,
+        .card-preview-exchange { width: 100%; min-height: 48px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 800; cursor: pointer; transition: transform .2s ease, border-color .2s ease, background .2s ease; }
+        .card-preview-vcard { border: none; background: var(--card-brand); color: #fff; box-shadow: 0 10px 20px -5px var(--card-brand-ring); }
+        .card-preview-exchange { border: 1px solid var(--card-brand-ring); background: #fff; color: var(--card-brand); }
+        .card-preview-vcard:hover,
+        .card-preview-exchange:hover { transform: translateY(-1px); }
+        .card-preview-exchange:hover { border-color: var(--card-brand); background: var(--card-brand-soft); }
         .card-preview-info-list { margin: 0 22px 22px; display: grid; gap: 10px; }
         .card-preview-info-list a, .card-preview-info-list div { display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; gap: 10px; min-width: 0; padding: 12px; border: 1px solid #e5e7eb; border-radius: 14px; background: #fff; color: #0f172a; text-decoration: none; }
         .card-preview-info-list span { width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--card-brand-soft); color: var(--card-brand); }
@@ -757,6 +897,119 @@ export default function CardPhonePreview({
         .card-preview-qr span { overflow-wrap: anywhere; text-align: center; }
         .card-preview-qr em { margin-top: 2px; font-style: normal; color: #0d6ffd; background: #eaf3ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 800; text-align: center; }
         .card-preview-brand-mark { width: 30px; height: 30px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 950; font-family: Archivo, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        .card-preview-exchange-modal {
+          position: fixed;
+          inset: 0;
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          background: rgba(15, 23, 42, .54);
+          backdrop-filter: blur(8px);
+        }
+        .card-preview-exchange-panel {
+          width: min(440px, 100%);
+          max-height: min(720px, calc(100vh - 40px));
+          overflow: auto;
+          border-radius: 20px;
+          border: 1px solid rgba(226, 232, 240, .9);
+          background: #fff;
+          box-shadow: 0 28px 90px rgba(15, 23, 42, .24);
+        }
+        .card-preview-exchange-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 22px 22px 16px;
+          border-bottom: 1px solid #eef2f7;
+        }
+        .card-preview-exchange-header h3 {
+          margin: 0;
+          color: #0f172a;
+          font-size: 22px;
+          line-height: 1.1;
+          font-weight: 900;
+          letter-spacing: 0;
+        }
+        .card-preview-exchange-header p {
+          margin: 6px 0 0;
+          color: #64748b;
+          font-size: 13px;
+          line-height: 1.45;
+        }
+        .card-preview-exchange-header button {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          border: 1px solid #e2e8f0;
+          background: #fff;
+          color: #475569;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          flex: 0 0 auto;
+        }
+        .card-preview-exchange-form { display: grid; gap: 13px; padding: 18px 22px 22px; }
+        .card-preview-exchange-form label { display: grid; gap: 7px; }
+        .card-preview-exchange-form span {
+          color: #0f172a;
+          font-size: 12px;
+          font-weight: 850;
+        }
+        .card-preview-exchange-form em {
+          color: #94a3b8;
+          font-style: normal;
+          font-weight: 750;
+        }
+        .card-preview-exchange-form input {
+          width: 100%;
+          min-height: 46px;
+          box-sizing: border-box;
+          border: 1px solid #dbe5f3;
+          border-radius: 12px;
+          background: #fff;
+          color: #0f172a;
+          padding: 0 13px;
+          font: inherit;
+          font-size: 14px;
+          outline: none;
+        }
+        .card-preview-exchange-form input:focus {
+          border-color: var(--card-brand);
+          box-shadow: 0 0 0 4px var(--card-brand-soft);
+        }
+        .card-preview-exchange-form > button {
+          min-height: 48px;
+          border: none;
+          border-radius: 13px;
+          background: var(--card-brand);
+          color: #fff;
+          font-size: 15px;
+          font-weight: 900;
+          cursor: pointer;
+        }
+        .card-preview-exchange-form > button:disabled { cursor: wait; opacity: .72; }
+        .card-preview-exchange-message {
+          margin: 0;
+          border-radius: 12px;
+          padding: 10px 12px;
+          font-size: 13px;
+          font-weight: 750;
+          line-height: 1.4;
+        }
+        .card-preview-exchange-message.is-error {
+          color: #b91c1c;
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+        }
+        .card-preview-exchange-message.is-success {
+          color: #047857;
+          background: #ecfdf5;
+          border: 1px solid #bbf7d0;
+        }
         @media (max-width: 640px) {
           .card-preview-wrap:not(.is-compact) { width: 100%; }
           .card-preview-wrap:not(.is-compact) .card-preview-phone { width: 100%; box-sizing: border-box; }

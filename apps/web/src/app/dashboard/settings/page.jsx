@@ -3,11 +3,15 @@ import {
   User,
   Shield,
   Globe,
+  CheckCircle2,
+  Link2,
+  Loader2,
   Trash2,
   Save,
   Eye,
   EyeOff,
   Camera,
+  Unplug,
 } from "lucide-react";
 import {
   PROFILE_IMAGE_ACCEPT,
@@ -118,10 +122,61 @@ export default function SettingsPage() {
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [updatingPassword, setUpdatingPassword] = useState(false);
   const [hasPassword, setHasPassword] = useState(true);
+  const [googleContacts, setGoogleContacts] = useState({
+    connected: false,
+    syncEnabled: false,
+    status: "dashboard_only",
+    accountEmail: "",
+    lastSyncedAt: "",
+    lastError: "",
+  });
+  const [integrationBusy, setIntegrationBusy] = useState("");
+  const [integrationMessage, setIntegrationMessage] = useState("");
 
   const update = (k, v) => setProfile((p) => ({ ...p, [k]: v }));
   const updatePasswordField = (key, value) =>
     setPasswordForm((current) => ({ ...current, [key]: value }));
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tab") === "Integrations") {
+      setActiveTab("Integrations");
+    }
+    if (params.get("googleContacts") === "connected") {
+      setIntegrationMessage("Google Contacts connected. New leads will sync automatically.");
+    }
+    if (params.get("googleContacts") === "failed") {
+      setIntegrationMessage("Google Contacts could not be connected. Please try again.");
+    }
+  }, []);
+
+  async function loadGoogleContactsIntegration({ active = true } = {}) {
+    try {
+      const response = await fetch("/api/integrations/google-contacts", {
+        credentials: "same-origin",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) return;
+      if (active) {
+        setGoogleContacts((current) => ({
+          ...current,
+          ...(data.integration || {}),
+        }));
+      }
+    } catch {
+      if (active) {
+        setGoogleContacts((current) => ({ ...current, connected: false, syncEnabled: false }));
+      }
+    }
+  }
+
+  useEffect(() => {
+    let active = true;
+    loadGoogleContactsIntegration({ active });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -353,6 +408,56 @@ export default function SettingsPage() {
       setPasswordError(error.message || "Unable to update password.");
     } finally {
       setUpdatingPassword(false);
+    }
+  };
+
+  const connectGoogleContacts = () => {
+    setIntegrationBusy("connect");
+    window.location.href = "/api/integrations/google-contacts/connect";
+  };
+
+  const updateGoogleContactsSync = async (syncEnabled) => {
+    setIntegrationBusy("toggle");
+    setIntegrationMessage("");
+
+    try {
+      const response = await fetch("/api/integrations/google-contacts", {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ syncEnabled }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to update Google Contacts sync.");
+      setGoogleContacts((current) => ({ ...current, ...(data.integration || {}) }));
+      setIntegrationMessage(syncEnabled ? "Google Contacts sync is on." : "Google Contacts sync is off. Leads will stay in JOSTAP only.");
+    } catch (error) {
+      setIntegrationMessage(error.message || "Unable to update Google Contacts sync.");
+    } finally {
+      setIntegrationBusy("");
+    }
+  };
+
+  const disconnectGoogleContacts = async () => {
+    const confirmed = window.confirm("Disconnect Google Contacts? New leads will remain in your JOSTAP dashboard only.");
+    if (!confirmed) return;
+
+    setIntegrationBusy("disconnect");
+    setIntegrationMessage("");
+
+    try {
+      const response = await fetch("/api/integrations/google-contacts", {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to disconnect Google Contacts.");
+      setGoogleContacts((current) => ({ ...current, ...(data.integration || {}) }));
+      setIntegrationMessage("Google Contacts disconnected. Leads will remain in JOSTAP only.");
+    } catch (error) {
+      setIntegrationMessage(error.message || "Unable to disconnect Google Contacts.");
+    } finally {
+      setIntegrationBusy("");
     }
   };
 
@@ -1051,87 +1156,198 @@ export default function SettingsPage() {
 
       {activeTab === "Integrations" && (
         <Section
-          title="Connected Integrations"
-          desc="Manage third-party connections."
+          title="Contact Sync"
+          desc="Choose where new leads from your card profiles should go."
         >
-          {[
-            {
-              name: "Cal.com",
-              desc: "Appointment booking",
-              color: "#0d6ffd",
-            },
-            {
-              name: "Stripe",
-              desc: "Payments & billing",
-              color: "#635BFF",
-            },
-            {
-              name: "Zapier",
-              desc: "Workflow automation",
-              color: "#FF4A00",
-            },
-            {
-              name: "HubSpot",
-              desc: "CRM sync",
-              color: "#FF7A59",
-            },
-          ].map((int) => (
+          {integrationMessage && (
             <div
-              key={int.name}
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 14,
-                flexWrap: "wrap",
-                padding: "14px 0",
-                borderBottom: "1px solid #F3F4F6",
+                background: integrationMessage.toLowerCase().includes("could not") || integrationMessage.toLowerCase().includes("unable")
+                  ? "#FEF2F2"
+                  : "#ECFDF5",
+                border: integrationMessage.toLowerCase().includes("could not") || integrationMessage.toLowerCase().includes("unable")
+                  ? "1px solid #FECACA"
+                  : "1px solid #BBF7D0",
+                color: integrationMessage.toLowerCase().includes("could not") || integrationMessage.toLowerCase().includes("unable")
+                  ? "#B91C1C"
+                  : "#047857",
+                borderRadius: 10,
+                padding: "11px 14px",
+                fontSize: 13,
+                fontWeight: 700,
+                marginBottom: 14,
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 9,
-                    background: `${int.color}18`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Globe size={16} color={int.color} />
-                </div>
-                <div>
-                  <p
-                    style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}
-                  >
-                    {int.name}
-                  </p>
-                  <p style={{ fontSize: 13, color: "#6B7280" }}>{int.desc}</p>
-                </div>
+              {integrationMessage}
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 14,
+              flexWrap: "wrap",
+              padding: "14px 0",
+              borderBottom: "1px solid #F3F4F6",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  background: "#EAF3FF",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {googleContacts.connected ? (
+                  <CheckCircle2 size={17} color="#0d6ffd" />
+                ) : (
+                  <Link2 size={17} color="#0d6ffd" />
+                )}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
+                  Google Contacts
+                </p>
+                <p style={{ fontSize: 13, color: "#6B7280" }}>
+                  {googleContacts.connected
+                    ? `Connected${googleContacts.accountEmail ? ` as ${googleContacts.accountEmail}` : ""}`
+                    : "Automatically create Google contacts from new leads."}
+                </p>
+                {googleContacts.lastError && (
+                  <p style={{ fontSize: 12, color: "#B91C1C", marginTop: 4 }}>
+                    {googleContacts.lastError}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              {googleContacts.connected && (
+                <button
+                  type="button"
+                  onClick={() => updateGoogleContactsSync(!googleContacts.syncEnabled)}
+                  disabled={integrationBusy === "toggle"}
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    minWidth: 106,
+                    gap: 8,
+                    border: "1px solid #D1D5DB",
+                    borderRadius: 999,
+                    background: googleContacts.syncEnabled ? "#ECFDF5" : "#fff",
+                    color: googleContacts.syncEnabled ? "#047857" : "#374151",
+                    padding: "7px 12px",
                     fontSize: 12,
                     fontWeight: 800,
-                    color: "#92400E",
-                    background: "#FFFBEB",
-                    border: "1px solid #FDE68A",
-                    borderRadius: 999,
-                    padding: "6px 12px",
+                    cursor: integrationBusy === "toggle" ? "wait" : "pointer",
                   }}
                 >
-                  Coming Soon
-                </span>
+                  {integrationBusy === "toggle" && <Loader2 size={13} />}
+                  {googleContacts.syncEnabled ? "Sync on" : "Sync off"}
+                </button>
+              )}
+
+              {googleContacts.connected ? (
+                <button
+                  type="button"
+                  onClick={disconnectGoogleContacts}
+                  disabled={Boolean(integrationBusy)}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    border: "1px solid #FECACA",
+                    borderRadius: 8,
+                    background: "#FEF2F2",
+                    color: "#B91C1C",
+                    padding: "8px 13px",
+                    fontSize: 13,
+                    fontWeight: 800,
+                    cursor: integrationBusy ? "wait" : "pointer",
+                  }}
+                >
+                  <Unplug size={14} /> Disconnect
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={connectGoogleContacts}
+                  disabled={integrationBusy === "connect"}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    border: "none",
+                    borderRadius: 8,
+                    background: "#0d6ffd",
+                    color: "#fff",
+                    padding: "9px 14px",
+                    fontSize: 13,
+                    fontWeight: 800,
+                    cursor: integrationBusy === "connect" ? "wait" : "pointer",
+                  }}
+                >
+                  {integrationBusy === "connect" ? <Loader2 size={14} /> : <Globe size={14} />}
+                  Connect Google
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 14,
+              flexWrap: "wrap",
+              padding: "14px 0",
+              borderBottom: "1px solid #F3F4F6",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <CheckCircle2 size={17} color="#64748B" />
+              </div>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>Dashboard only</p>
+                <p style={{ fontSize: 13, color: "#6B7280" }}>Every lead is always saved in your JOSTAP Leads dashboard.</p>
               </div>
             </div>
-          ))}
+            <span style={{ fontSize: 12, fontWeight: 800, color: "#047857", background: "#ECFDF5", border: "1px solid #BBF7D0", borderRadius: 999, padding: "6px 12px" }}>
+              Always on
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 14,
+              flexWrap: "wrap",
+              padding: "14px 0",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: "#F5F3FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Globe size={17} color="#6D28D9" />
+              </div>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>Apple Contacts</p>
+                <p style={{ fontSize: 13, color: "#6B7280" }}>iCloud contact sync can be added later.</p>
+              </div>
+            </div>
+            <span style={{ minWidth: 106, textAlign: "center", fontSize: 12, fontWeight: 800, color: "#92400E", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 999, padding: "6px 12px" }}>
+              Coming Soon
+            </span>
+          </div>
         </Section>
       )}
 

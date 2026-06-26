@@ -215,6 +215,7 @@ export async function GET(request) {
     { data: cards, error: cardsError },
     { data: events, error: eventsError },
     { data: appointments, error: appointmentsError },
+    { data: leads, error: leadsError },
     { data: announcements, error: announcementsError },
     { data: reads, error: readsError },
   ] = await Promise.all([
@@ -248,6 +249,10 @@ export async function GET(request) {
       .eq("assigned_user_id", user.id)
       .gte("created_at", start.toISOString()),
     supabase
+      .from("leads")
+      .select("id")
+      .eq("user_id", user.id),
+    supabase
       .from("announcements")
       .select("*")
       .eq("status", "published")
@@ -266,6 +271,7 @@ export async function GET(request) {
     cardsError ||
     eventsError ||
     appointmentsError ||
+    leadsError ||
     announcementsError ||
     readsError;
 
@@ -276,12 +282,14 @@ export async function GET(request) {
   const cardRows = cards || [];
   const eventRows = events || [];
   const appointmentRows = appointments || [];
+  const leadRows = leads || [];
   const usage = {
     cards: cardRows.length,
     views: total(cardRows, "views"),
     qrScans: total(cardRows, "qr_scans"),
     taps: total(cardRows, "taps"),
     appointments: appointmentRows.length,
+    leads: leadRows.length,
   };
   const totals = {
     ...usage,

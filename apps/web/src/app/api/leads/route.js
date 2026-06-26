@@ -3,6 +3,13 @@ import { paginationFromRequest, paginationMeta } from "../utils/pagination.js";
 import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin } from "../utils/supabase.js";
 
+function jobTitleFromRow(row) {
+  if (row.job_title) return row.job_title;
+
+  const match = String(row.message || "").match(/^Job title:\s*(.+)$/i);
+  return match?.[1]?.trim() || "";
+}
+
 function leadFromRow(row) {
   return {
     id: row.id,
@@ -10,6 +17,7 @@ function leadFromRow(row) {
     email: row.email || "",
     phone: row.phone || "",
     company: row.company || "",
+    jobTitle: jobTitleFromRow(row),
     message: row.message || "",
     source: row.source || "",
     status: row.status || "new",
