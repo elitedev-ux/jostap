@@ -773,7 +773,7 @@ export default function CardPhonePreview({
               {exchangeStatus.error && <p className="card-preview-exchange-message is-error">{exchangeStatus.error}</p>}
               {exchangeStatus.success && <p className="card-preview-exchange-message is-success">{exchangeStatus.success}</p>}
 
-              <button type="submit" disabled={exchangeStatus.submitting}>
+              <button className="card-preview-exchange-submit" type="submit" disabled={exchangeStatus.submitting}>
                 {exchangeStatus.submitting ? "Sending..." : "Share contact"}
               </button>
             </form>
@@ -952,7 +952,7 @@ export default function CardPhonePreview({
           cursor: pointer;
           flex: 0 0 auto;
         }
-        .card-preview-exchange-form { display: grid; gap: 13px; padding: 18px 22px 22px; }
+        .card-preview-exchange-form { display: grid; gap: 13px; padding: 18px 22px 24px; }
         .card-preview-exchange-form label { display: grid; gap: 7px; }
         .card-preview-exchange-form span {
           color: #0f172a;
@@ -981,17 +981,25 @@ export default function CardPhonePreview({
           border-color: var(--card-brand);
           box-shadow: 0 0 0 4px var(--card-brand-soft);
         }
-        .card-preview-exchange-form > button {
+        .card-preview-exchange-submit {
+          display: inline-flex !important;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
           min-height: 48px;
           border: none;
           border-radius: 13px;
-          background: var(--card-brand);
-          color: #fff;
+          background: var(--card-brand, #0d6ffd) !important;
+          color: #fff !important;
           font-size: 15px;
           font-weight: 900;
           cursor: pointer;
+          box-shadow: 0 12px 24px -12px var(--card-brand, #0d6ffd);
+          appearance: none;
+          -webkit-appearance: none;
         }
-        .card-preview-exchange-form > button:disabled { cursor: wait; opacity: .72; }
+        .card-preview-exchange-submit:hover { filter: brightness(.96); }
+        .card-preview-exchange-submit:disabled { cursor: wait; opacity: .72; }
         .card-preview-exchange-message {
           margin: 0;
           border-radius: 12px;
