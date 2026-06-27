@@ -107,7 +107,7 @@ const FIELD_GROUPS = [
       ["github", "GitHub", Github, "github.com/name"],
       ["behance", "Behance", Globe, "behance.net/name"],
       ["dribbble", "Dribbble", Globe, "dribbble.com/name"],
-      ["exchangeContact", "Exchange Contact", Send, "Let visitors share their contact details"],
+      ["exchangeContact", "Contact sharing", Send, "Show Save contact and Exchange contact"],
       ["calendly", "Appointment Booking", Calendar, "Enable booking form on public profile"],
       ["videoUrl", "Video", Video, "https://youtube.com/watch?v=..."],
     ],
@@ -672,7 +672,7 @@ export default function CardBuilderPage({ mode = "user" }) {
                             </p>
                           ) : key === "exchangeContact" ? (
                             <p className="card-builder-appointment-note">
-                              Visitors can share their own details from your public profile. Shared contacts appear in Leads.
+                              Shows the Save contact and Exchange contact buttons on your public profile.
                             </p>
                           ) : (
                             <input

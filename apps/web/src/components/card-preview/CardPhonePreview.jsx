@@ -434,8 +434,8 @@ export default function CardPhonePreview({
   const resolvedQrUrl = card?.qrUrl || (card?.id ? cardQrUrl(card) : resolvedPublicUrl);
   const resolvedDisplayUrl = displayCardUrl(card?.slug || "your-slug");
   const hasVcardInfo = Boolean(card?.name || card?.company || card?.title || card?.email || card?.phone || card?.website || card?.portfolio);
-  const showExchangeContact = visibleFields.has("exchangeContact");
-  const canExchangeContact = showExchangeContact && typeof onExchangeContact === "function";
+  const showContactSharing = visibleFields.has("exchangeContact");
+  const canExchangeContact = showContactSharing && typeof onExchangeContact === "function";
   const Root = framed ? "div" : "section";
 
   if (compact) {
@@ -638,14 +638,14 @@ export default function CardPhonePreview({
               ))}
             </div>
           )}
-          {(hasVcardInfo || showExchangeContact) && (
+          {showContactSharing && (hasVcardInfo || canExchangeContact) && (
             <div className="card-preview-action-stack">
               {hasVcardInfo && (
                 <button className="card-preview-vcard" type="button" onClick={handleSaveContact}>
                   Save contact
                 </button>
               )}
-              {showExchangeContact && (
+              {showContactSharing && (
                 <button
                   className="card-preview-exchange"
                   type="button"
