@@ -107,13 +107,14 @@ const FIELD_GROUPS = [
       ["github", "GitHub", Github, "github.com/name"],
       ["behance", "Behance", Globe, "behance.net/name"],
       ["dribbble", "Dribbble", Globe, "dribbble.com/name"],
+      ["exchangeContact", "Exchange Contact", Send, "Let visitors share their contact details"],
       ["calendly", "Appointment Booking", Calendar, "Enable booking form on public profile"],
       ["videoUrl", "Video", Video, "https://youtube.com/watch?v=..."],
     ],
   },
 ];
 
-const DEFAULT_ACTIVE = new Set(["name", "title", "company", "email", "phone", "website", "instagram"]);
+const DEFAULT_ACTIVE = new Set(["name", "title", "company", "email", "phone", "website", "instagram", "exchangeContact"]);
 const DOWNLOADABLE_QR_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
 const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
 const CUSTOM_BRANDING_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
@@ -173,6 +174,20 @@ function valuesForFieldInput(value) {
 function hasMeaningfulValue(value) {
   if (Array.isArray(value)) return value.some((item) => String(item || "").trim());
   return Boolean(String(value || "").trim());
+}
+
+function activeFieldSetForLoadedCard(card) {
+  const fields = Array.isArray(card?.activeFields) && card.activeFields.length
+    ? new Set(card.activeFields)
+    : new Set(DEFAULT_ACTIVE);
+
+  if (card?.exchangeContactEnabled === false) {
+    fields.delete("exchangeContact");
+  } else {
+    fields.add("exchangeContact");
+  }
+
+  return fields;
 }
 
 function UploadTile({ label, icon: Icon, onUpload, preview, onRemove }) {
@@ -342,12 +357,14 @@ export default function CardBuilderPage({ mode = "user" }) {
             setAssignedUserId(found.userId || "");
             setSlugManuallyEdited(true);
             if (Array.isArray(found.activeFields) && found.activeFields.length) {
-              setActiveFields(new Set(found.activeFields));
+              setActiveFields(activeFieldSetForLoadedCard(found));
             } else {
               const activeKeys = new Set(DEFAULT_ACTIVE);
               Object.keys(found).forEach((key) => {
                 if (hasMeaningfulValue(found[key])) activeKeys.add(key);
               });
+              if (found.exchangeContactEnabled === false) activeKeys.delete("exchangeContact");
+              else activeKeys.add("exchangeContact");
               setActiveFields(activeKeys);
             }
           }
@@ -365,12 +382,14 @@ export default function CardBuilderPage({ mode = "user" }) {
           setCard({ ...EMPTY_CARD, brandColor: COLORS[8], coverUrl: "", ...found, title: found.title || found.role || "" });
           setSlugManuallyEdited(true);
           if (Array.isArray(found.activeFields) && found.activeFields.length) {
-            setActiveFields(new Set(found.activeFields));
+            setActiveFields(activeFieldSetForLoadedCard(found));
           } else {
             const activeKeys = new Set(DEFAULT_ACTIVE);
             Object.keys(found).forEach((key) => {
               if (hasMeaningfulValue(found[key])) activeKeys.add(key);
             });
+            if (found.exchangeContactEnabled === false) activeKeys.delete("exchangeContact");
+            else activeKeys.add("exchangeContact");
             setActiveFields(activeKeys);
           }
           return;
@@ -603,15 +622,15 @@ export default function CardBuilderPage({ mode = "user" }) {
                     const active = activeFields.has(key);
                     const locked = PREMIUM_ONLY_FIELDS.has(key) && !canUsePremiumFields;
                     const isMultiField = MULTI_ENTRY_FIELDS.has(key);
-                    const isAppointmentToggle = key === "calendly";
+                    const isToggleField = key === "calendly" || key === "exchangeContact";
                     return (
-                      <div className={`card-builder-field ${active ? "is-active" : ""} ${locked ? "is-locked" : ""} ${isAppointmentToggle ? "is-toggle-field" : ""}`} key={key}>
-                        <button type="button" onClick={() => toggleField(key)} aria-pressed={!locked && isAppointmentToggle ? active : undefined}>
+                      <div className={`card-builder-field ${active ? "is-active" : ""} ${locked ? "is-locked" : ""} ${isToggleField ? "is-toggle-field" : ""}`} key={key}>
+                        <button type="button" onClick={() => toggleField(key)} aria-pressed={!locked && isToggleField ? active : undefined}>
                           {locked ? <span className="card-builder-brand-mark"><LockKeyhole size={15} /></span> : <BrandMark field={key} icon={Icon} />}
                           <span>{label}</span>
                           {locked ? (
                             <a href="/pricing" onClick={(event) => event.stopPropagation()}>Upgrade</a>
-                          ) : isAppointmentToggle ? (
+                          ) : isToggleField ? (
                             <span className="card-builder-toggle" aria-hidden="true">
                               <span />
                             </span>
@@ -650,6 +669,10 @@ export default function CardBuilderPage({ mode = "user" }) {
                           ) : key === "calendly" ? (
                             <p className="card-builder-appointment-note">
                               Visitors will book from the public profile form. Requests are saved in your dashboard.
+                            </p>
+                          ) : key === "exchangeContact" ? (
+                            <p className="card-builder-appointment-note">
+                              Visitors can share their own details from your public profile. Shared contacts appear in Leads.
                             </p>
                           ) : (
                             <input

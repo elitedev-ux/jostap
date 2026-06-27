@@ -67,6 +67,7 @@ const ALLOWED_ACTIVE_FIELDS = new Set([
   "audiomack",
   "youtubeMusic",
   "videoUrl",
+  "exchangeContact",
 ]);
 
 function sanitizeActiveFields(value) {
@@ -230,6 +231,7 @@ export function cardFromRow(row) {
     brandColor: theme.brandColor || "",
     videoUrl: theme.videoUrl || "",
     activeFields: Array.isArray(theme.activeFields) ? theme.activeFields : [],
+    exchangeContactEnabled: theme.exchangeContactEnabled !== false,
     whatsapp: fromSocialValue("whatsapp", social.whatsapp),
     linkedin: fromSocialValue("linkedin", social.linkedin),
     twitter: fromSocialValue("twitter", social.twitter),
@@ -309,6 +311,7 @@ export function cardPayload(body) {
       coverUrl: toOriginStorageUrl(normalizeText(body.coverUrl, 1000)),
       brandColor: normalizeText(body.brandColor, 32),
       videoUrl: normalizeText(body.videoUrl, 1000),
+      exchangeContactEnabled: sanitizeActiveFields(body.activeFields).includes("exchangeContact"),
     },
     socialLinks: {
       whatsapp: toSocialValue("whatsapp", body.whatsapp),
