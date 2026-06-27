@@ -1,7 +1,7 @@
 import { badRequest, json } from "../../../utils/http.js";
 import { requireAdmin, logAdminAction, fullName } from "../../../utils/admin.js";
-import { cardFromRow } from "../../../utils/cards.js";
-import { getSupabaseAdmin } from "../../../utils/supabase.js";
+import { cardFromRow, cardPayload, isEmail } from "../../../utils/cards.js";
+import { getSupabaseAdmin, isUniqueViolation } from "../../../utils/supabase.js";
 import { cardNfcUrl, publicCardUrl, cardQrUrl } from "../../../../../utils/publicUrl.js";
 
 function cardResponse(row, request) {
@@ -52,6 +52,24 @@ async function notifyAssignedUser(supabase, { adminUser, card, assignee }) {
   });
 }
 
+export async function GET(request, { params }) {
+  const { response } = await requireAdmin(request, "cards:manage");
+
+  if (response) return response;
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("cards")
+    .select("*")
+    .eq("id", params.id)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return json({ error: "Card not found." }, { status: 404 });
+
+  return json({ card: cardResponse(data, request) });
+}
+
 export async function PATCH(request, { params }) {
   const { user: adminUser, response } = await requireAdmin(request, "cards:manage");
 
@@ -59,7 +77,7 @@ export async function PATCH(request, { params }) {
 
   const body = await request.json().catch(() => null);
 
-  if (!body || (typeof body.active !== "boolean" && !("userId" in body) && !("assignedUserId" in body))) {
+  if (!body) {
     return badRequest("Choose a card update to apply.");
   }
 
@@ -78,6 +96,7 @@ export async function PATCH(request, { params }) {
   let assignee = null;
   let nextUserId = existing.user_id || null;
   const hasAssignmentUpdate = "userId" in body || "assignedUserId" in body;
+  const hasCardPayload = "name" in body || "slug" in body;
 
   if (typeof body.active === "boolean") {
     updates.active = body.active;
@@ -98,18 +117,58 @@ export async function PATCH(request, { params }) {
     else if (existing.user_id !== nextUserId) actions.push("card.reassigned");
   }
 
+  if (hasCardPayload) {
+    const card = cardPayload(body);
+
+    if (!card.name || !card.slug) {
+      return badRequest("Card name and public slug are required.");
+    }
+
+    if (card.email && !isEmail(card.email)) {
+      return badRequest("Enter a valid card email address.");
+    }
+
+    Object.assign(updates, {
+      name: card.name,
+      title: card.title,
+      company: card.company,
+      slug: card.slug,
+      bio: card.bio,
+      email: card.email || null,
+      phone: card.phone,
+      website: card.website,
+      avatar_url: card.avatarUrl,
+      theme: card.theme,
+      social_links: card.socialLinks,
+      active: card.active,
+    });
+
+    actions.push("card.updated");
+  }
+
   if (Object.keys(updates).length === 0) {
     return badRequest("Choose a card update to apply.");
   }
 
-  const { data, error } = await supabase
-    .from("cards")
-    .update(updates)
-    .eq("id", params.id)
-    .select("*")
-    .single();
+  let data;
 
-  if (error) throw error;
+  try {
+    const result = await supabase
+      .from("cards")
+      .update(updates)
+      .eq("id", params.id)
+      .select("*")
+      .single();
+
+    if (result.error) throw result.error;
+    data = result.data;
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      return badRequest("This public slug is already in use.");
+    }
+
+    throw error;
+  }
 
   for (const action of actions) {
     await logAdminAction(supabase, adminUser, action, "card", params.id, {

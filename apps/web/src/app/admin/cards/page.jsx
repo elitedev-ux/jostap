@@ -4,6 +4,7 @@ import {
   Download,
   Eye,
   Flag,
+  Pencil,
   QrCode,
   Search,
   UserMinus,
@@ -238,6 +239,13 @@ export default function AdminCardsPage() {
                   </button>
                 )}
                 {cardLink && <a href={cardLink} title="Preview" style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, width: 30, height: 30, display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#374151" }}><Eye size={14} /></a>}
+                <a
+                  href={`/admin/cards/${card.id}/edit`}
+                  title="Edit card"
+                  style={{ border: "1px solid #BFDBFE", background: "#EFF6FF", borderRadius: 8, height: 30, padding: "0 10px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "#0d6ffd", textDecoration: "none", fontSize: 12, fontWeight: 800, whiteSpace: "nowrap" }}
+                >
+                  <Pencil size={13} /> Edit
+                </a>
                 {qrValue && (
                   <button
                     title="Download QR code"

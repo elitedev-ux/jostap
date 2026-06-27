@@ -1,6 +1,6 @@
 import { badRequest, json, readJson } from "../../utils/http.js";
 import { requireAdmin, logAdminAction, fullName } from "../../utils/admin.js";
-import { activePlanForUser, applyPlanLimits, cardFromRow, cardPayload, isEmail } from "../../utils/cards.js";
+import { cardFromRow, cardPayload, isEmail } from "../../utils/cards.js";
 import { getSupabaseAdmin, isUniqueViolation } from "../../utils/supabase.js";
 import { cardNfcUrl, publicCardUrl, cardQrUrl } from "../../../../utils/publicUrl.js";
 
@@ -69,8 +69,7 @@ export async function POST(request) {
   }
 
   try {
-    const plan = assignee ? await activePlanForUser(supabase, assignee.id) : "free";
-    const card = applyPlanLimits(cardPayload(body), plan);
+    const card = cardPayload(body);
 
     if (!card.name || !card.slug) {
       return badRequest("Card name and public slug are required.");

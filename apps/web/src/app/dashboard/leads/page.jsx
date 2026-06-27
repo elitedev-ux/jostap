@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BriefcaseBusiness, Building2, CreditCard, Mail, Phone, Search, UsersRound } from "lucide-react";
+import { BriefcaseBusiness, Building2, CreditCard, Download, Mail, Phone, Search, UsersRound } from "lucide-react";
 
 const LEADS_PAGE_SIZE = 12;
 const STATUS_FILTERS = ["all", "new", "contacted", "qualified", "closed"];
@@ -24,6 +24,61 @@ function dateLabel(value) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function escapeVcardValue(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;")
+    .trim();
+}
+
+function safeFileName(value) {
+  const name = String(value || "contact")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return name || "contact";
+}
+
+function leadVcard(lead) {
+  const lines = [
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    `FN:${escapeVcardValue(lead.name)}`,
+  ];
+
+  if (lead.phone) lines.push(`TEL;TYPE=CELL:${escapeVcardValue(lead.phone)}`);
+  if (lead.email) lines.push(`EMAIL;TYPE=INTERNET:${escapeVcardValue(lead.email)}`);
+  if (lead.company || lead.jobTitle) {
+    lines.push(
+      `ORG:${escapeVcardValue(lead.company)}`,
+      `TITLE:${escapeVcardValue(lead.jobTitle)}`,
+    );
+  }
+  if (lead.cardName) {
+    lines.push(`NOTE:${escapeVcardValue(`Shared through ${lead.cardName}`)}`);
+  }
+
+  lines.push("END:VCARD");
+
+  return `${lines.join("\r\n")}\r\n`;
+}
+
+function downloadLeadVcard(lead) {
+  const blob = new Blob([leadVcard(lead)], { type: "text/vcard;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${safeFileName(lead.name)}.vcf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 export default function LeadsPage() {
@@ -278,6 +333,26 @@ export default function LeadsPage() {
                   <span style={{ fontSize: 11, color: "#64748b", background: "#F8FAFC", border: "1px solid #E5E7EB", borderRadius: 999, padding: "4px 9px", fontWeight: 800 }}>
                     {sourceLabel(lead.source)}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => downloadLeadVcard(lead)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 7,
+                      border: "1px solid #BFDBFE",
+                      borderRadius: 8,
+                      background: "#EFF6FF",
+                      color: "#0d6ffd",
+                      padding: "8px 11px",
+                      fontSize: 12,
+                      fontWeight: 850,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Download size={13} /> Save contact
+                  </button>
                 </div>
               </div>
             ))}

@@ -235,6 +235,7 @@ export default function CardBuilderPage({ mode = "user" }) {
   const { id } = useParams();
   const editing = Boolean(id);
   const isAdminMode = mode === "admin";
+  const adminCardPath = editing ? `/admin/cards/${id}/edit` : "/admin/cards/new";
   const newCardSlugSuffix = useRef(Date.now().toString(36).slice(-4));
   const [card, setCard] = useState({ ...EMPTY_CARD, brandColor: COLORS[8], coverUrl: "" });
   const [activeFields, setActiveFields] = useState(DEFAULT_ACTIVE);
@@ -308,13 +309,48 @@ export default function CardBuilderPage({ mode = "user" }) {
         if (isAdminMode) {
           setCurrentPlan("custom_nfc");
           setQrLocked(false);
-          const response = await fetch("/api/admin/overview", { credentials: "same-origin" });
-          const data = await response.json().catch(() => ({}));
-          if (response.status === 401 || response.status === 403) {
-            window.location.href = "/auth/signin?callbackUrl=/admin/cards/new";
+          const [overviewResponse, cardResponse] = await Promise.all([
+            fetch("/api/admin/overview", { credentials: "same-origin" }),
+            editing ? fetch(`/api/admin/cards/${id}`, { credentials: "same-origin" }) : Promise.resolve(null),
+          ]);
+          const overviewData = await overviewResponse.json().catch(() => ({}));
+          if (overviewResponse.status === 401 || overviewResponse.status === 403) {
+            window.location.href = `/auth/signin?callbackUrl=${encodeURIComponent(adminCardPath)}`;
             return;
           }
-          if (active && response.ok) setUsers(data.users || []);
+
+          if (!overviewResponse.ok) {
+            setMessage(overviewData.error || "Unable to load admin card tools.");
+            return;
+          }
+
+          if (active) setUsers(overviewData.users || []);
+
+          if (editing) {
+            const cardData = await cardResponse.json().catch(() => ({}));
+            if (cardResponse.status === 401 || cardResponse.status === 403) {
+              window.location.href = `/auth/signin?callbackUrl=${encodeURIComponent(adminCardPath)}`;
+              return;
+            }
+            if (!cardResponse.ok || !cardData.card) {
+              setMessage(cardData.error || "This card could not be found.");
+              return;
+            }
+
+            const found = cardData.card;
+            setCard({ ...EMPTY_CARD, brandColor: COLORS[8], coverUrl: "", ...found, title: found.title || found.role || "" });
+            setAssignedUserId(found.userId || "");
+            setSlugManuallyEdited(true);
+            if (Array.isArray(found.activeFields) && found.activeFields.length) {
+              setActiveFields(new Set(found.activeFields));
+            } else {
+              const activeKeys = new Set(DEFAULT_ACTIVE);
+              Object.keys(found).forEach((key) => {
+                if (hasMeaningfulValue(found[key])) activeKeys.add(key);
+              });
+              setActiveFields(activeKeys);
+            }
+          }
           return;
         }
 
@@ -470,17 +506,17 @@ export default function CardBuilderPage({ mode = "user" }) {
         showTestimonials: canUsePremiumFields,
         showGallery: false,
         showFaq: false,
-        active: true,
+        active: editing ? Boolean(card.active) : true,
       };
       if (isAdminMode) {
-        const response = await fetch("/api/admin/cards", {
-          method: "POST",
+        const response = await fetch(editing ? `/api/admin/cards/${id}` : "/api/admin/cards", {
+          method: editing ? "PATCH" : "POST",
           credentials: "same-origin",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...payload, userId: assignedUserId || null }),
         });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || "Unable to create this card.");
+        if (!response.ok) throw new Error(data.error || (editing ? "Unable to update this card." : "Unable to create this card."));
         window.location.href = "/admin/cards";
         return;
       }
@@ -516,7 +552,7 @@ export default function CardBuilderPage({ mode = "user" }) {
           <header className="card-builder-header">
             <div>
               <p>Card Builder</p>
-              <h1>{isAdminMode ? "Create card for a user" : editing ? "Edit your card" : "Create your first card"}</h1>
+              <h1>{isAdminMode ? (editing ? "Edit admin card" : "Create card for a user") : editing ? "Edit your card" : "Create your first card"}</h1>
               <span>{isAdminMode ? "Build the full profile, then optionally assign it to a user account." : editing ? "Update the details, media, and links on this card." : "Ready to design your card? Pick a field below to get started."}</span>
             </div>
             <a href={isAdminMode ? "/admin/cards" : "/dashboard/cards"}>{isAdminMode ? "Admin Cards" : "My Cards"}</a>

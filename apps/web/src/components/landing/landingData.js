@@ -164,6 +164,6 @@ export const faqs = [
   {
     question: "How do I receive someone else’s contact information?",
     answer:
-      "After your JOSTAP Smart Business Card is tapped on someone’s phone, the person can share their own details with you by clicking the “Exchange Contact” button and filling out the lead generation form. Their contact information will be saved automatically on your user dashboard, synced to your Google account, and can also be saved on your phone.",
+      "After your JOSTAP Smart Business Card is tapped on someone’s phone, the person can share their own details with you by clicking the “Exchange Contact” button and filling out the lead generation form. Their contact information will be saved automatically on your user dashboard and can also be saved on your phone.",
   },
 ];

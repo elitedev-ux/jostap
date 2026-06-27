@@ -1,7 +1,6 @@
 import { badRequest, contentLengthExceeds, json, readJson } from "../../utils/http.js";
 import { rateLimit, rateLimitKey } from "../../utils/rateLimit.js";
 import { getSupabaseAdmin, hasSupabase } from "../../utils/supabase.js";
-import { syncLeadToGoogleContacts } from "../../utils/googleContacts.js";
 
 const MAX_BODY_BYTES = 8 * 1024;
 const NAME_MAX = 120;
@@ -152,15 +151,9 @@ export async function POST(request) {
     throw insertError;
   }
 
-  const googleSync = await syncLeadToGoogleContacts(supabase, {
-    id: lead.id,
-    userId: card.user_id,
-    name: payload.name,
-    email: payload.email,
-    phone: payload.phone,
-    company: payload.company,
-    jobTitle: payload.jobTitle,
-  }).catch(() => ({ synced: false }));
-
-  return json({ ok: true, leadId: lead.id, googleSync });
+  return json({
+    ok: true,
+    leadId: lead.id,
+    googleSync: { synced: false, status: "coming_soon" },
+  });
 }

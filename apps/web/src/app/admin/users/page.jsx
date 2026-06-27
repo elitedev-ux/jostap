@@ -8,6 +8,13 @@ const statusStyle = {
   "No plan": ["#f5f5f5", "#6B7280", "#E5E7EB"],
 };
 
+const UPGRADE_PLANS = [
+  ["jostap_nfc", "JOSTAP Card", "one_time"],
+  ["custom_nfc", "Custom Card", "one_time"],
+  ["basic_renewal", "Basic Renewal", "yearly"],
+  ["premium_renewal", "Premium Features Renewal", "yearly"],
+];
+
 const selectStyle = {
   border: "1px solid #E5E7EB",
   background: "#fff",
@@ -49,6 +56,12 @@ export default function AdminUsersPage() {
   const [sortOrder, setSortOrder] = useState("newest");
   const [loadError, setLoadError] = useState("");
   const [busyId, setBusyId] = useState("");
+  const [upgradeTarget, setUpgradeTarget] = useState(null);
+  const [upgradeForm, setUpgradeForm] = useState({
+    plan: "jostap_nfc",
+    billingCycle: "one_time",
+    password: "",
+  });
 
   async function loadUsers(active = true) {
     setLoadError("");
@@ -78,10 +91,40 @@ export default function AdminUsersPage() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Unable to update user.");
       await loadUsers();
+      return true;
     } catch (error) {
       setLoadError(error.message || "Unable to update user.");
+      return false;
     } finally {
       setBusyId("");
+    }
+  }
+
+  function openUpgrade(user) {
+    const currentPlan = UPGRADE_PLANS.some(([plan]) => plan === user.plan) ? user.plan : "jostap_nfc";
+    const selected = UPGRADE_PLANS.find(([plan]) => plan === currentPlan) || UPGRADE_PLANS[0];
+
+    setUpgradeTarget(user);
+    setUpgradeForm({
+      plan: selected[0],
+      billingCycle: selected[2],
+      password: "",
+    });
+    setLoadError("");
+  }
+
+  async function submitUpgrade(event) {
+    event.preventDefault();
+    if (!upgradeTarget) return;
+
+    const upgraded = await updateUser(upgradeTarget, {
+      plan: upgradeForm.plan,
+      billingCycle: upgradeForm.billingCycle,
+      upgradePassword: upgradeForm.password,
+    });
+    if (upgraded) {
+      setUpgradeTarget(null);
+      setUpgradeForm((current) => ({ ...current, password: "" }));
     }
   }
 
@@ -230,6 +273,13 @@ export default function AdminUsersPage() {
                       >
                         {user.role === "admin" ? "Make user" : "Make admin"}
                       </button>
+                      <button
+                        onClick={() => openUpgrade(user)}
+                        disabled={busyId === user.id}
+                        style={{ border: "1px solid #BFDBFE", background: "#EFF6FF", borderRadius: 8, padding: "7px 10px", fontSize: 12, fontWeight: 800, color: "#0d6ffd", cursor: busyId === user.id ? "wait" : "pointer" }}
+                      >
+                        Upgrade
+                      </button>
                     </td>
                   </tr>
                 );
@@ -238,6 +288,68 @@ export default function AdminUsersPage() {
           </table>
         </div>
       </div>
+
+      {upgradeTarget && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="upgrade-user-title"
+          style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(15,23,42,.45)", display: "grid", placeItems: "center", padding: 18 }}
+        >
+          <form onSubmit={submitUpgrade} style={{ width: "min(440px, 100%)", background: "#fff", border: "1px solid #E5E7EB", borderRadius: 14, padding: 22, boxShadow: "0 24px 60px rgba(15,23,42,.22)" }}>
+            <h2 id="upgrade-user-title" style={{ fontSize: 18, fontWeight: 850, color: "#111827", marginBottom: 4 }}>Upgrade account</h2>
+            <p style={{ fontSize: 13, color: "#64748B", marginBottom: 18 }}>
+              Activate a plan for {upgradeTarget.name || upgradeTarget.email}.
+            </p>
+
+            <label style={{ display: "grid", gap: 7, fontSize: 12, fontWeight: 800, color: "#111827", marginBottom: 14 }}>
+              Plan
+              <select
+                value={upgradeForm.plan}
+                onChange={(event) => {
+                  const selected = UPGRADE_PLANS.find(([plan]) => plan === event.target.value) || UPGRADE_PLANS[0];
+                  setUpgradeForm((current) => ({ ...current, plan: selected[0], billingCycle: selected[2] }));
+                }}
+                style={{ ...selectStyle, width: "100%", minHeight: 42 }}
+              >
+                {UPGRADE_PLANS.map(([plan, label]) => (
+                  <option key={plan} value={plan}>{label}</option>
+                ))}
+              </select>
+            </label>
+
+            <label style={{ display: "grid", gap: 7, fontSize: 12, fontWeight: 800, color: "#111827", marginBottom: 18 }}>
+              Upgrade password
+              <input
+                type="password"
+                value={upgradeForm.password}
+                onChange={(event) => setUpgradeForm((current) => ({ ...current, password: event.target.value }))}
+                placeholder="Enter upgrade password"
+                required
+                autoComplete="off"
+                style={{ border: "1px solid #E5E7EB", borderRadius: 9, minHeight: 42, padding: "0 12px", fontSize: 14, outline: "none" }}
+              />
+            </label>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setUpgradeTarget(null)}
+                style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "9px 13px", fontSize: 13, fontWeight: 800, color: "#475569", cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={busyId === upgradeTarget.id}
+                style={{ border: "none", background: "#0d6ffd", borderRadius: 8, padding: "9px 14px", fontSize: 13, fontWeight: 850, color: "#fff", cursor: busyId === upgradeTarget.id ? "wait" : "pointer" }}
+              >
+                {busyId === upgradeTarget.id ? "Upgrading..." : "Upgrade account"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </>
   );
 }
