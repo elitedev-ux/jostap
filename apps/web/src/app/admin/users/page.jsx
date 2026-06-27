@@ -1,4 +1,4 @@
-import { Ban, CheckCircle2, Download, Search } from "lucide-react";
+import { Ban, CheckCircle2, Download, Eye, EyeOff, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 const statusStyle = {
@@ -62,6 +62,7 @@ export default function AdminUsersPage() {
     billingCycle: "one_time",
     password: "",
   });
+  const [showUpgradePassword, setShowUpgradePassword] = useState(false);
 
   async function loadUsers(active = true) {
     setLoadError("");
@@ -110,6 +111,7 @@ export default function AdminUsersPage() {
       billingCycle: selected[2],
       password: "",
     });
+    setShowUpgradePassword(false);
     setLoadError("");
   }
 
@@ -320,15 +322,26 @@ export default function AdminUsersPage() {
 
             <label style={{ display: "grid", gap: 7, fontSize: 12, fontWeight: 800, color: "#111827", marginBottom: 18 }}>
               Upgrade password
-              <input
-                type="password"
-                value={upgradeForm.password}
-                onChange={(event) => setUpgradeForm((current) => ({ ...current, password: event.target.value }))}
-                placeholder="Enter upgrade password"
-                required
-                autoComplete="off"
-                style={{ border: "1px solid #E5E7EB", borderRadius: 9, minHeight: 42, padding: "0 12px", fontSize: 14, outline: "none" }}
-              />
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showUpgradePassword ? "text" : "password"}
+                  value={upgradeForm.password}
+                  onChange={(event) => setUpgradeForm((current) => ({ ...current, password: event.target.value }))}
+                  placeholder="Enter upgrade password"
+                  required
+                  autoComplete="off"
+                  style={{ width: "100%", boxSizing: "border-box", border: "1px solid #E5E7EB", borderRadius: 9, minHeight: 42, padding: "0 44px 0 12px", fontSize: 14, outline: "none" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowUpgradePassword((current) => !current)}
+                  aria-label={showUpgradePassword ? "Hide upgrade password" : "Show upgrade password"}
+                  title={showUpgradePassword ? "Hide password" : "Show password"}
+                  style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 30, height: 30, border: "none", background: "transparent", color: "#64748B", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                >
+                  {showUpgradePassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </label>
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
