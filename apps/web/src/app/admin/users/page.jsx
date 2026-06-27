@@ -36,6 +36,12 @@ function planLabel(plan) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function isUpgradedUser(user) {
+  const plan = String(user?.plan || "none").toLowerCase();
+  const status = String(user?.subscriptionStatus || "").toLowerCase();
+  return status === "active" && plan !== "none" && plan !== "free";
+}
+
 function downloadCsv(rows) {
   const columns = ["name", "email", "company", "role", "status", "plan", "subscriptionStatus", "cards", "revenue", "joined"];
   const body = rows.map((row) => columns.map((column) => JSON.stringify(String(row[column] ?? ""))).join(",")).join("\n");
@@ -235,6 +241,7 @@ export default function AdminUsersPage() {
               {filteredUsers.map((user, index) => {
                 const status = user.status === "suspended" ? "Suspended" : "Active";
                 const [bg, color, border] = statusStyle[status] || statusStyle["No plan"];
+                const upgraded = isUpgradedUser(user);
                 return (
                   <tr key={user.email} style={{ borderTop: index ? "1px solid #F3F4F6" : "none" }}>
                     <td style={{ padding: 16 }}>
@@ -277,10 +284,19 @@ export default function AdminUsersPage() {
                       </button>
                       <button
                         onClick={() => openUpgrade(user)}
-                        disabled={busyId === user.id}
-                        style={{ border: "1px solid #BFDBFE", background: "#EFF6FF", borderRadius: 8, padding: "7px 10px", fontSize: 12, fontWeight: 800, color: "#0d6ffd", cursor: busyId === user.id ? "wait" : "pointer" }}
+                        disabled={busyId === user.id || upgraded}
+                        style={{
+                          border: upgraded ? "1px solid #A7F3D0" : "1px solid #BFDBFE",
+                          background: upgraded ? "#ECFDF5" : "#EFF6FF",
+                          borderRadius: 8,
+                          padding: "7px 10px",
+                          fontSize: 12,
+                          fontWeight: 800,
+                          color: upgraded ? "#047857" : "#0d6ffd",
+                          cursor: busyId === user.id ? "wait" : upgraded ? "default" : "pointer",
+                        }}
                       >
-                        Upgrade
+                        {busyId === user.id ? "Saving..." : upgraded ? "Upgraded" : "Upgrade"}
                       </button>
                     </td>
                   </tr>

@@ -104,6 +104,11 @@ const FIELD_LABELS = {
 };
 
 const SOCIAL_FIELDS = Object.keys(FIELD_LABELS);
+const CONTACT_ACTIONS = {
+  phone: [Phone, "Call", (card) => (card?.phone ? `tel:${card.phone}` : "")],
+  email: [Mail, "Email", (card) => (card?.email ? `mailto:${card.email}` : "")],
+  website: [Globe, "Website", (card) => platformUrl("website", card?.website)],
+};
 const EXTRA_FIELDS = [
   ["portfolio", "Portfolio", Globe],
   ["address", "Address", MapPin],
@@ -340,6 +345,17 @@ function hasValue(value) {
   return Boolean(String(value || "").trim());
 }
 
+function orderedActiveKeys(activeFields, allowedKeys) {
+  const allowed = new Set(allowedKeys);
+  const ordered = Array.from(activeFields).filter((key) => allowed.has(key));
+
+  for (const key of allowedKeys) {
+    if (activeFields.has(key) && !ordered.includes(key)) ordered.push(key);
+  }
+
+  return ordered;
+}
+
 export function activeFieldsForCard(card, options = {}) {
   const fields = new Set(DEFAULT_ACTIVE_FIELDS);
 
@@ -367,8 +383,7 @@ export function activeFieldsForCard(card, options = {}) {
 }
 
 function socialTilesForPreview(card, activeFields) {
-  return SOCIAL_FIELDS.flatMap((key) => {
-    if (!activeFields.has(key)) return [];
+  return orderedActiveKeys(activeFields, SOCIAL_FIELDS).flatMap((key) => {
     const entries = normalizedValues(card[key]);
     return entries.map((value, index) => ({
       key: `${key}-${index}`,
@@ -423,11 +438,12 @@ export default function CardPhonePreview({
   const color = card?.brandColor || DEFAULT_COLOR;
   const hasCoverImage = Boolean(card?.coverUrl);
   const coverBackground = `linear-gradient(135deg, ${color} 0%, #0b5ed7 58%, #0f172a 100%)`;
-  const contactButtons = [
-    ["phone", Phone, "Call", card?.phone ? `tel:${card.phone}` : ""],
-    ["email", Mail, "Email", card?.email ? `mailto:${card.email}` : ""],
-    ["website", Globe, "Website", platformUrl("website", card?.website)],
-  ].filter(([key, , , href]) => visibleFields.has(key) && href);
+  const contactButtons = orderedActiveKeys(visibleFields, Object.keys(CONTACT_ACTIONS))
+    .map((key) => {
+      const [Icon, label, hrefForCard] = CONTACT_ACTIONS[key];
+      return [key, Icon, label, hrefForCard(card)];
+    })
+    .filter(([, , , href]) => href);
   const socialTiles = socialTilesForPreview(card || {}, visibleFields);
   const extraDetails = extraDetailsForPreview(card || {}, visibleFields);
   const directVideo = directVideoUrl(card?.videoUrl);

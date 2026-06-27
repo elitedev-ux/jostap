@@ -260,7 +260,13 @@ export async function GET(request) {
   const auditLogs = auditLogsResult.data || [];
   const userById = new Map(users.map((user) => [user.id, user]));
   const profileByUser = new Map(profiles.map((profile) => [profile.user_id, profile]));
-  const subscriptionsByUser = new Map(subscriptions.map((item) => [item.user_id, item]));
+  const subscriptionsByUser = subscriptions.reduce((map, item) => {
+    const current = map.get(item.user_id);
+    if (!current || (current.status !== "active" && item.status === "active")) {
+      map.set(item.user_id, item);
+    }
+    return map;
+  }, new Map());
   const subscriptionById = new Map(subscriptions.map((item) => [item.id, item]));
   const pricingBySlug = new Map(pricingPlans.map((plan) => [plan.slug, plan]));
   const activeSubscriptions = subscriptions.filter((item) => item.status === "active");
