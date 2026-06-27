@@ -126,6 +126,7 @@ export function planCapabilities(plan) {
 function hasConfirmedPlanAccess(row) {
   if (!row || row.status !== "active") return false;
   if (row.plan === "free") return true;
+  if (row.current_period_end && new Date(row.current_period_end).getTime() <= Date.now()) return false;
 
   return !["free", "free_upgrade"].includes(String(row.provider || "").toLowerCase());
 }
@@ -134,7 +135,7 @@ export async function activePlanForUser(supabase, userId) {
   const [{ data, error }, { data: user, error: userError }] = await Promise.all([
     supabase
       .from("subscriptions")
-      .select("plan,status,provider")
+      .select("plan,status,provider,current_period_end")
       .eq("user_id", userId)
       .eq("status", "active")
       .order("created_at", { ascending: false })

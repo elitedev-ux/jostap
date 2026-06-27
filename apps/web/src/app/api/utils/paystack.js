@@ -7,7 +7,7 @@ const PLAN_PRICE_KOBO = {
   jostap_nfc: { one_time: 3000000 },
   custom_nfc: { one_time: 4000000 },
   basic_renewal: { yearly: 120000 },
-  premium_renewal: { yearly: 200000 },
+  premium_renewal: { yearly: 2737500 },
 };
 
 export const PAYSTACK_PROVIDER = "paystack";
@@ -92,6 +92,10 @@ export async function planAmountKobo(supabase, plan, billingCycle) {
   }
 
   const fallback = PLAN_PRICE_KOBO[plan]?.[billingCycle] || 0;
+  if (plan === "premium_renewal" && billingCycle === "yearly") {
+    return fallback;
+  }
+
   const { data, error } = await supabase
     .from("pricing_plans")
     .select("monthly_cents, yearly_cents")
@@ -241,6 +245,17 @@ export async function applyPaystackTransaction(supabase, transaction) {
 
   if (subscriptionError) {
     throw subscriptionError;
+  }
+
+  const { error: supersedeError } = await supabase
+    .from("subscriptions")
+    .update({ status: "cancelled" })
+    .eq("user_id", payment.user_id)
+    .neq("id", subscription.id)
+    .in("status", ["active", "past_due"]);
+
+  if (supersedeError) {
+    throw supersedeError;
   }
 
   const { data: existingInvoice, error: invoiceLookupError } = await supabase

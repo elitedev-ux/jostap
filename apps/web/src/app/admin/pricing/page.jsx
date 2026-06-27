@@ -12,7 +12,7 @@ const DEFAULT_PLAN_PRICE_KOBO = {
   jostap_nfc: { monthly_cents: 3000000 },
   custom_nfc: { monthly_cents: 4000000 },
   basic_renewal: { yearly_cents: 120000 },
-  premium_renewal: { yearly_cents: 200000 },
+  premium_renewal: { yearly_cents: 2737500 },
 };
 
 function planPrice(row, key) {

@@ -9,8 +9,13 @@ import { cardNfcUrl, cardQrUrl, publicCardUrl } from "../../../utils/publicUrl.j
 function hasConfirmedPlanAccess(row) {
   if (!row || !["active", "past_due"].includes(row.status)) return false;
   if (row.plan === "free") return true;
+  if (row.current_period_end && new Date(row.current_period_end).getTime() <= Date.now()) return false;
 
   return !["free", "free_upgrade"].includes(String(row.provider || "").toLowerCase());
+}
+
+function preferredSubscription(rows = []) {
+  return rows.find((row) => hasConfirmedPlanAccess(row)) || rows[0] || null;
 }
 
 const PERIOD_DAYS = {
@@ -210,7 +215,7 @@ export async function GET(request) {
 
   const [
     { data: profile, error: profileError },
-    { data: subscription, error: subscriptionError },
+    { data: subscriptionRows, error: subscriptionError },
     { data: invoices, error: invoicesError },
     { data: cards, error: cardsError },
     { data: events, error: eventsError },
@@ -225,8 +230,7 @@ export async function GET(request) {
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .limit(5),
     supabase
       .from("invoices")
       .select("*")
@@ -310,7 +314,7 @@ export async function GET(request) {
   return json({
     account: accountFromUserAndKyc(user, profile),
     billing: {
-      subscription: subscriptionFromRow(subscription, user),
+      subscription: subscriptionFromRow(preferredSubscription(subscriptionRows || []), user),
       invoices: (invoices || []).map(invoiceFromRow),
       usage,
     },

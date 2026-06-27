@@ -16,6 +16,17 @@ const PAID_CARD_FEATURES = [
   "1 year premium access included",
 ];
 
+const PREMIUM_RENEWAL_FEATURES = [
+  "Advanced analytics",
+  "Lead capture",
+  "Appointment booking",
+  "Visitor insights",
+  "Downloadable QR code",
+  "Catalog section",
+  "Testimonials",
+  "Premium features for 1 year",
+];
+
 const PLANS = [
   {
     name: "Free",
@@ -46,6 +57,13 @@ const PLANS = [
     billing: "one_time",
     features: PAID_CARD_FEATURES,
   },
+  {
+    name: "Premium Features Renewal",
+    slug: "premium_renewal",
+    price: "\u20A627,375",
+    billing: "yearly",
+    features: PREMIUM_RENEWAL_FEATURES,
+  },
 ];
 
 const INVOICES = [];
@@ -62,6 +80,7 @@ const PLAN_SLUGS = {
   Free: "free",
   "JOSTAP Card": "jostap_nfc",
   "Custom Card": "custom_nfc",
+  "Premium Features Renewal": "premium_renewal",
 };
 
 function formatMoney(cents, currency = "usd") {

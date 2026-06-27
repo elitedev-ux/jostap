@@ -83,6 +83,7 @@ async function findShopProduct(supabase, slug) {
 function hasConfirmedPaidAccess(row) {
   if (!row || !["active", "past_due"].includes(row.status)) return false;
   if (row.plan === "free") return false;
+  if (row.current_period_end && new Date(row.current_period_end).getTime() <= Date.now()) return false;
 
   return !["free", "free_upgrade"].includes(String(row.provider || "").toLowerCase());
 }
@@ -148,7 +149,7 @@ export async function POST(request) {
     const now = new Date().toISOString();
     const { data: existing, error: lookupError } = await supabase
       .from("subscriptions")
-      .select("id,plan,status,provider")
+      .select("id,plan,status,provider,current_period_end")
       .eq("user_id", user.id)
       .in("status", ["pending", "active", "past_due"])
       .order("created_at", { ascending: false })
@@ -159,7 +160,7 @@ export async function POST(request) {
       throw lookupError;
     }
 
-    if (hasConfirmedPaidAccess(existing)) {
+    if (plan !== "premium_renewal" && hasConfirmedPaidAccess(existing)) {
       return badRequest("This account already has an active paid plan.");
     }
 
@@ -173,7 +174,9 @@ export async function POST(request) {
       current_period_end: addPeriod(billingCycle),
     };
 
-    const subscriptionQuery = existing
+    const shouldInsertRenewal =
+      plan === "premium_renewal" && hasConfirmedPaidAccess(existing);
+    const subscriptionQuery = existing && !shouldInsertRenewal
       ? supabase.from("subscriptions").update(subscriptionPayload).eq("id", existing.id)
       : supabase.from("subscriptions").insert(subscriptionPayload);
 

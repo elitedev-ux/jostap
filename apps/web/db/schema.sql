@@ -616,7 +616,7 @@ VALUES
   ('jostap_nfc', 'JOSTAP Card', 3000000, 0, 1, '["Physical NFC card", "Digital business profile", "Downloadable QR code", "Contact sharing", "Save contact (vCard)", "Social media links", "Contact save tracking", "Appointment booking", "Advanced analytics", "Premium features", "1 year premium access included"]'::jsonb, true),
   ('custom_nfc', 'Custom Card', 4000000, 0, 1, '["Physical NFC card", "Digital business profile", "Downloadable QR code", "Contact sharing", "Save contact (vCard)", "Social media links", "Contact save tracking", "Appointment booking", "Advanced analytics", "Premium features", "1 year premium access included"]'::jsonb, true),
   ('basic_renewal', 'Basic Renewal', 0, 120000, 1, '["Deprecated legacy renewal plan"]'::jsonb, false),
-  ('premium_renewal', 'Premium Features Renewal', 0, 200000, 1, '["Advanced Analytics", "Lead Capture", "Appointment Booking", "Visitor Insights", "Downloadable QR Code", "Catalog Section", "Testimonials", "Premium Features"]'::jsonb, true)
+  ('premium_renewal', 'Premium Features Renewal', 0, 2737500, 1, '["Advanced Analytics", "Lead Capture", "Appointment Booking", "Visitor Insights", "Downloadable QR Code", "Catalog Section", "Testimonials", "Premium Features"]'::jsonb, true)
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   monthly_cents = EXCLUDED.monthly_cents,

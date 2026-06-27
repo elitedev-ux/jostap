@@ -7,8 +7,13 @@ import { accessFromPlanAndTrial, trialStateFromUser } from "../utils/trial.js";
 function hasConfirmedPlanAccess(row) {
   if (!row || !["active", "past_due"].includes(row.status)) return false;
   if (row.plan === "free") return true;
+  if (row.current_period_end && new Date(row.current_period_end).getTime() <= Date.now()) return false;
 
   return !["free", "free_upgrade"].includes(String(row.provider || "").toLowerCase());
+}
+
+function preferredSubscription(rows = []) {
+  return rows.find((row) => hasConfirmedPlanAccess(row)) || rows[0] || null;
 }
 
 function subscriptionFromRow(row, user) {
@@ -21,7 +26,7 @@ function subscriptionFromRow(row, user) {
   if (!row) {
     return {
       plan: features.effectivePlan,
-      basePlan,
+      basePlan: "free",
       billingCycle: "free",
       status: "active",
       provider: "free",
@@ -71,7 +76,7 @@ export async function GET(request) {
 
   const supabase = getSupabaseAdmin();
   const [
-    { data: subscription, error: subscriptionError },
+    { data: subscriptionRows, error: subscriptionError },
     { data: invoices, error: invoicesError },
     { data: cards, error: cardsError },
     { data: appointments, error: appointmentsError },
@@ -81,8 +86,7 @@ export async function GET(request) {
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .limit(5),
     supabase
       .from("invoices")
       .select("*")
@@ -109,7 +113,7 @@ export async function GET(request) {
   };
 
   return json({
-    subscription: subscriptionFromRow(subscription, user),
+    subscription: subscriptionFromRow(preferredSubscription(subscriptionRows || []), user),
     invoices: (invoices || []).map(invoiceFromRow),
     usage,
   });

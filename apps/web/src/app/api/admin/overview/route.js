@@ -39,7 +39,7 @@ const DEFAULT_PLAN_PRICE_KOBO = {
   jostap_nfc: { one_time: 3000000 },
   custom_nfc: { one_time: 4000000 },
   basic_renewal: { yearly: 120000 },
-  premium_renewal: { yearly: 200000 },
+  premium_renewal: { yearly: 2737500 },
 };
 
 function currentPlanPrice(plan, cycle, value) {
@@ -63,6 +63,12 @@ function priceForSubscription(subscription, pricingBySlug) {
   }
 
   return 0;
+}
+
+function isSubscriptionCurrent(subscription) {
+  if (!subscription || subscription.status !== "active") return false;
+  if (!subscription.current_period_end) return true;
+  return new Date(subscription.current_period_end).getTime() > Date.now();
 }
 
 function planLabel(plan) {
@@ -262,14 +268,14 @@ export async function GET(request) {
   const profileByUser = new Map(profiles.map((profile) => [profile.user_id, profile]));
   const subscriptionsByUser = subscriptions.reduce((map, item) => {
     const current = map.get(item.user_id);
-    if (!current || (current.status !== "active" && item.status === "active")) {
+    if (!current || (!isSubscriptionCurrent(current) && isSubscriptionCurrent(item))) {
       map.set(item.user_id, item);
     }
     return map;
   }, new Map());
   const subscriptionById = new Map(subscriptions.map((item) => [item.id, item]));
   const pricingBySlug = new Map(pricingPlans.map((plan) => [plan.slug, plan]));
-  const activeSubscriptions = subscriptions.filter((item) => item.status === "active");
+  const activeSubscriptions = subscriptions.filter(isSubscriptionCurrent);
   const premiumSubscriptions = activeSubscriptions.filter((item) =>
     ["custom_nfc", "premium_renewal"].includes(item.plan),
   );
@@ -350,6 +356,7 @@ export async function GET(request) {
     },
     users: users.map((user) => {
       const subscription = subscriptionsByUser.get(user.id);
+      const subscriptionCurrent = isSubscriptionCurrent(subscription);
       const profile = profileByUser.get(user.id);
 
       return {
@@ -359,8 +366,8 @@ export async function GET(request) {
         company: profile?.business_name || user.company || "",
         role: user.role,
         status: user.status || "active",
-        plan: subscription?.plan || "none",
-        subscriptionStatus: subscription?.status || "no plan",
+        plan: subscriptionCurrent ? subscription.plan : "none",
+        subscriptionStatus: subscription ? (subscriptionCurrent ? subscription.status : "expired") : "no plan",
         cards: cardsByUser.get(user.id) || 0,
         revenue: money(revenueByUser.get(user.id) || 0),
         joined: dateTimeLabel(user.created_at),

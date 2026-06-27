@@ -22,6 +22,17 @@ const PAID_CARD_FEATURES = [
   "1 year premium access included",
 ];
 
+const PREMIUM_RENEWAL_FEATURES = [
+  "Advanced analytics",
+  "Lead capture",
+  "Appointment booking",
+  "Visitor insights",
+  "Downloadable QR code",
+  "Catalog section",
+  "Testimonials",
+  "Premium features for 1 year",
+];
+
 const PLANS = {
   free: {
     name: "Free",
@@ -49,6 +60,15 @@ const PLANS = {
     cards: "Physical NFC card",
     trial: "Includes premium feature access",
     features: PAID_CARD_FEATURES,
+  },
+  premium_renewal: {
+    name: "Premium Features Renewal",
+    price: 27375,
+    displayPrice: "\u20A627,375",
+    billingLabel: "Yearly renewal",
+    cards: "Premium features",
+    trial: "Renews premium feature access for 1 year",
+    features: PREMIUM_RENEWAL_FEATURES,
   },
 };
 
