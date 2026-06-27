@@ -41,6 +41,7 @@ const DEFAULT_ACTIVE_FIELDS = [
   "phone",
   "website",
   "instagram",
+  "saveContact",
   "exchangeContact",
 ];
 
@@ -349,11 +350,13 @@ export function activeFieldsForCard(card, options = {}) {
     ...SOCIAL_FIELDS,
     "videoUrl",
     "calendly",
+    "saveContact",
     "exchangeContact",
   ]) {
     if (hasValue(card?.[key])) fields.add(key);
   }
 
+  fields.add("saveContact");
   fields.add("exchangeContact");
 
   if (!options.includePremium) {
@@ -434,8 +437,9 @@ export default function CardPhonePreview({
   const resolvedQrUrl = card?.qrUrl || (card?.id ? cardQrUrl(card) : resolvedPublicUrl);
   const resolvedDisplayUrl = displayCardUrl(card?.slug || "your-slug");
   const hasVcardInfo = Boolean(card?.name || card?.company || card?.title || card?.email || card?.phone || card?.website || card?.portfolio);
-  const showContactSharing = visibleFields.has("exchangeContact");
-  const canExchangeContact = showContactSharing && typeof onExchangeContact === "function";
+  const showSaveContact = visibleFields.has("saveContact");
+  const showExchangeContact = visibleFields.has("exchangeContact");
+  const canExchangeContact = showExchangeContact && typeof onExchangeContact === "function";
   const Root = framed ? "div" : "section";
 
   if (compact) {
@@ -638,14 +642,14 @@ export default function CardPhonePreview({
               ))}
             </div>
           )}
-          {showContactSharing && (hasVcardInfo || canExchangeContact) && (
+          {((showSaveContact && hasVcardInfo) || showExchangeContact) && (
             <div className="card-preview-action-stack">
-              {hasVcardInfo && (
+              {showSaveContact && hasVcardInfo && (
                 <button className="card-preview-vcard" type="button" onClick={handleSaveContact}>
                   Save contact
                 </button>
               )}
-              {showContactSharing && (
+              {showExchangeContact && (
                 <button
                   className="card-preview-exchange"
                   type="button"

@@ -67,6 +67,7 @@ const ALLOWED_ACTIVE_FIELDS = new Set([
   "audiomack",
   "youtubeMusic",
   "videoUrl",
+  "saveContact",
   "exchangeContact",
 ]);
 
@@ -231,6 +232,7 @@ export function cardFromRow(row) {
     brandColor: theme.brandColor || "",
     videoUrl: theme.videoUrl || "",
     activeFields: Array.isArray(theme.activeFields) ? theme.activeFields : [],
+    saveContactEnabled: theme.saveContactEnabled !== false,
     exchangeContactEnabled: theme.exchangeContactEnabled !== false,
     whatsapp: fromSocialValue("whatsapp", social.whatsapp),
     linkedin: fromSocialValue("linkedin", social.linkedin),
@@ -288,6 +290,16 @@ export function cardFromRow(row) {
 
 export function cardPayload(body) {
   const slug = normalizeSlug(body.slug || body.name);
+  const activeFields = sanitizeActiveFields(body.activeFields);
+
+  for (const [key, enabled] of [
+    ["saveContact", body.saveContactEnabled],
+    ["exchangeContact", body.exchangeContactEnabled],
+  ]) {
+    const index = activeFields.indexOf(key);
+    if (enabled === false && index !== -1) activeFields.splice(index, 1);
+    if (enabled === true && index === -1) activeFields.push(key);
+  }
 
   return {
     name: normalizeText(body.name, 120),
@@ -302,7 +314,7 @@ export function cardPayload(body) {
     active: body.active ?? true,
     theme: {
       template: body.template || "Navy Pro",
-      activeFields: sanitizeActiveFields(body.activeFields),
+      activeFields,
       showServices: body.showServices ?? true,
       showTestimonials: body.showTestimonials ?? true,
       showGallery: body.showGallery ?? false,
@@ -311,7 +323,8 @@ export function cardPayload(body) {
       coverUrl: toOriginStorageUrl(normalizeText(body.coverUrl, 1000)),
       brandColor: normalizeText(body.brandColor, 32),
       videoUrl: normalizeText(body.videoUrl, 1000),
-      exchangeContactEnabled: sanitizeActiveFields(body.activeFields).includes("exchangeContact"),
+      saveContactEnabled: activeFields.includes("saveContact"),
+      exchangeContactEnabled: activeFields.includes("exchangeContact"),
     },
     socialLinks: {
       whatsapp: toSocialValue("whatsapp", body.whatsapp),

@@ -100,6 +100,13 @@ export function PublicCardProfile({ token }) {
     const index = visibleFields.indexOf("exchangeContact");
     if (index !== -1) visibleFields.splice(index, 1);
   }
+  if (card.saveContactEnabled !== false && !visibleFields.includes("saveContact")) {
+    visibleFields.push("saveContact");
+  }
+  if (card.saveContactEnabled === false) {
+    const index = visibleFields.indexOf("saveContact");
+    if (index !== -1) visibleFields.splice(index, 1);
+  }
   const appointmentBookingEnabled = includePremium && visibleFields.includes("calendly");
   const brandColor = hasCustomBranding(card.plan) ? card.brandColor : "";
   const minDate = new Date(Date.now() + 60_000).toISOString().slice(0, 10);

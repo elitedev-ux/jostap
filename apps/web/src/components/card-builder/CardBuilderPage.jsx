@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Building2,
   Calendar,
+  Download,
   Facebook,
   Github,
   Globe,
@@ -107,14 +108,15 @@ const FIELD_GROUPS = [
       ["github", "GitHub", Github, "github.com/name"],
       ["behance", "Behance", Globe, "behance.net/name"],
       ["dribbble", "Dribbble", Globe, "dribbble.com/name"],
-      ["exchangeContact", "Contact sharing", Send, "Show Save contact and Exchange contact"],
+      ["saveContact", "Save contact", Download, "Let visitors save your details"],
+      ["exchangeContact", "Exchange contact", Send, "Let visitors share their details with you"],
       ["calendly", "Appointment Booking", Calendar, "Enable booking form on public profile"],
       ["videoUrl", "Video", Video, "https://youtube.com/watch?v=..."],
     ],
   },
 ];
 
-const DEFAULT_ACTIVE = new Set(["name", "title", "company", "email", "phone", "website", "instagram", "exchangeContact"]);
+const DEFAULT_ACTIVE = new Set(["name", "title", "company", "email", "phone", "website", "instagram", "saveContact", "exchangeContact"]);
 const DOWNLOADABLE_QR_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
 const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
 const CUSTOM_BRANDING_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
@@ -185,6 +187,11 @@ function activeFieldSetForLoadedCard(card) {
     fields.delete("exchangeContact");
   } else {
     fields.add("exchangeContact");
+  }
+  if (card?.saveContactEnabled === false) {
+    fields.delete("saveContact");
+  } else {
+    fields.add("saveContact");
   }
 
   return fields;
@@ -365,6 +372,8 @@ export default function CardBuilderPage({ mode = "user" }) {
               });
               if (found.exchangeContactEnabled === false) activeKeys.delete("exchangeContact");
               else activeKeys.add("exchangeContact");
+              if (found.saveContactEnabled === false) activeKeys.delete("saveContact");
+              else activeKeys.add("saveContact");
               setActiveFields(activeKeys);
             }
           }
@@ -390,6 +399,8 @@ export default function CardBuilderPage({ mode = "user" }) {
             });
             if (found.exchangeContactEnabled === false) activeKeys.delete("exchangeContact");
             else activeKeys.add("exchangeContact");
+            if (found.saveContactEnabled === false) activeKeys.delete("saveContact");
+            else activeKeys.add("saveContact");
             setActiveFields(activeKeys);
           }
           return;
@@ -622,7 +633,7 @@ export default function CardBuilderPage({ mode = "user" }) {
                     const active = activeFields.has(key);
                     const locked = PREMIUM_ONLY_FIELDS.has(key) && !canUsePremiumFields;
                     const isMultiField = MULTI_ENTRY_FIELDS.has(key);
-                    const isToggleField = key === "calendly" || key === "exchangeContact";
+                    const isToggleField = key === "calendly" || key === "saveContact" || key === "exchangeContact";
                     return (
                       <div className={`card-builder-field ${active ? "is-active" : ""} ${locked ? "is-locked" : ""} ${isToggleField ? "is-toggle-field" : ""}`} key={key}>
                         <button type="button" onClick={() => toggleField(key)} aria-pressed={!locked && isToggleField ? active : undefined}>
@@ -672,7 +683,11 @@ export default function CardBuilderPage({ mode = "user" }) {
                             </p>
                           ) : key === "exchangeContact" ? (
                             <p className="card-builder-appointment-note">
-                              Shows the Save contact and Exchange contact buttons on your public profile.
+                              Visitors can share their own details from your public profile. Shared contacts appear in Leads.
+                            </p>
+                          ) : key === "saveContact" ? (
+                            <p className="card-builder-appointment-note">
+                              Visitors can download your details as a contact file.
                             </p>
                           ) : (
                             <input
