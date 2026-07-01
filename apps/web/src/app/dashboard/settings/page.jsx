@@ -1073,48 +1073,6 @@ export default function SettingsPage() {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 10,
-                  background: "#EAF3FF",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  }}
-              >
-                <Globe size={17} color="#0d6ffd" />
-              </div>
-              <div>
-                <p style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
-                  Google Contacts
-                </p>
-                <p style={{ fontSize: 13, color: "#6B7280" }}>
-                  Automatic Google contact sync is being prepared.
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ minWidth: 106, textAlign: "center", fontSize: 12, fontWeight: 800, color: "#92400E", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 999, padding: "6px 12px" }}>
-                Coming Soon
-              </span>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 14,
-              flexWrap: "wrap",
-              padding: "14px 0",
-              borderBottom: "1px solid #F3F4F6",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 38, height: 38, borderRadius: 10, background: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <CheckCircle2 size={17} color="#64748B" />
               </div>
