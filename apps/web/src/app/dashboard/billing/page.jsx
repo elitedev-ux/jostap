@@ -46,14 +46,14 @@ const PLANS = [
   {
     name: "JOSTAP Card",
     slug: "jostap_nfc",
-    price: "\u20A630,000",
+    price: "\u20A625,000",
     billing: "one_time",
     features: PAID_CARD_FEATURES,
   },
   {
     name: "Custom Card",
     slug: "custom_nfc",
-    price: "\u20A640,000",
+    price: "\u20A630,000",
     billing: "one_time",
     features: PAID_CARD_FEATURES,
   },

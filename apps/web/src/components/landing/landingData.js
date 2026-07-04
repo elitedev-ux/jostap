@@ -43,7 +43,7 @@ export const plans = [
   },
   {
     name: "JOSTAP Card",
-    price: "\u20A630,000",
+    price: "\u20A625,000",
     note: "",
     desc: "Best for professionals",
     features: [
@@ -66,7 +66,7 @@ export const plans = [
   },
   {
     name: "Custom Card",
-    price: "\u20A640,000",
+    price: "\u20A630,000",
     note: "",
     desc: "Best for custom card designs",
     features: [

@@ -575,8 +575,8 @@ ON CONFLICT DO NOTHING;
 INSERT INTO pricing_plans (slug, name, monthly_cents, yearly_cents, card_limit, features, is_active)
 VALUES
   ('free', 'Free', 0, 0, 1, '["1 Digital Business Card", "Public Profile Page", "JOSTAP Branded QR Code", "Contact Sharing", "Save Contact (vCard)", "Social Media Links", "Basic Analytics"]'::jsonb, true),
-  ('jostap_nfc', 'JOSTAP Card', 3000000, 0, 1, '["Physical NFC card", "Digital business profile", "Downloadable QR code", "Contact sharing", "Save contact (vCard)", "Social media links", "Contact save tracking", "Appointment booking", "Advanced analytics", "Premium features", "1 year premium access included"]'::jsonb, true),
-  ('custom_nfc', 'Custom Card', 4000000, 0, 1, '["Physical NFC card", "Digital business profile", "Downloadable QR code", "Contact sharing", "Save contact (vCard)", "Social media links", "Contact save tracking", "Appointment booking", "Advanced analytics", "Premium features", "1 year premium access included"]'::jsonb, true),
+  ('jostap_nfc', 'JOSTAP Card', 2500000, 0, 1, '["Physical NFC card", "Digital business profile", "Downloadable QR code", "Contact sharing", "Save contact (vCard)", "Social media links", "Contact save tracking", "Appointment booking", "Advanced analytics", "Premium features", "1 year premium access included"]'::jsonb, true),
+  ('custom_nfc', 'Custom Card', 3000000, 0, 1, '["Physical NFC card", "Digital business profile", "Downloadable QR code", "Contact sharing", "Save contact (vCard)", "Social media links", "Contact save tracking", "Appointment booking", "Advanced analytics", "Premium features", "1 year premium access included"]'::jsonb, true),
   ('basic_renewal', 'Basic Renewal', 0, 120000, 1, '["Deprecated legacy renewal plan"]'::jsonb, false),
   ('premium_renewal', 'Premium Features Renewal', 0, 2737500, 1, '["Advanced Analytics", "Lead Capture", "Appointment Booking", "Visitor Insights", "Downloadable QR Code", "Catalog Section", "Testimonials", "Premium Features"]'::jsonb, true)
 ON CONFLICT (slug) DO UPDATE SET
@@ -608,7 +608,7 @@ VALUES (
   'Tap-to-share NFC business card',
   'A ready-to-order NFC card with a Lagos-inspired front, QR-enabled back, and digital profile connection.',
   'Available now',
-  3000000,
+  2500000,
   'NGN',
   '/checkout?plan=jostap_nfc&billing=one_time',
   'lagos_vibes',

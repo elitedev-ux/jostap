@@ -37,6 +37,31 @@ import type { Route } from './+types/root';
 
 export const links = () => [];
 
+export const meta = () => [
+  { title: 'JOSTAP - NFC Smart Business Cards in Nigeria' },
+  {
+    name: 'description',
+    content:
+      'JOSTAP helps professionals and businesses share contact details, WhatsApp, social links, portfolios, bookings, and lead forms with one NFC smart business card tap.',
+  },
+  { name: 'robots', content: 'index, follow' },
+  { property: 'og:title', content: 'JOSTAP - NFC Smart Business Cards' },
+  {
+    property: 'og:description',
+    content:
+      'Share your digital profile, contacts, WhatsApp, social links, bookings, and leads with one tap using a JOSTAP NFC smart business card.',
+  },
+  { property: 'og:url', content: 'https://jostap.com/' },
+  { property: 'og:type', content: 'website' },
+  { name: 'twitter:card', content: 'summary' },
+  { name: 'twitter:title', content: 'JOSTAP - NFC Smart Business Cards' },
+  {
+    name: 'twitter:description',
+    content:
+      'Create a smart NFC business card profile that lets people save your contact, connect on social media, book appointments, and exchange details.',
+  },
+];
+
 export async function loader({ request }: Route.LoaderArgs) {
   return {
     nonce: request.headers.get('x-csp-nonce') || undefined,

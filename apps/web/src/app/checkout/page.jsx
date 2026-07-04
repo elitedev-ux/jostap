@@ -45,8 +45,8 @@ const PLANS = {
   },
   jostap_nfc: {
     name: "JOSTAP Card",
-    price: 30000,
-    displayPrice: "\u20A630,000",
+    price: 25000,
+    displayPrice: "\u20A625,000",
     billingLabel: "One-time payment",
     cards: "Physical NFC card",
     trial: "Includes premium feature access",
@@ -54,8 +54,8 @@ const PLANS = {
   },
   custom_nfc: {
     name: "Custom Card",
-    price: 40000,
-    displayPrice: "\u20A640,000",
+    price: 30000,
+    displayPrice: "\u20A630,000",
     billingLabel: "One-time payment",
     cards: "Physical NFC card",
     trial: "Includes premium feature access",

@@ -36,8 +36,8 @@ function isMissingTableError(error, tableName) {
 
 const DEFAULT_PLAN_PRICE_KOBO = {
   free: { free: 0 },
-  jostap_nfc: { one_time: 3000000 },
-  custom_nfc: { one_time: 4000000 },
+  jostap_nfc: { one_time: 2500000 },
+  custom_nfc: { one_time: 3000000 },
   basic_renewal: { yearly: 120000 },
   premium_renewal: { yearly: 2737500 },
 };
