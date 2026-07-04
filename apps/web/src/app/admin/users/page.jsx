@@ -12,7 +12,7 @@ const UPGRADE_PLANS = [
   ["jostap_nfc", "JOSTAP Card", "one_time"],
   ["custom_nfc", "Custom Card", "one_time"],
   ["basic_renewal", "Basic Renewal", "yearly"],
-  ["premium_renewal", "Premium Features Renewal", "yearly"],
+  ["premium_renewal", "Premium Access", "yearly"],
 ];
 
 const selectStyle = {

@@ -22,7 +22,7 @@ const PAID_CARD_FEATURES = [
   "1 year premium access included",
 ];
 
-const PREMIUM_RENEWAL_FEATURES = [
+const PREMIUM_REPAYMENT_FEATURES = [
   "Advanced analytics",
   "Lead capture",
   "Appointment booking",
@@ -30,7 +30,7 @@ const PREMIUM_RENEWAL_FEATURES = [
   "Downloadable QR code",
   "Catalog section",
   "Testimonials",
-  "Premium features for 1 year",
+  "Premium access for 1 year",
 ];
 
 const PLANS = {
@@ -62,13 +62,13 @@ const PLANS = {
     features: PAID_CARD_FEATURES,
   },
   premium_renewal: {
-    name: "Premium Features Renewal",
+    name: "Premium Access Repayment",
     price: 27375,
     displayPrice: "\u20A627,375",
-    billingLabel: "Yearly renewal",
+    billingLabel: "Yearly repayment",
     cards: "Premium features",
-    trial: "Renews premium feature access for 1 year",
-    features: PREMIUM_RENEWAL_FEATURES,
+    trial: "Keeps premium feature access active for 1 year",
+    features: PREMIUM_REPAYMENT_FEATURES,
   },
 };
 

@@ -16,17 +16,6 @@ const PAID_CARD_FEATURES = [
   "1 year premium access included",
 ];
 
-const PREMIUM_RENEWAL_FEATURES = [
-  "Advanced analytics",
-  "Lead capture",
-  "Appointment booking",
-  "Visitor insights",
-  "Downloadable QR code",
-  "Catalog section",
-  "Testimonials",
-  "Premium features for 1 year",
-];
-
 const PLANS = [
   {
     name: "Free",
@@ -57,13 +46,6 @@ const PLANS = [
     billing: "one_time",
     features: PAID_CARD_FEATURES,
   },
-  {
-    name: "Premium Features Renewal",
-    slug: "premium_renewal",
-    price: "\u20A627,375",
-    billing: "yearly",
-    features: PREMIUM_RENEWAL_FEATURES,
-  },
 ];
 
 const INVOICES = [];
@@ -80,7 +62,6 @@ const PLAN_SLUGS = {
   Free: "free",
   "JOSTAP Card": "jostap_nfc",
   "Custom Card": "custom_nfc",
-  "Premium Features Renewal": "premium_renewal",
 };
 
 function formatMoney(cents, currency = "usd") {
@@ -96,7 +77,7 @@ function planLabel(plan) {
   if (plan === "jostap_nfc") return "JOSTAP Card";
   if (plan === "custom_nfc") return "Custom Card";
   if (plan === "basic_renewal") return "Basic Renewal";
-  if (plan === "premium_renewal") return "Premium Features Renewal";
+  if (plan === "premium_renewal") return "Premium Access";
   return null;
 }
 
@@ -178,7 +159,7 @@ export default function BillingPage() {
           Subscription & Billing
         </h1>
         <p style={{ fontSize: 14, color: "#6B7280" }}>
-          Manage your JOSTAP plan, NFC card order, renewals, and billing history.
+          Manage your JOSTAP plan, NFC card order, repayment notices, and billing history.
         </p>
       </div>
 
@@ -404,7 +385,7 @@ export default function BillingPage() {
               gap: 2,
             }}
           >
-            <span style={{ fontSize: 12, color: "#6B7280", padding: "5px 10px" }}>One-time cards and yearly renewals</span>
+            <span style={{ fontSize: 12, color: "#6B7280", padding: "5px 10px" }}>One-time NFC card plans</span>
           </div>
         </div>
         <div

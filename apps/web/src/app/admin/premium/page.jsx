@@ -29,7 +29,7 @@ export default function AdminPremiumPage() {
       statCards={[
         ["Features", (data) => data?.features?.length || 0, "#0d6ffd", "#eaf3ff"],
         ["Enabled", (data) => data?.features?.filter((item) => item.is_enabled).length || 0, "#047857", "#ECFDF5"],
-        ["Premium Features Renewal", (data) => data?.features?.filter((item) => item.plan === "premium_renewal").length || 0, "#ff9f0d", "#F5F3FF"],
+        ["Premium Access", (data) => data?.features?.filter((item) => item.plan === "premium_renewal").length || 0, "#ff9f0d", "#F5F3FF"],
       ]}
       rowAction={{
         label: (row) => (row.is_enabled ? "Disable" : "Enable"),

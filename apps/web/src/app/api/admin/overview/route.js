@@ -76,7 +76,7 @@ function planLabel(plan) {
   if (plan === "jostap_nfc") return "JOSTAP Card";
   if (plan === "custom_nfc") return "Custom Card";
   if (plan === "basic_renewal") return "Basic Renewal";
-  if (plan === "premium_renewal") return "Premium Features Renewal";
+  if (plan === "premium_renewal") return "Premium Access";
   return plan || "Unknown";
 }
 

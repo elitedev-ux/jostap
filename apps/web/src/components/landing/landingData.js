@@ -86,25 +86,6 @@ export const plans = [
     href: "/checkout?plan=custom_nfc&billing=one_time",
     highlight: false,
   },
-  {
-    name: "Premium Features Renewal",
-    price: "\u20A627,375",
-    note: "/year",
-    desc: "Renew premium access after the included first year",
-    features: [
-      "Advanced analytics",
-      "Lead capture",
-      "Appointment booking",
-      "Visitor insights",
-      "Downloadable QR code",
-      "Catalog section",
-      "Testimonials",
-      "Premium features for 1 year",
-    ],
-    cta: "Renew Premium",
-    href: "/checkout?plan=premium_renewal&billing=yearly",
-    highlight: false,
-  },
 ];
 
 export const testimonials = [
@@ -158,7 +139,7 @@ export const faqs = [
   {
     question: "Is there a subscription plan?",
     answer:
-      "Yes. JOSTAP premium features renew annually at \u20A627,375 after the first included year. This renewal keeps your full JOSTAP Smart Business Card experience active, including seamless sharing of your contact details, portfolio, social media links, and other important business information.",
+      "Your first year of premium access is included when you purchase a JOSTAP Smart Business Card. When your account is close to its repayment date, you will receive a dashboard notification so you can keep your premium features active.",
   },
   {
     question: "Which phones are compatible?",

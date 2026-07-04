@@ -18,7 +18,7 @@ export const PAYSTACK_PLAN_NAMES = {
   jostap_nfc: "JOSTAP Card",
   custom_nfc: "Custom Card",
   basic_renewal: "Basic Renewal",
-  premium_renewal: "Premium Features Renewal",
+  premium_renewal: "Premium Access Repayment",
 };
 
 function secretKey() {

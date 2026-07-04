@@ -175,7 +175,7 @@ export default function AdminOverviewPage() {
               ["Free", statsData.freePlanUsers || 0],
               ["JOSTAP Card", statsData.jostapNfcUsers || 0],
               ["Custom Card", statsData.customNfcUsers || 0],
-              ["Premium Features Renewal", statsData.premiumRenewalUsers || 0],
+              ["Premium Access", statsData.premiumRenewalUsers || 0],
             ].map(([label, value]) => (
               <div key={label} style={{ border: "1px solid #E5E7EB", borderRadius: 10, padding: 13 }}>
                 <p style={{ fontSize: 12, color: "#6B7280", marginBottom: 4 }}>{label}</p>

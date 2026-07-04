@@ -42,10 +42,12 @@ export default function DashboardLayout({ children }) {
   const [billing, setBilling] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
   const [announcementOpen, setAnnouncementOpen] = useState(false);
-  const [readTrialNotices, setReadTrialNotices] = useState(() => {
+  const [readDashboardNotices, setReadDashboardNotices] = useState(() => {
     if (typeof window === "undefined") return [];
     try {
-      return JSON.parse(window.localStorage.getItem("jostap_trial_notice_reads") || "[]");
+      const current = window.localStorage.getItem("jostap_dashboard_notice_reads");
+      const legacy = window.localStorage.getItem("jostap_trial_notice_reads");
+      return JSON.parse(current || legacy || "[]");
     } catch {
       return [];
     }
@@ -63,10 +65,10 @@ export default function DashboardLayout({ children }) {
   };
 
   const markAnnouncementRead = async (id) => {
-    if (String(id || "").startsWith("trial-")) {
-      const next = Array.from(new Set([...readTrialNotices, id]));
-      setReadTrialNotices(next);
-      window.localStorage?.setItem("jostap_trial_notice_reads", JSON.stringify(next));
+    if (String(id || "").startsWith("trial-") || String(id || "").startsWith("repayment-")) {
+      const next = Array.from(new Set([...readDashboardNotices, id]));
+      setReadDashboardNotices(next);
+      window.localStorage?.setItem("jostap_dashboard_notice_reads", JSON.stringify(next));
       return;
     }
 
@@ -126,7 +128,7 @@ export default function DashboardLayout({ children }) {
         : billing?.subscription?.plan === "jostap_nfc"
           ? "JOSTAP Card"
           : billing?.subscription?.plan === "premium_renewal"
-            ? "Premium Renewal"
+            ? "Premium Access"
             : "Free";
   const cardLimit = billing?.subscription?.cardLimit ?? 5;
   const cardsUsed = billing?.usage?.cards ?? 0;
@@ -135,6 +137,9 @@ export default function DashboardLayout({ children }) {
   const isPaidPremium =
     Boolean(billing?.subscription?.features?.hasPremiumFeatures) &&
     !["free", "trial"].includes(String(billing?.subscription?.plan || "free"));
+  const paidRepaymentPlan = String(
+    billing?.subscription?.basePlan || billing?.subscription?.plan || "free",
+  );
   const accountInitials =
     accountName
       .split(" ")
@@ -143,6 +148,30 @@ export default function DashboardLayout({ children }) {
       .slice(0, 2)
       .toUpperCase() || "ME";
   const trial = billing?.subscription?.trial;
+  const repaymentDueDate = billing?.subscription?.currentPeriodEnd
+    ? new Date(billing.subscription.currentPeriodEnd)
+    : null;
+  const repaymentDaysRemaining = repaymentDueDate
+    ? Math.ceil((repaymentDueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+  const repaymentAnnouncement =
+    !["free", "trial"].includes(paidRepaymentPlan) &&
+    repaymentDueDate &&
+    Number.isFinite(repaymentDaysRemaining) &&
+    repaymentDaysRemaining <= 30
+      ? {
+          id: repaymentDaysRemaining <= 0 ? "repayment-due" : `repayment-${repaymentDueDate.toISOString().slice(0, 10)}`,
+          title: repaymentDaysRemaining <= 0 ? "Premium repayment is due" : "Premium repayment reminder",
+          message:
+            repaymentDaysRemaining <= 0
+              ? "Your premium access repayment is due. Please complete your repayment to keep premium features active."
+              : `${repaymentDaysRemaining} day${repaymentDaysRemaining === 1 ? "" : "s"} left before your premium repayment is due. Please prepare your repayment to keep premium features active.`,
+          type: "warning",
+          isRead: readDashboardNotices.includes(
+            repaymentDaysRemaining <= 0 ? "repayment-due" : `repayment-${repaymentDueDate.toISOString().slice(0, 10)}`,
+          ),
+        }
+      : null;
   const trialAnnouncement =
     trial && billing?.subscription?.plan === "trial"
       ? {
@@ -153,7 +182,7 @@ export default function DashboardLayout({ children }) {
               ? "Your premium trial expires in 1 day. Upgrade to keep premium features active."
               : `${trial.daysRemaining} days left in your 14-day premium trial. Upgrade anytime to keep access after it ends.`,
           type: "warning",
-          isRead: readTrialNotices.includes(`trial-${trial.daysRemaining}`),
+          isRead: readDashboardNotices.includes(`trial-${trial.daysRemaining}`),
         }
       : trial?.expired && billing?.subscription?.plan === "free"
         ? {
@@ -161,12 +190,14 @@ export default function DashboardLayout({ children }) {
             title: "Your free trial has ended",
             message: "Premium features are locked again. Upgrade to restore advanced cards, QR downloads, booking, and analytics.",
             type: "warning",
-            isRead: readTrialNotices.includes("trial-expired"),
+            isRead: readDashboardNotices.includes("trial-expired"),
           }
         : null;
-  const visibleAnnouncements = trialAnnouncement
-    ? [trialAnnouncement, ...announcements]
-    : announcements;
+  const visibleAnnouncements = [
+    repaymentAnnouncement,
+    trialAnnouncement,
+    ...announcements,
+  ].filter(Boolean);
   const unreadAnnouncements = visibleAnnouncements.filter((item) => !item.isRead).length;
 
   const SidebarContent = ({ mobile = false } = {}) => {
