@@ -171,6 +171,7 @@ export default function CheckoutPage() {
   const [productSlug, setProductSlug] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [loadingProduct, setLoadingProduct] = useState(false);
+  const [authStatus, setAuthStatus] = useState("checking");
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState("");
   const [account, setAccount] = useState({
@@ -194,6 +195,42 @@ export default function CheckoutPage() {
     } else if (payment === "missing-reference") {
       setNotice("Paystack returned without a transaction reference. Please try again.");
     }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadBuyer() {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "same-origin" });
+        const data = await response.json().catch(() => ({}));
+
+        if (!active) return;
+
+        if (!response.ok) {
+          setAuthStatus("guest");
+          return;
+        }
+
+        const user = data.user || {};
+        setAuthStatus("authenticated");
+        setAccount((current) => ({
+          name: current.name || user.name || "",
+          email: current.email || user.email || "",
+          company: current.company || user.company || "",
+        }));
+      } catch {
+        if (active) {
+          setAuthStatus("guest");
+        }
+      }
+    }
+
+    loadBuyer();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -261,12 +298,22 @@ export default function CheckoutPage() {
     setAccount((current) => ({ ...current, [key]: value }));
   };
 
+  const redirectToAccount = () => {
+    const callbackUrl = `${window.location.pathname}${window.location.search}`;
+    window.location.href = `/auth/signup?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
     setNotice("");
 
     try {
+      if (authStatus !== "authenticated") {
+        redirectToAccount();
+        return;
+      }
+
       const endpoint = isFreePlan
         ? "/api/billing/activate"
         : "/api/billing/paystack/initialize";
@@ -284,6 +331,11 @@ export default function CheckoutPage() {
       const data = await responseBody(response);
 
       if (!response.ok) {
+        if (response.status === 401) {
+          redirectToAccount();
+          return;
+        }
+
         throw new Error(data.error || `Checkout request failed (${response.status}).`);
       }
 
@@ -582,6 +634,24 @@ export default function CheckoutPage() {
                 Payment details
               </h2>
 
+              {authStatus === "guest" && (
+                <div
+                  style={{
+                    border: "1px solid #FED7AA",
+                    borderRadius: 12,
+                    background: "#FFF7ED",
+                    color: "#9A3412",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    lineHeight: 1.6,
+                    padding: "12px 14px",
+                    marginBottom: 14,
+                  }}
+                >
+                  Create a free JOSTAP account or sign in before payment. We will bring you back to this checkout automatically.
+                </div>
+              )}
+
               <div
                 style={{
                   display: "grid",
@@ -623,16 +693,17 @@ export default function CheckoutPage() {
               )}
 
               <button
-                disabled={loading}
-                type="submit"
+                disabled={loading || authStatus === "checking"}
+                type={authStatus === "guest" ? "button" : "submit"}
+                onClick={authStatus === "guest" ? redirectToAccount : undefined}
                 style={{
                   width: "100%",
                   marginTop: 20,
                   border: "none",
                   borderRadius: 10,
-                  background: loading ? "#8fc1ff" : "#0d6ffd",
+                  background: loading || authStatus === "checking" ? "#8fc1ff" : "#0d6ffd",
                   color: "#fff",
-                  cursor: loading ? "not-allowed" : "pointer",
+                  cursor: loading || authStatus === "checking" ? "not-allowed" : "pointer",
                   fontSize: 15,
                   fontWeight: 700,
                   padding: "13px 18px",
@@ -642,6 +713,10 @@ export default function CheckoutPage() {
                   ? isFreePlan
                     ? "Activating..."
                     : "Redirecting to Paystack..."
+                  : authStatus === "checking"
+                    ? "Checking account..."
+                  : authStatus === "guest"
+                    ? "Create account to continue"
                   : isFreePlan
                     ? "Activate free plan"
                     : "Pay with Paystack"}
