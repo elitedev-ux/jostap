@@ -8,6 +8,7 @@ import {
   sortShopProducts,
 } from "../../utils/shopProducts.js";
 import { toCdnStorageUrl } from "../../utils/storageUrls.js";
+import { listSuccessfulPaystackTransactions } from "../../utils/paystack.js";
 import { cardNfcUrl, publicCardUrl, cardQrUrl } from "../../../../utils/publicUrl.js";
 
 function dateLabel(value) {
@@ -119,6 +120,103 @@ function paymentDate(payment, invoiceByPaymentReference) {
     null;
 
   return invoice?.paid_at || invoice?.issued_at || payment.created_at;
+}
+
+function metadataFrom(value) {
+  return value?.metadata && typeof value.metadata === "object" ? value.metadata : {};
+}
+
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function referenceForPaystackTransaction(transaction) {
+  return String(transaction?.reference || "").trim();
+}
+
+function dateForPaystackTransaction(transaction) {
+  return (
+    transaction?.paid_at ||
+    transaction?.paidAt ||
+    transaction?.created_at ||
+    transaction?.createdAt ||
+    transaction?.transaction_date ||
+    ""
+  );
+}
+
+function planFromPaystackTransaction(transaction, localPayment) {
+  const metadata = metadataFrom(transaction);
+  const plan = String(localPayment?.order_plan || metadata.plan || "").trim();
+  if (plan) return plan;
+
+  const amount = Number(transaction?.amount || 0);
+  if (amount === 3000000) return "custom_nfc";
+  if (amount === 2737500) return "premium_renewal";
+  return "jostap_nfc";
+}
+
+function productFromPaystackTransaction(transaction, localPayment) {
+  const metadata = metadataFrom(transaction);
+  const plan = planFromPaystackTransaction(transaction, localPayment);
+  return localPayment?.order_product_name || metadata.product_name || planLabel(plan);
+}
+
+function accountFromPaystackTransaction(transaction, localPayment, userByEmail) {
+  const metadata = metadataFrom(transaction);
+  const email = normalizeEmail(localPayment?.order_account?.email || transaction?.customer?.email || metadata.email);
+  const user = userByEmail.get(email);
+  const name =
+    localPayment?.order_account?.name ||
+    [transaction?.customer?.first_name, transaction?.customer?.last_name]
+      .filter(Boolean)
+      .join(" ")
+      .trim() ||
+    fullName(user) ||
+    email ||
+    "Paystack customer";
+
+  return email && !String(name).toLowerCase().includes(email) ? `${name} (${email})` : name;
+}
+
+function paymentRowFromPaystackTransaction(transaction, localPayment, userByEmail) {
+  const reference = referenceForPaystackTransaction(transaction);
+  const plan = planFromPaystackTransaction(transaction, localPayment);
+  const paidAt = dateForPaystackTransaction(transaction);
+  const email = normalizeEmail(localPayment?.order_account?.email || transaction?.customer?.email);
+  const user = userByEmail.get(email);
+
+  return {
+    id: localPayment?.id || `paystack-${transaction?.id || reference}`,
+    orderId: localPayment?.order_id || metadataFrom(transaction).order_id || reference,
+    userId: localPayment?.user_id || user?.id || "",
+    account: accountFromPaystackTransaction(transaction, localPayment, userByEmail),
+    accountEmail: email || user?.email || "",
+    accountCompany: localPayment?.order_account?.company || user?.company || "",
+    product: productFromPaystackTransaction(transaction, localPayment),
+    plan,
+    planLabel: planLabel(plan),
+    amount: money(Number(transaction?.amount || localPayment?.amount_cents || 0), transaction?.currency || localPayment?.currency || "NGN"),
+    status: "succeeded",
+    created: dateTimeLabel(transaction?.created_at || transaction?.createdAt || localPayment?.created_at),
+    paidAt: dateTimeLabel(paidAt),
+    providerPaymentId: reference,
+    sortAt: paidAt || transaction?.created_at || transaction?.createdAt || localPayment?.created_at || "",
+  };
+}
+
+function paystackPaymentRecordFromTransaction(transaction, localPayment, userByEmail) {
+  const email = normalizeEmail(localPayment?.order_account?.email || transaction?.customer?.email);
+  const user = userByEmail.get(email);
+
+  return {
+    user_id: localPayment?.user_id || user?.id || "",
+    amount_cents: Number(transaction?.amount || localPayment?.amount_cents || 0),
+    currency: String(transaction?.currency || localPayment?.currency || "NGN").toLowerCase(),
+    order_plan: planFromPaystackTransaction(transaction, localPayment),
+    provider_payment_id: referenceForPaystackTransaction(transaction),
+    customerEmail: email,
+  };
 }
 
 function ticketContact(ticket) {
@@ -289,6 +387,11 @@ export async function GET(request) {
   const roles = rolesResult.data || [];
   const auditLogs = auditLogsResult.data || [];
   const userById = new Map(users.map((user) => [user.id, user]));
+  const userByEmail = new Map(
+    users
+      .map((user) => [normalizeEmail(user.email), user])
+      .filter(([email]) => Boolean(email)),
+  );
   const profileByUser = new Map(profiles.map((profile) => [profile.user_id, profile]));
   const subscriptionsByUser = subscriptions.reduce((map, item) => {
     const current = map.get(item.user_id);
@@ -306,24 +409,69 @@ export async function GET(request) {
   const customerActiveSubscriptions = activeSubscriptions.filter((subscription) =>
     customerUserIds.has(subscription.user_id),
   );
-  const paystackSucceededPayments = payments.filter(
-    (payment) =>
-      payment.status === "succeeded" &&
-      payment.provider === "paystack" &&
-      customerUserIds.has(payment.user_id),
+  const localPaystackByReference = new Map(
+    payments
+      .filter((payment) => payment.provider === "paystack" && payment.provider_payment_id)
+      .map((payment) => [payment.provider_payment_id, payment]),
   );
-  const paystackPaidUserIds = new Set(paystackSucceededPayments.map((payment) => payment.user_id));
+  let gatewayPaystackTransactions = [];
+  let gatewayPaystackLoaded = false;
+
+  try {
+    gatewayPaystackTransactions = await listSuccessfulPaystackTransactions({
+      perPage: 100,
+      maxPages: 5,
+    });
+    gatewayPaystackLoaded = true;
+  } catch (error) {
+    console.error("Unable to load Paystack transactions for admin overview:", error);
+  }
+
+  const gatewayPaystackReferences = new Set(
+    gatewayPaystackTransactions.map(referenceForPaystackTransaction).filter(Boolean),
+  );
+  const gatewayPaystackPaymentRows = gatewayPaystackTransactions.map((transaction) =>
+    paymentRowFromPaystackTransaction(
+      transaction,
+      localPaystackByReference.get(referenceForPaystackTransaction(transaction)),
+      userByEmail,
+    ),
+  );
+  const paystackSucceededPayments = gatewayPaystackLoaded
+    ? gatewayPaystackTransactions.map((transaction) =>
+        paystackPaymentRecordFromTransaction(
+          transaction,
+          localPaystackByReference.get(referenceForPaystackTransaction(transaction)),
+          userByEmail,
+        ),
+      )
+    : payments.filter(
+        (payment) =>
+          payment.status === "succeeded" &&
+          payment.provider === "paystack" &&
+          customerUserIds.has(payment.user_id),
+      );
+  const paystackPaidUserIds = new Set(
+    paystackSucceededPayments.map((payment) => payment.user_id).filter(Boolean),
+  );
+  const paystackCustomerEmails = new Set(
+    paystackSucceededPayments.map((payment) => payment.customerEmail).filter(Boolean),
+  );
+  const paystackCustomerCount = Math.max(paystackPaidUserIds.size, paystackCustomerEmails.size);
   const paidPlanSlugs = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
   const premiumSubscriptions = customerActiveSubscriptions.filter((item) =>
     paidPlanSlugs.has(item.plan) && paystackPaidUserIds.has(item.user_id),
   );
-  const paidUserIds = new Set(premiumSubscriptions.map((item) => item.user_id));
-  const premiumUserIds = new Set(premiumSubscriptions.map((item) => item.user_id));
-  const planCounts = premiumSubscriptions.reduce(
-    (counts, subscription) => ({
-      ...counts,
-      [subscription.plan]: (counts[subscription.plan] || 0) + 1,
-    }),
+  const paidUserIds = paystackPaidUserIds;
+  const planCounts = paystackSucceededPayments.reduce(
+    (counts, payment) => {
+      const plan = payment.order_plan || "jostap_nfc";
+
+      return {
+        ...counts,
+        [plan]: (counts[plan] || 0) + 1,
+      };
+    },
     { free: 0, jostap_nfc: 0, custom_nfc: 0, basic_renewal: 0, premium_renewal: 0 },
   );
   const cardsByUser = cards.reduce((map, card) => {
@@ -331,8 +479,8 @@ export async function GET(request) {
     map.set(card.user_id, (map.get(card.user_id) || 0) + 1);
     return map;
   }, new Map());
-  const revenueByUser = payments
-    .filter((payment) => payment.status === "succeeded" && payment.provider === "paystack")
+  const revenueByUser = paystackSucceededPayments
+    .filter((payment) => payment.user_id)
     .reduce((map, payment) => {
       map.set(payment.user_id, (map.get(payment.user_id) || 0) + Number(payment.amount_cents || 0));
       return map;
@@ -342,6 +490,42 @@ export async function GET(request) {
     if (invoice.invoice_number) map.set(invoice.invoice_number, invoice);
     return map;
   }, new Map());
+  const localPaymentRows = payments
+    .filter(
+      (payment) =>
+        !(
+          payment.provider === "paystack" &&
+          payment.provider_payment_id &&
+          gatewayPaystackReferences.has(payment.provider_payment_id)
+        ),
+    )
+    .map((payment) => {
+      const orderPlan = paymentPlan(payment, subscriptionById);
+      const sortAt =
+        payment.status === "succeeded"
+          ? paymentDate(payment, invoiceByPaymentReference)
+          : payment.created_at;
+
+      return {
+        id: payment.id,
+        orderId: paymentOrderId(payment),
+        userId: payment.user_id,
+        account: paymentOrderAccount(payment, userById),
+        accountEmail: paymentOrderEmail(payment, userById),
+        accountCompany: paymentOrderCompany(payment, userById),
+        product: payment.order_product_name || planLabel(orderPlan),
+        plan: orderPlan,
+        planLabel: planLabel(orderPlan),
+        amount: money(payment.amount_cents, payment.currency),
+        status: payment.status,
+        created: dateTimeLabel(payment.created_at),
+        paidAt: payment.status === "succeeded" ? dateTimeLabel(sortAt) : "",
+        sortAt,
+      };
+    });
+  const adminPaymentRows = [...gatewayPaystackPaymentRows, ...localPaymentRows]
+    .sort((a, b) => new Date(b.sortAt || 0) - new Date(a.sortAt || 0))
+    .map(({ sortAt, ...row }) => row);
 
   return json({
     stats: {
@@ -349,7 +533,7 @@ export async function GET(request) {
       admins: users.filter((user) => user.role === "admin").length,
       standardUsers: users.filter((user) => user.role !== "admin").length,
       suspendedUsers: users.filter((user) => user.status === "suspended").length,
-      premiumUsers: customerUsers.filter((user) => premiumUserIds.has(user.id)).length,
+      premiumUsers: paystackCustomerCount,
       freeUsers: customerUsers.filter((user) => !paidUserIds.has(user.id)).length,
       starterUsers: planCounts.free || 0,
       professionalUsers: planCounts.jostap_nfc || 0,
@@ -373,7 +557,7 @@ export async function GET(request) {
       subscriptions: activeSubscriptions.length,
       premiumSubscriptions: premiumSubscriptions.length,
       paystackPayments: paystackSucceededPayments.length,
-      paystackCustomers: paystackPaidUserIds.size,
+      paystackCustomers: paystackCustomerCount,
       revenueCents: sum(paystackSucceededPayments, "amount_cents"),
       estimatedMrrCents: sum(premiumSubscriptions.map((subscription) => ({
         value: mrrForSubscription(subscription, pricingBySlug),
@@ -471,45 +655,20 @@ export async function GET(request) {
         issued: dateLabel(invoice.issued_at),
       };
     }),
-    payments: payments.map((payment) => {
-      const orderPlan = paymentPlan(payment, subscriptionById);
-
-      return {
+    payments: adminPaymentRows,
+    orders: adminPaymentRows
+      .filter((payment) => payment.status === "succeeded" && ["jostap_nfc", "custom_nfc"].includes(payment.plan))
+      .map((payment) => ({
         id: payment.id,
-        orderId: paymentOrderId(payment),
-        userId: payment.user_id,
-        account: paymentOrderAccount(payment, userById),
-        accountEmail: paymentOrderEmail(payment, userById),
-        accountCompany: paymentOrderCompany(payment, userById),
-        product: payment.order_product_name || planLabel(orderPlan),
-        plan: orderPlan,
-        planLabel: planLabel(orderPlan),
-        amount: money(payment.amount_cents, payment.currency),
-        status: payment.status,
-        created: dateTimeLabel(payment.created_at),
-        paidAt: payment.status === "succeeded" ? dateTimeLabel(paymentDate(payment, invoiceByPaymentReference)) : "",
-      };
-    }),
-    orders: payments
-      .filter((payment) => {
-        const orderPlan = paymentPlan(payment, subscriptionById);
-        return payment.status === "succeeded" && ["jostap_nfc", "custom_nfc"].includes(orderPlan);
-      })
-      .map((payment) => {
-        const orderPlan = paymentPlan(payment, subscriptionById);
-
-        return {
-          id: payment.id,
-          orderId: paymentOrderId(payment),
-          customer: paymentOrderAccount(payment, userById),
-          customerEmail: paymentOrderEmail(payment, userById),
-          customerCompany: paymentOrderCompany(payment, userById),
-          product: payment.order_product_name || planLabel(orderPlan),
-          payment: money(payment.amount_cents, payment.currency),
-          status: "paid",
-          date: dateTimeLabel(paymentDate(payment, invoiceByPaymentReference)),
-        };
-      }),
+        orderId: payment.orderId,
+        customer: payment.account,
+        customerEmail: payment.accountEmail,
+        customerCompany: payment.accountCompany,
+        product: payment.product,
+        payment: payment.amount,
+        status: "paid",
+        date: payment.paidAt || payment.created,
+      })),
     leads: leads.map((lead) => {
       const owner = userById.get(lead.user_id);
       return {

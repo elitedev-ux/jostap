@@ -385,6 +385,30 @@ export async function verifyPaystackTransaction(reference) {
   return data.data || {};
 }
 
+export async function listSuccessfulPaystackTransactions({ perPage = 100, maxPages = 5 } = {}) {
+  const transactions = [];
+  const pageSize = Math.min(Math.max(Number(perPage) || 100, 1), 100);
+  const pages = Math.min(Math.max(Number(maxPages) || 1, 1), 10);
+
+  for (let page = 1; page <= pages; page += 1) {
+    const params = new URLSearchParams({
+      status: "success",
+      perPage: String(pageSize),
+      page: String(page),
+    });
+    const data = await paystackRequest(`/transaction?${params.toString()}`, {
+      method: "GET",
+    });
+    const rows = Array.isArray(data.data) ? data.data : [];
+
+    transactions.push(...rows.filter((row) => row?.status === "success"));
+
+    if (rows.length < pageSize) break;
+  }
+
+  return transactions;
+}
+
 export async function applyPaystackTransaction(supabase, transaction) {
   const reference = transaction?.reference || transaction?.metadata?.reference || "";
   const status = transaction?.status === "success" ? "succeeded" : "failed";
