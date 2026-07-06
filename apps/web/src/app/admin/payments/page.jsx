@@ -1,3 +1,4 @@
+import { useState } from "react";
 import AdminResourcePage from "../AdminResourcePage";
 
 function money(cents) {
@@ -44,6 +45,110 @@ async function syncPaystackPayment(row) {
   return "Payment sync completed.";
 }
 
+function PaystackReferenceImporter() {
+  const [reference, setReference] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const importReference = async (event) => {
+    event.preventDefault();
+    setMessage("");
+    setError("");
+
+    const value = reference.trim();
+    if (!value) {
+      setError("Paste the Paystack reference from the paid transaction.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const response = await fetch("/api/admin/payments/sync", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reference: value }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to import this Paystack payment.");
+      }
+
+      const status = data.payment?.status || "synced";
+      setMessage(`Paystack reference imported. Status: ${status}. Refreshing payments...`);
+      setTimeout(() => window.location.reload(), 700);
+    } catch (syncError) {
+      setError(syncError.message || "Unable to import this Paystack payment.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form
+      onSubmit={importReference}
+      style={{
+        background: "#fff",
+        border: "1px solid #E5E7EB",
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 16,
+        display: "grid",
+        gridTemplateColumns: "minmax(220px,1fr) auto",
+        gap: 10,
+        alignItems: "end",
+      }}
+    >
+      <label style={{ display: "grid", gap: 7, fontSize: 12, fontWeight: 800, color: "#374151" }}>
+        Import missing paid Paystack transaction
+        <input
+          value={reference}
+          onChange={(event) => setReference(event.target.value)}
+          placeholder="Paste Paystack reference"
+          style={{
+            border: "1px solid #D1D5DB",
+            borderRadius: 9,
+            padding: "11px 12px",
+            fontSize: 13,
+            outline: "none",
+          }}
+        />
+      </label>
+      <button
+        type="submit"
+        disabled={busy}
+        style={{
+          border: "none",
+          background: "#0d6ffd",
+          color: "#fff",
+          borderRadius: 9,
+          padding: "12px 14px",
+          fontSize: 13,
+          fontWeight: 800,
+          cursor: busy ? "wait" : "pointer",
+        }}
+      >
+        {busy ? "Verifying..." : "Import Payment"}
+      </button>
+      {(message || error) && (
+        <p
+          style={{
+            gridColumn: "1 / -1",
+            margin: 0,
+            fontSize: 13,
+            fontWeight: 700,
+            color: error ? "#B91C1C" : "#047857",
+          }}
+        >
+          {error || message}
+        </p>
+      )}
+    </form>
+  );
+}
+
 export default function AdminPaymentsPage() {
   return (
     <AdminResourcePage
@@ -69,6 +174,8 @@ export default function AdminPaymentsPage() {
         disabled: (row) => row.status !== "pending",
         run: syncPaystackPayment,
       }}
-    />
+    >
+      <PaystackReferenceImporter />
+    </AdminResourcePage>
   );
 }

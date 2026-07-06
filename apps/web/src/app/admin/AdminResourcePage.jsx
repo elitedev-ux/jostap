@@ -35,6 +35,7 @@ export default function AdminResourcePage({
   emptyCopy,
   statCards = [],
   rowAction,
+  children,
 }) {
   const [admin, setAdmin] = useState(null);
   const [query, setQuery] = useState("");
@@ -135,6 +136,8 @@ export default function AdminResourcePage({
           {notice}
         </div>
       )}
+
+      {children}
 
       <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
         <div style={{ padding: 16, borderBottom: "1px solid #E5E7EB" }}>

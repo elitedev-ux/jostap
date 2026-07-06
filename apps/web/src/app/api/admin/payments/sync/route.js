@@ -12,6 +12,10 @@ function cleanId(value) {
   return String(value || "").trim();
 }
 
+function cleanReference(value) {
+  return String(value || "").trim().slice(0, 180);
+}
+
 function isPendingPaystackPayment(payment) {
   return (
     payment?.provider === PAYSTACK_PROVIDER &&
@@ -29,9 +33,14 @@ export async function POST(request) {
 
   const body = (await readJson(request)) || {};
   const paymentId = cleanId(body.paymentId);
+  const reference = cleanReference(body.reference);
 
-  if (!paymentId) {
-    return badRequest("Choose a pending payment to sync.");
+  if (!paymentId && !reference) {
+    return badRequest("Choose a pending payment or enter a Paystack reference.");
+  }
+
+  if (reference) {
+    return syncPaystackReference({ supabase: getSupabaseAdmin(), adminUser, reference });
   }
 
   const supabase = getSupabaseAdmin();
@@ -84,6 +93,42 @@ export async function POST(request) {
       id: result.payment?.id || payment.id,
       status: result.payment?.status || payment.status,
       orderId: result.payment?.order_id || payment.order_id || "",
+    },
+  });
+}
+
+async function syncPaystackReference({ supabase, adminUser, reference }) {
+  let result;
+
+  try {
+    const transaction = await verifyPaystackTransaction(reference);
+    result = await applyPaystackTransaction(supabase, transaction);
+  } catch (error) {
+    return badRequest(error?.message || "Unable to verify this Paystack reference.");
+  }
+
+  if (result.payment?.status === "succeeded") {
+    await sendOrderConfirmationEmail({ supabase, payment: result.payment });
+  }
+
+  await logAdminAction(
+    supabase,
+    adminUser,
+    "payment.paystack_reference_synced",
+    "payment",
+    result.payment?.id || null,
+    {
+      reference,
+      status: result.payment?.status || "unknown",
+      orderId: result.payment?.order_id || "",
+    },
+  );
+
+  return json({
+    payment: {
+      id: result.payment?.id || "",
+      status: result.payment?.status || "",
+      orderId: result.payment?.order_id || "",
     },
   });
 }

@@ -10,6 +10,8 @@ const PLAN_PRICE_KOBO = {
   premium_renewal: { yearly: 2737500 },
 };
 const LOCKED_PAYSTACK_PRICES = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
+const VALID_PAYSTACK_PLANS = new Set(["jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
+const VALID_PAYSTACK_CYCLES = new Set(["one_time", "yearly"]);
 
 export const PAYSTACK_PROVIDER = "paystack";
 
@@ -71,6 +73,222 @@ export function makePaystackOrderId() {
 
 export function paystackPlanName(plan) {
   return PAYSTACK_PLAN_NAMES[plan] || plan || "JOSTAP order";
+}
+
+function clean(value, maxLength = 160) {
+  return String(value || "").trim().slice(0, maxLength);
+}
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || ""),
+  );
+}
+
+function addPeriodFrom(dateValue, cycle) {
+  const date = dateValue ? new Date(dateValue) : new Date();
+  if (Number.isNaN(date.getTime())) {
+    return addPeriodFrom(null, cycle);
+  }
+  date.setMonth(date.getMonth() + (cycle === "yearly" ? 12 : 12));
+  return date.toISOString();
+}
+
+function metadataFrom(transaction) {
+  return transaction?.metadata && typeof transaction.metadata === "object"
+    ? transaction.metadata
+    : {};
+}
+
+function planFromTransaction(transaction) {
+  const metadata = metadataFrom(transaction);
+  const plan = clean(metadata.plan).toLowerCase();
+  if (VALID_PAYSTACK_PLANS.has(plan)) return plan;
+
+  const amount = Number(transaction?.amount || 0);
+  if (amount === PLAN_PRICE_KOBO.custom_nfc.one_time) return "custom_nfc";
+  if (amount === PLAN_PRICE_KOBO.premium_renewal.yearly) return "premium_renewal";
+  return "jostap_nfc";
+}
+
+function cycleFromTransaction(transaction, plan) {
+  const metadata = metadataFrom(transaction);
+  const cycle = clean(metadata.billing_cycle || metadata.billingCycle).toLowerCase();
+  if (VALID_PAYSTACK_CYCLES.has(cycle)) return cycle;
+  return plan === "premium_renewal" || plan === "basic_renewal" ? "yearly" : "one_time";
+}
+
+async function userFromTransaction(supabase, transaction) {
+  const metadata = metadataFrom(transaction);
+  const userId = clean(metadata.user_id || metadata.userId);
+  const customerEmail = clean(transaction?.customer?.email || metadata.customer_email || metadata.email).toLowerCase();
+
+  if (isUuid(userId)) {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, first_name, last_name, email, company")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (data) return data;
+  }
+
+  if (customerEmail) {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, first_name, last_name, email, company")
+      .ilike("email", customerEmail)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (data) return data;
+  }
+
+  return null;
+}
+
+async function subscriptionForRecoveredPayment({
+  supabase,
+  transaction,
+  user,
+  plan,
+  billingCycle,
+  paidAt,
+  reference,
+}) {
+  const metadata = metadataFrom(transaction);
+  const subscriptionId = clean(metadata.subscription_id || metadata.subscriptionId);
+
+  if (isUuid(subscriptionId)) {
+    const { data, error } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("id", subscriptionId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (data) return data;
+  }
+
+  const { data: existing, error: lookupError } = await supabase
+    .from("subscriptions")
+    .select("*")
+    .eq("user_id", user.id)
+    .in("status", ["pending", "active", "past_due"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (lookupError) throw lookupError;
+
+  const payload = {
+    user_id: user.id,
+    plan,
+    billing_cycle: billingCycle,
+    status: "pending",
+    provider: PAYSTACK_PROVIDER,
+    provider_subscription_id: reference,
+    current_period_start: paidAt,
+    current_period_end: addPeriodFrom(paidAt, billingCycle),
+  };
+
+  const query = existing
+    ? supabase.from("subscriptions").update(payload).eq("id", existing.id)
+    : supabase.from("subscriptions").insert({
+        ...(isUuid(subscriptionId) ? { id: subscriptionId } : {}),
+        ...payload,
+      });
+
+  const { data, error } = await query.select("*").single();
+
+  if (error) throw error;
+  return data;
+}
+
+async function paymentByMetadataId(supabase, transaction, reference) {
+  const metadata = metadataFrom(transaction);
+  const paymentId = clean(metadata.payment_id || metadata.paymentId);
+  if (!isUuid(paymentId)) return null;
+
+  const { data: payment, error } = await supabase
+    .from("payments")
+    .select("*")
+    .eq("id", paymentId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!payment) return null;
+
+  const { data: updated, error: updateError } = await supabase
+    .from("payments")
+    .update({
+      provider: PAYSTACK_PROVIDER,
+      provider_payment_id: reference,
+      status: payment.status === "succeeded" ? "succeeded" : "pending",
+    })
+    .eq("id", payment.id)
+    .select("*")
+    .single();
+
+  if (updateError) throw updateError;
+  return updated;
+}
+
+async function recoverPaymentFromTransaction(supabase, transaction, reference, status, paidAt) {
+  if (status !== "succeeded") {
+    throw new Error(`No pending payment found for Paystack reference ${reference}.`);
+  }
+
+  const existingByMetadataId = await paymentByMetadataId(supabase, transaction, reference);
+  if (existingByMetadataId) return existingByMetadataId;
+
+  const user = await userFromTransaction(supabase, transaction);
+  if (!user) {
+    throw new Error(
+      "Paystack verified this payment, but no JOSTAP account could be matched to it.",
+    );
+  }
+
+  const metadata = metadataFrom(transaction);
+  const plan = planFromTransaction(transaction);
+  const billingCycle = cycleFromTransaction(transaction, plan);
+  const subscription = await subscriptionForRecoveredPayment({
+    supabase,
+    transaction,
+    user,
+    plan,
+    billingCycle,
+    paidAt,
+    reference,
+  });
+  const userName = [user.first_name, user.last_name].filter(Boolean).join(" ").trim();
+  const orderAccount = {
+    name: clean(metadata.customer_name || userName || user.email),
+    email: clean(transaction?.customer?.email || metadata.email || user.email),
+    company: clean(metadata.company || user.company),
+  };
+
+  const { data: payment, error } = await supabase
+    .from("payments")
+    .insert({
+      user_id: user.id,
+      subscription_id: subscription.id,
+      amount_cents: Number(transaction?.amount || 0),
+      currency: clean(transaction?.currency || paystackCurrency()).toLowerCase(),
+      status: "pending",
+      provider: PAYSTACK_PROVIDER,
+      provider_payment_id: reference,
+      order_id: clean(metadata.order_id || metadata.orderId) || makePaystackOrderId(),
+      order_plan: plan,
+      order_product_name: clean(metadata.product_name || metadata.productName) || paystackPlanName(plan),
+      order_account: orderAccount,
+    })
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return payment;
 }
 
 export function callbackUrlForRequest(request) {
@@ -180,7 +398,7 @@ export async function applyPaystackTransaction(supabase, transaction) {
     throw new Error("Paystack transaction reference is missing.");
   }
 
-  const { data: payment, error: paymentError } = await supabase
+  let { data: payment, error: paymentError } = await supabase
     .from("payments")
     .select("*")
     .eq("provider", PAYSTACK_PROVIDER)
@@ -194,7 +412,7 @@ export async function applyPaystackTransaction(supabase, transaction) {
   }
 
   if (!payment) {
-    throw new Error(`No pending payment found for Paystack reference ${reference}.`);
+    payment = await recoverPaymentFromTransaction(supabase, transaction, reference, status, paidAt);
   }
 
   if (status !== "succeeded") {

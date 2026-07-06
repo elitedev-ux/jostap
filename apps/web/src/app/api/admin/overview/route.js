@@ -49,17 +49,13 @@ function currentPlanPrice(plan, cycle, value) {
   return fallback || amount;
 }
 
-function priceForSubscription(subscription, pricingBySlug) {
+function mrrForSubscription(subscription, pricingBySlug) {
   if (!subscription || subscription.status !== "active") return 0;
 
   const pricing = pricingBySlug.get(subscription.plan);
 
   if (subscription.billing_cycle === "yearly") {
-    return currentPlanPrice(subscription.plan, "yearly", pricing?.yearly_cents);
-  }
-
-  if (subscription.billing_cycle === "one_time") {
-    return currentPlanPrice(subscription.plan, "one_time", pricing?.monthly_cents);
+    return Math.round(currentPlanPrice(subscription.plan, "yearly", pricing?.yearly_cents) / 12);
   }
 
   return 0;
@@ -365,7 +361,7 @@ export async function GET(request) {
       premiumSubscriptions: premiumSubscriptions.length,
       revenueCents: sum(payments.filter((payment) => payment.status === "succeeded"), "amount_cents"),
       estimatedMrrCents: sum(activeSubscriptions.map((subscription) => ({
-        value: priceForSubscription(subscription, pricingBySlug),
+        value: mrrForSubscription(subscription, pricingBySlug),
       })), "value"),
       openInvoices: invoices.filter((invoice) => invoice.status === "open").length,
       paidInvoices: invoices.filter((invoice) => invoice.status === "paid").length,
