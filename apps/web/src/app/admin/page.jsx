@@ -47,7 +47,7 @@ function ProgressRow({ label, value, total, color }) {
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 7 }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{label}</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: "#6B7280" }}>
-          {value} / {total}
+          {value.toLocaleString()} {value === 1 ? "account" : "accounts"}
         </span>
       </div>
       <div style={{ height: 7, background: "#F3F4F6", borderRadius: 999, overflow: "hidden" }}>
@@ -88,6 +88,7 @@ export default function AdminOverviewPage() {
 
   const statsData = admin?.stats || {};
   const totalUsers = statsData.users || 0;
+  const customerUsers = statsData.standardUsers || 0;
   const stats = [
     ["Total Users", totalUsers, `${statsData.admins || 0} admins`, Users, "#0d6ffd", "#eaf3ff"],
     ["Premium Users", statsData.premiumUsers || 0, "Custom + Premium renewal", UserCheck, "#059669", "#ECFDF5"],
@@ -166,10 +167,10 @@ export default function AdminOverviewPage() {
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr .8fr", gap: 20, marginBottom: 20 }}>
         <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 22 }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 8 }}>User & Plan Breakdown</h2>
-          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 12 }}>Live platform segmentation from Supabase.</p>
-          <ProgressRow label="Premium users" value={statsData.premiumUsers || 0} total={totalUsers} color="#059669" />
-          <ProgressRow label="Free users" value={statsData.freeUsers || 0} total={totalUsers} color="#D97706" />
-          <ProgressRow label="KYC completed" value={statsData.kycComplete || 0} total={totalUsers} color="#0d6ffd" />
+          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 12 }}>Customer segmentation from Supabase. Admin accounts are excluded.</p>
+          <ProgressRow label="Premium users" value={statsData.premiumUsers || 0} total={customerUsers} color="#059669" />
+          <ProgressRow label="Free users" value={statsData.freeUsers || 0} total={customerUsers} color="#D97706" />
+          <ProgressRow label="KYC completed" value={statsData.kycComplete || 0} total={customerUsers} color="#0d6ffd" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 10, marginTop: 16 }}>
             {[
               ["Free", statsData.freePlanUsers || 0],

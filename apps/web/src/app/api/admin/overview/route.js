@@ -300,13 +300,19 @@ export async function GET(request) {
   const subscriptionById = new Map(subscriptions.map((item) => [item.id, item]));
   const pricingBySlug = new Map(pricingPlans.map((plan) => [plan.slug, plan]));
   const activeSubscriptions = subscriptions.filter(isSubscriptionCurrent);
+  const customerUsers = users.filter((user) => user.role !== "admin");
+  const customerUserIds = new Set(customerUsers.map((user) => user.id));
+  const customerProfiles = profiles.filter((profile) => customerUserIds.has(profile.user_id));
+  const customerActiveSubscriptions = activeSubscriptions.filter((subscription) =>
+    customerUserIds.has(subscription.user_id),
+  );
   const paidPlanSlugs = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
-  const premiumSubscriptions = activeSubscriptions.filter((item) =>
+  const premiumSubscriptions = customerActiveSubscriptions.filter((item) =>
     paidPlanSlugs.has(item.plan),
   );
   const paidUserIds = new Set(premiumSubscriptions.map((item) => item.user_id));
   const premiumUserIds = new Set(premiumSubscriptions.map((item) => item.user_id));
-  const planCounts = activeSubscriptions.reduce(
+  const planCounts = customerActiveSubscriptions.reduce(
     (counts, subscription) => ({
       ...counts,
       [subscription.plan]: (counts[subscription.plan] || 0) + 1,
@@ -336,8 +342,8 @@ export async function GET(request) {
       admins: users.filter((user) => user.role === "admin").length,
       standardUsers: users.filter((user) => user.role !== "admin").length,
       suspendedUsers: users.filter((user) => user.status === "suspended").length,
-      premiumUsers: users.filter((user) => premiumUserIds.has(user.id)).length,
-      freeUsers: users.filter((user) => !paidUserIds.has(user.id)).length,
+      premiumUsers: customerUsers.filter((user) => premiumUserIds.has(user.id)).length,
+      freeUsers: customerUsers.filter((user) => !paidUserIds.has(user.id)).length,
       starterUsers: planCounts.free || 0,
       professionalUsers: planCounts.jostap_nfc || 0,
       businessUsers: planCounts.custom_nfc || 0,
@@ -346,8 +352,8 @@ export async function GET(request) {
       customNfcUsers: planCounts.custom_nfc || 0,
       basicRenewalUsers: planCounts.basic_renewal || 0,
       premiumRenewalUsers: planCounts.premium_renewal || 0,
-      kycComplete: profiles.length,
-      kycPending: Math.max(users.length - profiles.length, 0),
+      kycComplete: customerProfiles.length,
+      kycPending: Math.max(customerUsers.length - customerProfiles.length, 0),
       cards: cards.length,
       assignedCards: cards.filter((card) => Boolean(card.user_id)).length,
       unassignedCards: cards.filter((card) => !card.user_id).length,
@@ -360,7 +366,7 @@ export async function GET(request) {
       subscriptions: activeSubscriptions.length,
       premiumSubscriptions: premiumSubscriptions.length,
       revenueCents: sum(payments.filter((payment) => payment.status === "succeeded"), "amount_cents"),
-      estimatedMrrCents: sum(activeSubscriptions.map((subscription) => ({
+      estimatedMrrCents: sum(customerActiveSubscriptions.map((subscription) => ({
         value: mrrForSubscription(subscription, pricingBySlug),
       })), "value"),
       openInvoices: invoices.filter((invoice) => invoice.status === "open").length,
