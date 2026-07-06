@@ -18,10 +18,16 @@ function fileBaseName(file) {
     .slice(0, 70) || "image";
 }
 
-function canvasToWebp(canvas, quality) {
+function canvasToBlob(canvas, type, quality) {
   return new Promise((resolve) => {
-    canvas.toBlob(resolve, "image/webp", quality);
+    canvas.toBlob(resolve, type, quality);
   });
+}
+
+function extensionForType(type) {
+  if (type === "image/png") return "png";
+  if (type === "image/webp") return "webp";
+  return "jpg";
 }
 
 async function decodeImage(file) {
@@ -90,9 +96,20 @@ export async function prepareImageForUpload(file, target = IMAGE_UPLOAD_TARGETS.
     context.drawImage(decoded.image, 0, 0, width, height);
 
     let blob = null;
-    for (const quality of [options.quality, 0.74, 0.66, 0.58]) {
-      blob = await canvasToWebp(canvas, quality);
-      if (blob && (blob.size <= PROFILE_IMAGE_MAX_BYTES || quality === 0.58)) {
+    for (const type of ["image/webp", "image/jpeg"]) {
+      for (const quality of [options.quality, 0.74, 0.66, 0.58]) {
+        const candidate = await canvasToBlob(canvas, type, quality);
+        if (!candidate || !PROFILE_IMAGE_TYPES.includes(candidate.type)) {
+          continue;
+        }
+
+        blob = candidate;
+        if (candidate.size <= PROFILE_IMAGE_MAX_BYTES) {
+          break;
+        }
+      }
+
+      if (blob && blob.size <= PROFILE_IMAGE_MAX_BYTES) {
         break;
       }
     }
@@ -105,8 +122,8 @@ export async function prepareImageForUpload(file, target = IMAGE_UPLOAD_TARGETS.
       throw new Error("Use a smaller image or crop it before uploading.");
     }
 
-    const optimizedFile = new File([blob], `${fileBaseName(file)}.webp`, {
-      type: "image/webp",
+    const optimizedFile = new File([blob], `${fileBaseName(file)}.${extensionForType(blob.type)}`, {
+      type: blob.type,
       lastModified: Date.now(),
     });
 
