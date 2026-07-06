@@ -91,20 +91,20 @@ export default function AdminOverviewPage() {
   const customerUsers = statsData.standardUsers || 0;
   const stats = [
     ["Total Users", totalUsers, `${statsData.admins || 0} admins`, Users, "#0d6ffd", "#eaf3ff"],
-    ["Premium Users", statsData.premiumUsers || 0, "Custom + Premium renewal", UserCheck, "#059669", "#ECFDF5"],
-    ["Free Users", statsData.freeUsers || 0, "No active plan", ShieldCheck, "#D97706", "#FFFBEB"],
+    ["Paystack Users", statsData.premiumUsers || 0, "paid through Paystack", UserCheck, "#059669", "#ECFDF5"],
+    ["Other Users", statsData.freeUsers || 0, "free or admin-upgraded", ShieldCheck, "#D97706", "#FFFBEB"],
     ["Active Cards", statsData.activeCards || 0, `${statsData.cards || 0} total cards`, CreditCard, "#ff9f0d", "#F5F3FF"],
     ["NFC Taps", statsData.taps || 0, "physical card taps", Package, "#0F766E", "#CCFBF1"],
     ["QR Scans", statsData.qrScans || 0, "public profile scans", BarChart3, "#DB2777", "#FCE7F3"],
     ["Contact Downloads", statsData.contactDownloads || 0, "saved contacts", CheckCircle2, "#047857", "#ECFDF5"],
     ["Estimated MRR", money(statsData.estimatedMrrCents), "yearly plans only", TrendingUp, "#0F766E", "#CCFBF1"],
-    ["Revenue Collected", money(statsData.revenueCents), "successful payments", DollarSign, "#4F46E5", "#EEF2FF"],
+    ["Revenue Collected", money(statsData.revenueCents), "Paystack payments only", DollarSign, "#4F46E5", "#EEF2FF"],
     ["Leads Captured", statsData.leads || 0, "all user cards", BarChart3, "#DB2777", "#FCE7F3"],
     ["Open Invoices", statsData.openInvoices || 0, `${statsData.paidInvoices || 0} paid`, FileText, "#B45309", "#FEF3C7"],
   ];
   const tasks = [
     ["Review public profiles", `${statsData.cards || 0} total`, "#FEF3C7", "#B45309"],
-    ["Monitor premium accounts", `${statsData.premiumUsers || 0} premium`, "#eaf3ff", "#0d6ffd"],
+    ["Monitor Paystack accounts", `${statsData.premiumUsers || 0} paid`, "#eaf3ff", "#0d6ffd"],
     ["Complete KYC follow-up", `${statsData.kycPending || 0} pending`, "#FEF2F2", "#DC2626"],
   ];
   const activity = [
@@ -168,12 +168,12 @@ export default function AdminOverviewPage() {
         <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 22 }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 8 }}>User & Plan Breakdown</h2>
           <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 12 }}>Customer segmentation from Supabase. Admin accounts are excluded.</p>
-          <ProgressRow label="Premium users" value={statsData.premiumUsers || 0} total={customerUsers} color="#059669" />
-          <ProgressRow label="Free users" value={statsData.freeUsers || 0} total={customerUsers} color="#D97706" />
+          <ProgressRow label="Paystack-paid users" value={statsData.premiumUsers || 0} total={customerUsers} color="#059669" />
+          <ProgressRow label="Free or admin-upgraded users" value={statsData.freeUsers || 0} total={customerUsers} color="#D97706" />
           <ProgressRow label="KYC completed" value={statsData.kycComplete || 0} total={customerUsers} color="#0d6ffd" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 10, marginTop: 16 }}>
             {[
-              ["Free", statsData.freePlanUsers || 0],
+              ["No Paystack payment", statsData.freeUsers || 0],
               ["JOSTAP Card", statsData.jostapNfcUsers || 0],
               ["Custom Card", statsData.customNfcUsers || 0],
               ["Premium Access", statsData.premiumRenewalUsers || 0],

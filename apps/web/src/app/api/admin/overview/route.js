@@ -306,13 +306,20 @@ export async function GET(request) {
   const customerActiveSubscriptions = activeSubscriptions.filter((subscription) =>
     customerUserIds.has(subscription.user_id),
   );
+  const paystackSucceededPayments = payments.filter(
+    (payment) =>
+      payment.status === "succeeded" &&
+      payment.provider === "paystack" &&
+      customerUserIds.has(payment.user_id),
+  );
+  const paystackPaidUserIds = new Set(paystackSucceededPayments.map((payment) => payment.user_id));
   const paidPlanSlugs = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
   const premiumSubscriptions = customerActiveSubscriptions.filter((item) =>
-    paidPlanSlugs.has(item.plan),
+    paidPlanSlugs.has(item.plan) && paystackPaidUserIds.has(item.user_id),
   );
   const paidUserIds = new Set(premiumSubscriptions.map((item) => item.user_id));
   const premiumUserIds = new Set(premiumSubscriptions.map((item) => item.user_id));
-  const planCounts = customerActiveSubscriptions.reduce(
+  const planCounts = premiumSubscriptions.reduce(
     (counts, subscription) => ({
       ...counts,
       [subscription.plan]: (counts[subscription.plan] || 0) + 1,
@@ -325,7 +332,7 @@ export async function GET(request) {
     return map;
   }, new Map());
   const revenueByUser = payments
-    .filter((payment) => payment.status === "succeeded")
+    .filter((payment) => payment.status === "succeeded" && payment.provider === "paystack")
     .reduce((map, payment) => {
       map.set(payment.user_id, (map.get(payment.user_id) || 0) + Number(payment.amount_cents || 0));
       return map;
@@ -365,8 +372,8 @@ export async function GET(request) {
       completedAppointments: appointments.filter((appointment) => appointment.status === "completed").length,
       subscriptions: activeSubscriptions.length,
       premiumSubscriptions: premiumSubscriptions.length,
-      revenueCents: sum(payments.filter((payment) => payment.status === "succeeded"), "amount_cents"),
-      estimatedMrrCents: sum(customerActiveSubscriptions.map((subscription) => ({
+      revenueCents: sum(paystackSucceededPayments, "amount_cents"),
+      estimatedMrrCents: sum(premiumSubscriptions.map((subscription) => ({
         value: mrrForSubscription(subscription, pricingBySlug),
       })), "value"),
       openInvoices: invoices.filter((invoice) => invoice.status === "open").length,

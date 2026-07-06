@@ -88,15 +88,15 @@ export default function AdminSubscriptionsPage() {
     <>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", marginBottom: 4 }}>Subscriptions</h1>
-        <p style={{ fontSize: 14, color: "#6B7280" }}>Track MRR, plan distribution, trials, renewals, and invoice state.</p>
+        <p style={{ fontSize: 14, color: "#6B7280" }}>Track Paystack revenue, plan distribution, renewals, and invoice state.</p>
       </div>
 
       {loadError && <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", color: "#B91C1C", borderRadius: 10, padding: "11px 14px", fontSize: 13, fontWeight: 700, marginBottom: 16 }}>{loadError}</div>}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 14, marginBottom: 20 }}>
         {[
-          ["Revenue", money(data?.stats?.revenueCents), DollarSign, "#0d6ffd", "#eaf3ff"],
-          ["Active Plans", data?.stats?.subscriptions || 0, TrendingUp, "#059669", "#ECFDF5"],
+          ["Paystack Revenue", money(data?.stats?.revenueCents), DollarSign, "#0d6ffd", "#eaf3ff"],
+          ["All Active Plans", data?.stats?.subscriptions || 0, TrendingUp, "#059669", "#ECFDF5"],
           ["Invoices", invoices.length, RefreshCcw, "#ff9f0d", "#F5F3FF"],
           ["Open Invoices", data?.stats?.openInvoices || 0, ArrowUpRight, "#D97706", "#FFFBEB"],
         ].map(([label, value, Icon, color, bg]) => (
