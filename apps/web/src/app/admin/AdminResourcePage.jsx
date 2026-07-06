@@ -39,6 +39,7 @@ export default function AdminResourcePage({
   const [admin, setAdmin] = useState(null);
   const [query, setQuery] = useState("");
   const [loadError, setLoadError] = useState("");
+  const [notice, setNotice] = useState("");
   const [busyId, setBusyId] = useState("");
 
   async function load() {
@@ -74,10 +75,13 @@ export default function AdminResourcePage({
 
   const runAction = async (row) => {
     if (!rowAction) return;
+    if (rowAction.disabled?.(row)) return;
     setBusyId(row.id);
     setLoadError("");
+    setNotice("");
     try {
-      await rowAction.run(row);
+      const message = await rowAction.run(row);
+      if (message) setNotice(message);
       await load();
     } catch (error) {
       setLoadError(error.message || "Unable to update this record.");
@@ -126,6 +130,12 @@ export default function AdminResourcePage({
         </div>
       )}
 
+      {notice && (
+        <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", color: "#047857", borderRadius: 10, padding: "11px 14px", fontSize: 13, fontWeight: 700, marginBottom: 16 }}>
+          {notice}
+        </div>
+      )}
+
       <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
         <div style={{ padding: 16, borderBottom: "1px solid #E5E7EB" }}>
           <input
@@ -167,13 +177,28 @@ export default function AdminResourcePage({
                   ))}
                   {rowAction && (
                     <td style={{ padding: "14px 16px", whiteSpace: "nowrap" }}>
-                      <button
-                        onClick={() => runAction(row)}
-                        disabled={busyId === row.id}
-                        style={{ border: "1px solid #E5E7EB", background: "#fff", borderRadius: 8, padding: "7px 11px", fontSize: 12, fontWeight: 800, color: rowAction.color?.(row) || "#0d6ffd", cursor: busyId === row.id ? "wait" : "pointer" }}
-                      >
-                        {busyId === row.id ? "Saving..." : rowAction.label(row)}
-                      </button>
+                      {(() => {
+                        const disabled = rowAction.disabled?.(row) || false;
+
+                        return (
+                          <button
+                            onClick={() => runAction(row)}
+                            disabled={busyId === row.id || disabled}
+                            style={{
+                              border: "1px solid #E5E7EB",
+                              background: disabled ? "#F9FAFB" : "#fff",
+                              borderRadius: 8,
+                              padding: "7px 11px",
+                              fontSize: 12,
+                              fontWeight: 800,
+                              color: disabled ? "#9CA3AF" : rowAction.color?.(row) || "#0d6ffd",
+                              cursor: busyId === row.id ? "wait" : disabled ? "not-allowed" : "pointer",
+                            }}
+                          >
+                            {busyId === row.id ? "Saving..." : rowAction.label(row)}
+                          </button>
+                        );
+                      })()}
                     </td>
                   )}
                 </tr>

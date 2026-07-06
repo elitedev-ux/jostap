@@ -20,6 +20,30 @@ const columns = [
   { label: "Payment ID", key: "id" },
 ];
 
+async function syncPaystackPayment(row) {
+  const response = await fetch("/api/admin/payments/sync", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paymentId: row.id }),
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || "Unable to sync this payment.");
+  }
+
+  if (data.payment?.status === "succeeded") {
+    return "Payment verified with Paystack and marked successful.";
+  }
+
+  if (data.payment?.status === "failed") {
+    return "Paystack did not confirm this payment, so it was marked failed.";
+  }
+
+  return "Payment sync completed.";
+}
+
 export default function AdminPaymentsPage() {
   return (
     <AdminResourcePage
@@ -34,6 +58,17 @@ export default function AdminPaymentsPage() {
         ["Successful", (data) => data?.payments?.filter((item) => item.status === "succeeded").length || 0, "#047857", "#ECFDF5"],
         ["Revenue", (data) => money(data?.stats?.revenueCents), "#4F46E5", "#EEF2FF"],
       ]}
+      rowAction={{
+        label: (row) => {
+          if (row.status === "pending") return "Sync Paystack";
+          if (row.status === "succeeded") return "Paid";
+          if (row.status === "failed") return "Failed";
+          return "Synced";
+        },
+        color: (row) => (row.status === "failed" ? "#B91C1C" : "#0d6ffd"),
+        disabled: (row) => row.status !== "pending",
+        run: syncPaystackPayment,
+      }}
     />
   );
 }
