@@ -372,6 +372,8 @@ export async function GET(request) {
       completedAppointments: appointments.filter((appointment) => appointment.status === "completed").length,
       subscriptions: activeSubscriptions.length,
       premiumSubscriptions: premiumSubscriptions.length,
+      paystackPayments: paystackSucceededPayments.length,
+      paystackCustomers: paystackPaidUserIds.size,
       revenueCents: sum(paystackSucceededPayments, "amount_cents"),
       estimatedMrrCents: sum(premiumSubscriptions.map((subscription) => ({
         value: mrrForSubscription(subscription, pricingBySlug),
