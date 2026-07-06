@@ -30,6 +30,11 @@ const selectStyle = {
 function planLabel(plan) {
   const value = String(plan || "none");
   if (value === "none") return "None";
+  if (value === "free") return "Free";
+  if (value === "jostap_nfc") return "JOSTAP Card";
+  if (value === "custom_nfc") return "Custom Card";
+  if (value === "basic_renewal") return "Basic Renewal";
+  if (value === "premium_renewal") return "Premium Access";
 
   return value
     .replace(/_/g, " ")

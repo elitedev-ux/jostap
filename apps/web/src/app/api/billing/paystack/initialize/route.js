@@ -191,10 +191,11 @@ export async function POST(request) {
     const reference = makePaystackReference(user.id);
     const orderId = makePaystackOrderId();
     const productName = selectedProduct?.name || paystackPlanName(plan);
+    const userName = [user.first_name, user.last_name].filter(Boolean).join(" ").trim();
     const orderAccount = {
-      name: cleanText(account.name || user.name),
+      name: cleanText(account.name || userName || user.email),
       email: cleanText(account.email || user.email),
-      company: cleanText(account.company),
+      company: cleanText(account.company || user.company),
     };
     const { data: payment, error: paymentError } = await supabase
       .from("payments")
@@ -220,7 +221,7 @@ export async function POST(request) {
 
     const callbackUrl = callbackUrlForRequest(request);
     const authorization = await initializePaystackTransaction({
-      email: user.email,
+      email: orderAccount.email || user.email,
       amountKobo,
       currency,
       reference,

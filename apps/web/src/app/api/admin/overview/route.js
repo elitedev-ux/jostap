@@ -97,6 +97,34 @@ function paymentOrderAccount(payment, userById) {
   return email && !String(name).includes(email) ? `${name} (${email})` : name;
 }
 
+function paymentOrderEmail(payment, userById) {
+  const account = payment.order_account || {};
+  const user = userById.get(payment.user_id);
+  return account.email || user?.email || "";
+}
+
+function paymentOrderCompany(payment, userById) {
+  const account = payment.order_account || {};
+  const user = userById.get(payment.user_id);
+  return account.company || user?.company || "";
+}
+
+function billingCycleLabel(cycle) {
+  if (cycle === "one_time") return "One-time";
+  if (cycle === "yearly") return "Yearly";
+  if (cycle === "free") return "Free";
+  return cycle || "";
+}
+
+function paymentDate(payment, invoiceByPaymentReference) {
+  const invoice =
+    invoiceByPaymentReference.get(payment.provider_payment_id) ||
+    invoiceByPaymentReference.get(payment.order_id) ||
+    null;
+
+  return invoice?.paid_at || invoice?.issued_at || payment.created_at;
+}
+
 function ticketContact(ticket) {
   return (
     fullName(ticket.users) ||
@@ -276,10 +304,11 @@ export async function GET(request) {
   const subscriptionById = new Map(subscriptions.map((item) => [item.id, item]));
   const pricingBySlug = new Map(pricingPlans.map((plan) => [plan.slug, plan]));
   const activeSubscriptions = subscriptions.filter(isSubscriptionCurrent);
+  const paidPlanSlugs = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
   const premiumSubscriptions = activeSubscriptions.filter((item) =>
-    ["custom_nfc", "premium_renewal"].includes(item.plan),
+    paidPlanSlugs.has(item.plan),
   );
-  const subscribedUserIds = new Set(activeSubscriptions.map((item) => item.user_id));
+  const paidUserIds = new Set(premiumSubscriptions.map((item) => item.user_id));
   const premiumUserIds = new Set(premiumSubscriptions.map((item) => item.user_id));
   const planCounts = activeSubscriptions.reduce(
     (counts, subscription) => ({
@@ -299,6 +328,11 @@ export async function GET(request) {
       map.set(payment.user_id, (map.get(payment.user_id) || 0) + Number(payment.amount_cents || 0));
       return map;
     }, new Map());
+  const invoiceByPaymentReference = invoices.reduce((map, invoice) => {
+    if (invoice.provider_invoice_id) map.set(invoice.provider_invoice_id, invoice);
+    if (invoice.invoice_number) map.set(invoice.invoice_number, invoice);
+    return map;
+  }, new Map());
 
   return json({
     stats: {
@@ -307,7 +341,7 @@ export async function GET(request) {
       standardUsers: users.filter((user) => user.role !== "admin").length,
       suspendedUsers: users.filter((user) => user.status === "suspended").length,
       premiumUsers: users.filter((user) => premiumUserIds.has(user.id)).length,
-      freeUsers: users.filter((user) => !subscribedUserIds.has(user.id)).length,
+      freeUsers: users.filter((user) => !paidUserIds.has(user.id)).length,
       starterUsers: planCounts.free || 0,
       professionalUsers: planCounts.jostap_nfc || 0,
       businessUsers: planCounts.custom_nfc || 0,
@@ -367,6 +401,7 @@ export async function GET(request) {
         role: user.role,
         status: user.status || "active",
         plan: subscriptionCurrent ? subscription.plan : "none",
+        planLabel: subscriptionCurrent ? planLabel(subscription.plan) : "None",
         subscriptionStatus: subscription ? (subscriptionCurrent ? subscription.status : "expired") : "no plan",
         cards: cardsByUser.get(user.id) || 0,
         revenue: money(revenueByUser.get(user.id) || 0),
@@ -406,7 +441,9 @@ export async function GET(request) {
         id: subscription.id,
         account: fullName(owner) || owner?.email || "Unknown",
         plan: subscription.plan,
+        planLabel: planLabel(subscription.plan),
         billingCycle: subscription.billing_cycle,
+        billingCycleLabel: billingCycleLabel(subscription.billing_cycle),
         status: subscription.status,
         renews: dateLabel(subscription.current_period_end),
       };
@@ -431,11 +468,15 @@ export async function GET(request) {
         orderId: paymentOrderId(payment),
         userId: payment.user_id,
         account: paymentOrderAccount(payment, userById),
+        accountEmail: paymentOrderEmail(payment, userById),
+        accountCompany: paymentOrderCompany(payment, userById),
         product: payment.order_product_name || planLabel(orderPlan),
         plan: orderPlan,
+        planLabel: planLabel(orderPlan),
         amount: money(payment.amount_cents, payment.currency),
         status: payment.status,
-        created: dateLabel(payment.created_at),
+        created: dateTimeLabel(payment.created_at),
+        paidAt: payment.status === "succeeded" ? dateTimeLabel(paymentDate(payment, invoiceByPaymentReference)) : "",
       };
     }),
     orders: payments
@@ -450,10 +491,12 @@ export async function GET(request) {
           id: payment.id,
           orderId: paymentOrderId(payment),
           customer: paymentOrderAccount(payment, userById),
+          customerEmail: paymentOrderEmail(payment, userById),
+          customerCompany: paymentOrderCompany(payment, userById),
           product: payment.order_product_name || planLabel(orderPlan),
           payment: money(payment.amount_cents, payment.currency),
           status: "paid",
-          date: dateLabel(payment.created_at),
+          date: dateTimeLabel(paymentDate(payment, invoiceByPaymentReference)),
         };
       }),
     leads: leads.map((lead) => {

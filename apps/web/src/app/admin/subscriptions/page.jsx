@@ -73,10 +73,15 @@ export default function AdminSubscriptionsPage() {
       }),
     [subscriptions],
   );
-  const billingCycles = ["monthly", "yearly"].map((cycle, index) => {
+  const billingCycleOptions = [
+    ["one_time", "One-time", "Card purchase", "#0d6ffd", "#eaf3ff"],
+    ["yearly", "Yearly", "Annual access", "#059669", "#ECFDF5"],
+    ["free", "Free", "Free account", "#6B7280", "#F3F4F6"],
+  ];
+  const billingCycles = billingCycleOptions.map(([cycle, label, caption, color, bg]) => {
     const count = subscriptions.filter((item) => item.billingCycle === cycle).length;
     const share = subscriptions.length ? `${Math.round((count / subscriptions.length) * 100)}%` : "0%";
-    return [cycle === "yearly" ? "Yearly" : "Monthly", count, "Live", share, index ? "#059669" : "#0d6ffd", index ? "#ECFDF5" : "#eaf3ff"];
+    return [label, count, caption, share, color, bg];
   });
 
   return (
@@ -120,9 +125,9 @@ export default function AdminSubscriptionsPage() {
 
         <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: 22 }}>
           <h2 style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 4 }}>Billing Cycle Split</h2>
-          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 16 }}>See how many customers are on monthly vs yearly subscriptions.</p>
+          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 16 }}>See how many customers are on one-time card, yearly, and free plans.</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {billingCycles.map(([cycle, customers, revenue, share, color, bg]) => (
+            {billingCycles.map(([cycle, customers, caption, share, color, bg]) => (
               <div key={cycle} style={{ border: "1px solid #E5E7EB", borderRadius: 11, padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
                   <div>
@@ -130,7 +135,7 @@ export default function AdminSubscriptionsPage() {
                     <p style={{ fontSize: 12, color: "#6B7280" }}>{customers} customers</p>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <p style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>{revenue}</p>
+                    <p style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>{caption}</p>
                     <p style={{ fontSize: 12, color }}>{share} of accounts</p>
                   </div>
                 </div>
@@ -138,7 +143,7 @@ export default function AdminSubscriptionsPage() {
                   <div style={{ width: share, height: "100%", background: color, borderRadius: 999 }} />
                 </div>
                 <span style={{ display: "inline-flex", marginTop: 10, fontSize: 11, fontWeight: 800, color, background: bg, borderRadius: 999, padding: "3px 9px" }}>
-                  {cycle === "Yearly" ? "Annual prepay" : "Recurring monthly"}
+                  {caption}
                 </span>
               </div>
             ))}
@@ -161,8 +166,8 @@ export default function AdminSubscriptionsPage() {
                 <p style={{ fontSize: 13, fontWeight: 800, color: "#111827" }}>{subscription.account}</p>
                 <p style={{ fontSize: 12, color: "#6B7280" }}>{subscription.renews ? `Renews ${subscription.renews}` : "No renewal date"}</p>
               </div>
-              <span style={{ fontSize: 13, color: "#374151", fontWeight: 700, textTransform: "capitalize" }}>{subscription.plan}</span>
-              <span style={{ fontSize: 13, color: "#6B7280", textTransform: "capitalize" }}>{subscription.billingCycle}</span>
+              <span style={{ fontSize: 13, color: "#374151", fontWeight: 700 }}>{subscription.planLabel || planName(subscription.plan)}</span>
+              <span style={{ fontSize: 13, color: "#6B7280" }}>{subscription.billingCycleLabel || subscription.billingCycle}</span>
               <span style={{ justifySelf: "start", fontSize: 11, fontWeight: 800, color: subscription.status === "active" ? "#047857" : "#B45309", background: subscription.status === "active" ? "#ECFDF5" : "#FFFBEB", borderRadius: 999, padding: "3px 8px", textTransform: "capitalize" }}>{subscription.status}</span>
               <button
                 onClick={() => updateSubscription(subscription)}

@@ -19,6 +19,7 @@ export default function AdminOrdersPage() {
         const rows = (data.orders || []).map((order) => [
           order.orderId,
           order.customer,
+          order.customerEmail,
           order.product,
           order.payment,
           order.status,
@@ -88,12 +89,12 @@ export default function AdminOrdersPage() {
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead style={{ background: "#f5f5f5" }}>
-              <tr>{["Order", "Customer", "Product", "Payment", "Status", "Date"].map((heading) => <th key={heading} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, color: "#6B7280", textTransform: "uppercase" }}>{heading}</th>)}</tr>
+              <tr>{["Order", "Customer", "Email", "Product", "Payment", "Status", "Date"].map((heading) => <th key={heading} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, color: "#6B7280", textTransform: "uppercase" }}>{heading}</th>)}</tr>
             </thead>
             <tbody>
               {filteredOrders.length === 0 && (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={7}>
                     {loadError ? (
                       <div style={{ background: "#FEF2F2", color: "#B91C1C", padding: 16, fontSize: 13, fontWeight: 700 }}>{loadError}</div>
                     ) : query ? (
