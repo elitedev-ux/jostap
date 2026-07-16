@@ -1,8 +1,8 @@
 export const TRIAL_DAYS = 14;
 export const TRIAL_PLAN = "trial";
 
-const PREMIUM_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
-const CUSTOM_BRANDING_PLANS = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
+const PREMIUM_PLANS = new Set(["jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
+const CUSTOM_BRANDING_PLANS = new Set(["jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
 
 function dateFrom(value) {
   const date = new Date(value);

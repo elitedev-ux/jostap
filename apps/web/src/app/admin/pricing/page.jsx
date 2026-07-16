@@ -9,10 +9,10 @@ function money(cents) {
 }
 
 const DEFAULT_PLAN_PRICE_KOBO = {
-  jostap_nfc: { monthly_cents: 2500000 },
-  custom_nfc: { monthly_cents: 3000000 },
-  basic_renewal: { yearly_cents: 120000 },
-  premium_renewal: { yearly_cents: 2737500 },
+  jostap_nfc: { monthly_cents: 2000000 },
+  custom_nfc: { monthly_cents: 2500000 },
+  basic_renewal: { yearly_cents: 1000000 },
+  premium_renewal: { yearly_cents: 1500000 },
 };
 
 function planPrice(row, key) {

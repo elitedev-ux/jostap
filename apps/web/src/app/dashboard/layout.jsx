@@ -129,6 +129,8 @@ export default function DashboardLayout({ children }) {
           ? "JOSTAP Card"
           : billing?.subscription?.plan === "premium_renewal"
             ? "Premium Access"
+            : billing?.subscription?.plan === "basic_renewal"
+              ? "Team Access Renewal"
             : "Free";
   const cardLimit = billing?.subscription?.cardLimit ?? 5;
   const cardsUsed = billing?.usage?.cards ?? 0;

@@ -5,7 +5,7 @@ function planName(plan) {
   if (plan === "free") return "Free";
   if (plan === "jostap_nfc") return "JOSTAP Card";
   if (plan === "custom_nfc") return "Custom Card";
-  if (plan === "basic_renewal") return "Basic Renewal";
+  if (plan === "basic_renewal") return "Team Access Renewal";
   if (plan === "premium_renewal") return "Premium Access";
   return plan || "Unknown";
 }
@@ -67,7 +67,7 @@ export default function AdminSubscriptionsPage() {
   const invoices = data?.invoices || [];
   const plans = useMemo(
     () =>
-      ["free", "jostap_nfc", "custom_nfc", "premium_renewal"].map((plan) => {
+      ["free", "jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"].map((plan) => {
         const count = subscriptions.filter((item) => item.plan === plan).length;
         return [planName(plan), count, "Live", "0%"];
       }),

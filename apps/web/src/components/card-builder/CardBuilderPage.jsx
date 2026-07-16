@@ -117,9 +117,9 @@ const FIELD_GROUPS = [
 ];
 
 const DEFAULT_ACTIVE = new Set(["name", "title", "company", "email", "phone", "website", "instagram", "saveContact", "exchangeContact"]);
-const DOWNLOADABLE_QR_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
-const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
-const CUSTOM_BRANDING_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
+const DOWNLOADABLE_QR_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
+const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
+const CUSTOM_BRANDING_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
 const PREMIUM_ONLY_FIELDS = new Set(["calendly", "videoUrl"]);
 const MULTI_ENTRY_FIELDS = new Set([
   "twitter",
@@ -142,7 +142,6 @@ const MULTI_ENTRY_FIELDS = new Set([
 function hasDownloadableQr(plan) {
   return DOWNLOADABLE_QR_PLANS.has(String(plan || "").toLowerCase());
 }
-
 function hasPremiumFeatures(plan) {
   return PREMIUM_FEATURE_PLANS.has(String(plan || "").toLowerCase());
 }
@@ -220,7 +219,6 @@ function UploadTile({ label, icon: Icon, onUpload, preview, onRemove }) {
     </div>
   );
 }
-
 function AppointmentFormPreview() {
   return (
     <section className="card-builder-booking-preview" aria-labelledby="card-builder-booking-preview-title">

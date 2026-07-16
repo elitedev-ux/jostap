@@ -12,7 +12,7 @@ const DEFAULT_PRODUCTS = [
     description:
       "A ready-to-order NFC card with a Lagos-inspired front, QR-enabled back, and digital profile connection.",
     badge: "Available now",
-    priceCents: 2500000,
+    priceCents: 2000000,
     currency: "NGN",
     checkoutPath: "/checkout?plan=jostap_nfc&billing=one_time",
     artworkKey: "lagos_vibes",

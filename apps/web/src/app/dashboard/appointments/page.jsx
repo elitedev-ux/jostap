@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Calendar, CheckCircle, Clock, LockKeyhole, XCircle } from "lucide-react";
 import { clearDashboardDataCache, getDashboardData } from "../../../utils/dashboardDataStore";
 
-const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
+const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
 const STATUS_FILTERS = ["all", "pending", "approved", "rejected", "cancelled", "completed"];
 const APPOINTMENTS_PAGE_SIZE = 10;
 const STATUS_ACTIONS = {
@@ -19,7 +19,6 @@ const STATUS_ACTIONS = {
 function hasPremiumFeatures(plan) {
   return PREMIUM_FEATURE_PLANS.has(String(plan || "").toLowerCase());
 }
-
 function statusLabel(status) {
   return String(status || "pending").replace(/^\w/, (letter) => letter.toUpperCase());
 }
@@ -43,7 +42,6 @@ function UpgradeGate() {
     </div>
   );
 }
-
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState([]);
   const [loadError, setLoadError] = useState("");

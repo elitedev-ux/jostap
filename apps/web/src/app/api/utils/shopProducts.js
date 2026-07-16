@@ -6,7 +6,7 @@ export const DEFAULT_SHOP_PRODUCT = {
   description:
     "A ready-to-order NFC card with a Lagos-inspired front, QR-enabled back, and digital profile connection.",
   badge: "Available now",
-  priceCents: 2500000,
+  priceCents: 2000000,
   currency: "NGN",
   checkoutPath: "/checkout?plan=jostap_nfc&billing=one_time",
   artworkKey: "lagos_vibes",
@@ -20,11 +20,30 @@ export const DEFAULT_SHOP_PRODUCT = {
 
 export const SHOP_PRODUCTS_PAGE_SLUG = "shop-products";
 
+const LOCKED_CHECKOUT_PRICES = {
+  jostap_nfc: 2000000,
+  custom_nfc: 2500000,
+  basic_renewal: 1000000,
+  premium_renewal: 1500000,
+};
+
+function lockedPriceFromCheckoutPath(path) {
+  try {
+    const url = new URL(path || "", "https://jostap.com");
+    const plan = String(url.searchParams.get("plan") || "").toLowerCase();
+    return LOCKED_CHECKOUT_PRICES[plan] || null;
+  } catch {
+    return null;
+  }
+}
+
 export function isMissingShopProductsTable(error) {
   return error?.code === "42P01" || /shop_products/i.test(error?.message || "");
 }
 
 export function shopProductFromRow(row) {
+  const checkoutPath = row.checkout_path || "/checkout?plan=jostap_nfc&billing=one_time";
+
   return {
     id: row.id,
     slug: row.slug,
@@ -32,9 +51,9 @@ export function shopProductFromRow(row) {
     subtitle: row.subtitle || "",
     description: row.description || "",
     badge: row.badge || "",
-    priceCents: Number(row.price_cents || 0),
+    priceCents: lockedPriceFromCheckoutPath(checkoutPath) || Number(row.price_cents || 0),
     currency: row.currency || "NGN",
-    checkoutPath: row.checkout_path || "/checkout?plan=jostap_nfc&billing=one_time",
+    checkoutPath,
     artworkKey: row.artwork_key || "lagos_vibes",
     frontImageUrl: row.front_image_url || "",
     backImageUrl: row.back_image_url || "",

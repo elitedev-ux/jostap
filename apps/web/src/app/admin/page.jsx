@@ -183,6 +183,7 @@ export default function AdminOverviewPage() {
               ["No Paystack payment", statsData.freeUsers || 0],
               ["JOSTAP Card", statsData.jostapNfcUsers || 0],
               ["Custom Card", statsData.customNfcUsers || 0],
+              ["Team Renewal", statsData.basicRenewalUsers || 0],
               ["Premium Access", statsData.premiumRenewalUsers || 0],
             ].map(([label, value]) => (
               <div key={label} style={{ border: "1px solid #E5E7EB", borderRadius: 10, padding: 13 }}>

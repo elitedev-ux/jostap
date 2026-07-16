@@ -4,12 +4,12 @@ const PAYSTACK_BASE_URL = "https://api.paystack.co";
 const DEFAULT_CURRENCY = "NGN";
 const PLAN_PRICE_KOBO = {
   free: { free: 0 },
-  jostap_nfc: { one_time: 2500000 },
-  custom_nfc: { one_time: 3000000 },
-  basic_renewal: { yearly: 120000 },
-  premium_renewal: { yearly: 2737500 },
+  jostap_nfc: { one_time: 2000000 },
+  custom_nfc: { one_time: 2500000 },
+  basic_renewal: { yearly: 1000000 },
+  premium_renewal: { yearly: 1500000 },
 };
-const LOCKED_PAYSTACK_PRICES = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
+const LOCKED_PAYSTACK_PRICES = new Set(["jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
 const VALID_PAYSTACK_PLANS = new Set(["jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
 const VALID_PAYSTACK_CYCLES = new Set(["one_time", "yearly"]);
 
@@ -19,7 +19,7 @@ export const PAYSTACK_PLAN_NAMES = {
   free: "Free",
   jostap_nfc: "JOSTAP Card",
   custom_nfc: "Custom Card",
-  basic_renewal: "Basic Renewal",
+  basic_renewal: "Team Access Renewal",
   premium_renewal: "Premium Access Repayment",
 };
 
@@ -106,8 +106,9 @@ function planFromTransaction(transaction) {
   if (VALID_PAYSTACK_PLANS.has(plan)) return plan;
 
   const amount = Number(transaction?.amount || 0);
-  if (amount === PLAN_PRICE_KOBO.custom_nfc.one_time) return "custom_nfc";
-  if (amount === PLAN_PRICE_KOBO.premium_renewal.yearly) return "premium_renewal";
+  if (amount === PLAN_PRICE_KOBO.custom_nfc.one_time || amount === 3000000) return "custom_nfc";
+  if (amount === PLAN_PRICE_KOBO.basic_renewal.yearly) return "basic_renewal";
+  if (amount === PLAN_PRICE_KOBO.premium_renewal.yearly || amount === 2737500) return "premium_renewal";
   return "jostap_nfc";
 }
 

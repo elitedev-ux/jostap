@@ -33,6 +33,15 @@ const PREMIUM_REPAYMENT_FEATURES = [
   "Premium access for 1 year",
 ];
 
+const TEAM_RENEWAL_FEATURES = [
+  "Team yearly subscription",
+  "Team card profile access",
+  "Premium team features",
+  "Lead capture",
+  "Appointment booking",
+  "Advanced analytics",
+];
+
 const PLANS = {
   free: {
     name: "Free",
@@ -45,26 +54,35 @@ const PLANS = {
   },
   jostap_nfc: {
     name: "JOSTAP Card",
-    price: 25000,
-    displayPrice: "\u20A625,000",
+    price: 20000,
+    displayPrice: "\u20A620,000",
     billingLabel: "One-time payment",
     cards: "Physical NFC card",
-    trial: "Includes premium feature access",
+    trial: "\u20A615,000 yearly subscription after the included first year",
     features: PAID_CARD_FEATURES,
   },
   custom_nfc: {
     name: "Custom Card",
-    price: 30000,
-    displayPrice: "\u20A630,000",
+    price: 25000,
+    displayPrice: "\u20A625,000",
     billingLabel: "One-time payment",
     cards: "Physical NFC card",
-    trial: "Includes premium feature access",
+    trial: "\u20A615,000 yearly subscription after the included first year",
     features: PAID_CARD_FEATURES,
+  },
+  basic_renewal: {
+    name: "Team Access Renewal",
+    price: 10000,
+    displayPrice: "\u20A610,000",
+    billingLabel: "Yearly subscription",
+    cards: "Team features",
+    trial: "Keeps team access active for 1 year",
+    features: TEAM_RENEWAL_FEATURES,
   },
   premium_renewal: {
     name: "Premium Access Repayment",
-    price: 27375,
-    displayPrice: "\u20A627,375",
+    price: 15000,
+    displayPrice: "\u20A615,000",
     billingLabel: "Yearly repayment",
     cards: "Premium features",
     trial: "Keeps premium feature access active for 1 year",

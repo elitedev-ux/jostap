@@ -142,9 +142,11 @@ export async function POST(request) {
       return badRequest("This card currency is not available for Paystack checkout right now.");
     }
 
-    const amountKobo = selectedProduct
-      ? Math.max(0, Math.round(Number(selectedProduct.priceCents || 0)))
-      : await planAmountKobo(supabase, plan, billingCycle);
+    const configuredAmountKobo = await planAmountKobo(supabase, plan, billingCycle);
+    const amountKobo = configuredAmountKobo ||
+      (selectedProduct
+        ? Math.max(0, Math.round(Number(selectedProduct.priceCents || 0)))
+        : 0);
 
     if (!amountKobo) {
       return badRequest("This card does not have a configured Paystack amount.");

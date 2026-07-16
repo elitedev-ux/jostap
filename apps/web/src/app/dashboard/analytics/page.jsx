@@ -25,12 +25,11 @@ import { getDashboardData } from "../../../utils/dashboardDataStore";
 
 const COLORS = ["#0d6ffd", "#ff9f0d", "#059669"];
 
-const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
+const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
 
 function hasPremiumFeatures(plan) {
   return PREMIUM_FEATURE_PLANS.has(String(plan || "").toLowerCase());
 }
-
 function AdvancedAnalyticsGate() {
   return (
     <div className="ui-empty-state" style={{ marginBottom: 20 }}>
@@ -45,7 +44,6 @@ function AdvancedAnalyticsGate() {
     </div>
   );
 }
-
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState("30d");
   const [card, setCard] = useState("All Cards");

@@ -17,6 +17,16 @@ const PAID_CARD_FEATURES = [
   ["1 Year Premium Access Included", true],
 ];
 
+const TEAM_FEATURES = [
+  ["Team card profile access", true],
+  ["Physical NFC card", true],
+  ["Digital business profile", true],
+  ["Lead capture", true],
+  ["Appointment booking", true],
+  ["Advanced analytics", true],
+  ["Yearly team subscription: \u20A610,000", true],
+];
+
 const PLANS = [
   {
     name: "Free",
@@ -37,8 +47,8 @@ const PLANS = [
   },
   {
     name: "JOSTAP Card",
-    price: "\u20A625,000",
-    note: "",
+    price: "\u20A620,000",
+    note: "\u20A615,000 yearly subscription",
     desc: "Best for professionals",
     cta: "Order Card",
     href: "/checkout?plan=jostap_nfc&billing=one_time",
@@ -47,12 +57,21 @@ const PLANS = [
   },
   {
     name: "Custom Card",
-    price: "\u20A630,000",
-    note: "",
+    price: "\u20A625,000",
+    note: "\u20A615,000 yearly subscription",
     desc: "Best for custom card designs",
     cta: "Order Custom Card",
     href: "/checkout?plan=custom_nfc&billing=one_time",
     features: PAID_CARD_FEATURES,
+  },
+  {
+    name: "Team",
+    price: "\u20A620,000",
+    note: "\u20A610,000 yearly subscription",
+    desc: "Best for companies managing team cards",
+    cta: "Order Team Card",
+    href: "/checkout?plan=jostap_nfc&billing=one_time",
+    features: TEAM_FEATURES,
   },
 ];
 
@@ -63,7 +82,7 @@ const FAQS = [
   },
   {
     q: "Are NFC cards subscriptions?",
-    a: "No. JOSTAP Card and Custom Card are one-time card payments with premium features included.",
+    a: "JOSTAP Card and Custom Card are one-time card payments with premium features included. Team accounts have a yearly subscription.",
   },
   {
     q: "What is the difference between JOSTAP Card and Custom Card?",

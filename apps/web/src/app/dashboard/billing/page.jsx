@@ -35,14 +35,14 @@ const PLANS = [
   {
     name: "JOSTAP Card",
     slug: "jostap_nfc",
-    price: "\u20A625,000",
+    price: "\u20A620,000",
     billing: "one_time",
     features: PAID_CARD_FEATURES,
   },
   {
     name: "Custom Card",
     slug: "custom_nfc",
-    price: "\u20A630,000",
+    price: "\u20A625,000",
     billing: "one_time",
     features: PAID_CARD_FEATURES,
   },
@@ -76,7 +76,7 @@ function planLabel(plan) {
   if (plan === "free") return "Free";
   if (plan === "jostap_nfc") return "JOSTAP Card";
   if (plan === "custom_nfc") return "Custom Card";
-  if (plan === "basic_renewal") return "Basic Renewal";
+  if (plan === "basic_renewal") return "Team Access Renewal";
   if (plan === "premium_renewal") return "Premium Access";
   return null;
 }

@@ -11,7 +11,7 @@ const statusStyle = {
 const UPGRADE_PLANS = [
   ["jostap_nfc", "JOSTAP Card", "one_time"],
   ["custom_nfc", "Custom Card", "one_time"],
-  ["basic_renewal", "Basic Renewal", "yearly"],
+  ["basic_renewal", "Team Access Renewal", "yearly"],
   ["premium_renewal", "Premium Access", "yearly"],
 ];
 
@@ -33,7 +33,7 @@ function planLabel(plan) {
   if (value === "free") return "Free";
   if (value === "jostap_nfc") return "JOSTAP Card";
   if (value === "custom_nfc") return "Custom Card";
-  if (value === "basic_renewal") return "Basic Renewal";
+  if (value === "basic_renewal") return "Team Access Renewal";
   if (value === "premium_renewal") return "Premium Access";
 
   return value

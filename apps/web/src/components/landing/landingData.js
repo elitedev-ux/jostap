@@ -43,8 +43,8 @@ export const plans = [
   },
   {
     name: "JOSTAP Card",
-    price: "\u20A625,000",
-    note: "",
+    price: "\u20A620,000",
+    note: "\u20A615,000 yearly subscription",
     desc: "Best for professionals",
     features: [
       "Physical NFC card",
@@ -66,8 +66,8 @@ export const plans = [
   },
   {
     name: "Custom Card",
-    price: "\u20A630,000",
-    note: "",
+    price: "\u20A625,000",
+    note: "\u20A615,000 yearly subscription",
     desc: "Best for custom card designs",
     features: [
       "Physical NFC card",
@@ -84,6 +84,24 @@ export const plans = [
     ],
     cta: "Order Custom Card",
     href: "/checkout?plan=custom_nfc&billing=one_time",
+    highlight: false,
+  },
+  {
+    name: "Team",
+    price: "\u20A620,000",
+    note: "\u20A610,000 yearly subscription",
+    desc: "Best for companies managing team cards",
+    features: [
+      "Team card profile access",
+      "Physical NFC card",
+      "Digital business profile",
+      "Contact sharing",
+      "Lead capture",
+      "Appointment booking",
+      "Advanced analytics",
+    ],
+    cta: "Order Team Card",
+    href: "/checkout?plan=jostap_nfc&billing=one_time",
     highlight: false,
   },
 ];

@@ -27,12 +27,11 @@ import {
   publicCardUrl,
 } from "../../../utils/publicUrl";
 
-const DOWNLOADABLE_QR_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "premium_renewal"]);
+const DOWNLOADABLE_QR_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
 
 function hasDownloadableQr(plan) {
   return DOWNLOADABLE_QR_PLANS.has(String(plan || "").toLowerCase());
 }
-
 function CardPreview({ card }) {
   const theme = CARD_THEMES.find((item) => item.name === card.template) || CARD_THEMES[0];
   const initials =
@@ -170,7 +169,6 @@ function CardPreview({ card }) {
     </div>
   );
 }
-
 function CardRow({ card, qrLocked }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [actionError, setActionError] = useState("");

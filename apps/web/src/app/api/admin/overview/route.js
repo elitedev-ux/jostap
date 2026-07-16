@@ -37,10 +37,10 @@ function isMissingTableError(error, tableName) {
 
 const DEFAULT_PLAN_PRICE_KOBO = {
   free: { free: 0 },
-  jostap_nfc: { one_time: 2500000 },
-  custom_nfc: { one_time: 3000000 },
-  basic_renewal: { yearly: 120000 },
-  premium_renewal: { yearly: 2737500 },
+  jostap_nfc: { one_time: 2000000 },
+  custom_nfc: { one_time: 2500000 },
+  basic_renewal: { yearly: 1000000 },
+  premium_renewal: { yearly: 1500000 },
 };
 
 function currentPlanPrice(plan, cycle, value) {
@@ -72,7 +72,7 @@ function planLabel(plan) {
   if (plan === "free") return "Free";
   if (plan === "jostap_nfc") return "JOSTAP Card";
   if (plan === "custom_nfc") return "Custom Card";
-  if (plan === "basic_renewal") return "Basic Renewal";
+  if (plan === "basic_renewal") return "Team Access Renewal";
   if (plan === "premium_renewal") return "Premium Access";
   return plan || "Unknown";
 }
@@ -151,8 +151,9 @@ function planFromPaystackTransaction(transaction, localPayment) {
   if (plan) return plan;
 
   const amount = Number(transaction?.amount || 0);
-  if (amount === 3000000) return "custom_nfc";
-  if (amount === 2737500) return "premium_renewal";
+  if (amount === 2500000 || amount === 3000000) return "custom_nfc";
+  if (amount === 1000000) return "basic_renewal";
+  if (amount === 1500000 || amount === 2737500) return "premium_renewal";
   return "jostap_nfc";
 }
 
@@ -458,7 +459,7 @@ export async function GET(request) {
     paystackSucceededPayments.map((payment) => payment.customerEmail).filter(Boolean),
   );
   const paystackCustomerCount = Math.max(paystackPaidUserIds.size, paystackCustomerEmails.size);
-  const paidPlanSlugs = new Set(["jostap_nfc", "custom_nfc", "premium_renewal"]);
+  const paidPlanSlugs = new Set(["jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
   const premiumSubscriptions = customerActiveSubscriptions.filter((item) =>
     paidPlanSlugs.has(item.plan) && paystackPaidUserIds.has(item.user_id),
   );
