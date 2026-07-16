@@ -171,16 +171,20 @@ export function isCompanyAccount(profile) {
 }
 
 export async function purchasedCardSlotsForUser(supabase, userId) {
-  const { count, error } = await supabase
+  const { data, error } = await supabase
     .from("payments")
-    .select("id", { count: "exact", head: true })
+    .select("order_account")
     .eq("user_id", userId)
     .eq("provider", "paystack")
     .eq("status", "succeeded")
     .in("order_plan", COMPANY_CARD_PURCHASE_PLANS);
 
   if (error) throw error;
-  return Number(count || 0);
+
+  return (data || []).reduce((slots, payment) => {
+    const quantity = Math.floor(Number(payment.order_account?.quantity || 1));
+    return slots + (Number.isFinite(quantity) ? Math.max(1, quantity) : 1);
+  }, 0);
 }
 
 async function profileForUser(supabase, userId) {

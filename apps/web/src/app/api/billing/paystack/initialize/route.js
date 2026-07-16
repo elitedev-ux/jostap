@@ -43,6 +43,12 @@ function cleanText(value, maxLength = 160) {
   return String(value || "").trim().slice(0, maxLength);
 }
 
+function cleanQuantity(value) {
+  const quantity = Math.floor(Number(value || 1));
+  if (!Number.isFinite(quantity)) return 1;
+  return Math.min(Math.max(quantity, 1), 100);
+}
+
 function checkoutFromPath(path) {
   try {
     const url = new URL(path || "", "https://jostap.com");
@@ -128,6 +134,9 @@ export async function POST(request) {
       return badRequest("Choose a valid paid plan and billing cycle.");
     }
 
+    const isCardPurchasePlan = COMPANY_CARD_PURCHASE_PLANS.includes(plan) && billingCycle === "one_time";
+    const quantity = isCardPurchasePlan ? cleanQuantity(body?.quantity) : 1;
+
     try {
       assertPaystackConfigured();
     } catch (error) {
@@ -143,10 +152,11 @@ export async function POST(request) {
     }
 
     const configuredAmountKobo = await planAmountKobo(supabase, plan, billingCycle);
-    const amountKobo = configuredAmountKobo ||
+    const unitAmountKobo = configuredAmountKobo ||
       (selectedProduct
         ? Math.max(0, Math.round(Number(selectedProduct.priceCents || 0)))
         : 0);
+    const amountKobo = unitAmountKobo * quantity;
 
     if (!amountKobo) {
       return badRequest("This card does not have a configured Paystack amount.");
@@ -222,11 +232,14 @@ export async function POST(request) {
     const reference = makePaystackReference(user.id);
     const orderId = makePaystackOrderId();
     const productName = selectedProduct?.name || paystackPlanName(plan);
+    const displayProductName = quantity > 1 ? `${productName} x ${quantity}` : productName;
     const userName = [user.first_name, user.last_name].filter(Boolean).join(" ").trim();
     const orderAccount = {
       name: cleanText(account.name || userName || user.email),
       email: cleanText(account.email || user.email),
       company: cleanText(account.company || user.company),
+      quantity,
+      unit_amount_cents: unitAmountKobo,
     };
     const { data: payment, error: paymentError } = await supabase
       .from("payments")
@@ -240,7 +253,7 @@ export async function POST(request) {
         provider_payment_id: reference,
         order_id: orderId,
         order_plan: plan,
-        order_product_name: productName,
+        order_product_name: displayProductName,
         order_account: orderAccount,
       })
       .select("*")
@@ -263,10 +276,12 @@ export async function POST(request) {
         subscription_id: subscription.id,
         payment_id: payment.id,
         order_id: orderId,
-        product_name: productName,
+        product_name: displayProductName,
         product_slug: selectedProduct?.slug || "",
         plan,
         billing_cycle: billingCycle,
+        quantity,
+        unit_amount_cents: unitAmountKobo,
       },
     });
 

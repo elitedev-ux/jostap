@@ -108,6 +108,12 @@ function money(cents, currency = "NGN") {
   }).format(Number(cents || 0) / 100);
 }
 
+function cleanQuantity(value) {
+  const quantity = Math.floor(Number(value || 1));
+  if (!Number.isFinite(quantity)) return 1;
+  return Math.min(Math.max(quantity, 1), 100);
+}
+
 function checkoutFromPath(path) {
   try {
     const url = new URL(path || "", window.location.origin);
@@ -136,6 +142,7 @@ const getCheckoutFromUrl = () => {
     plan: PLANS[plan] ? plan : "jostap_nfc",
     billing: ["one_time", "yearly", "free"].includes(billing) ? billing : "one_time",
     productSlug: String(params.get("product") || params.get("productSlug") || "").trim(),
+    quantity: cleanQuantity(params.get("quantity") || 1),
   };
 };
 
@@ -187,6 +194,7 @@ export default function CheckoutPage() {
   const [planKey, setPlanKey] = useState("jostap_nfc");
   const [billing, setBilling] = useState("one_time");
   const [productSlug, setProductSlug] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [loadingProduct, setLoadingProduct] = useState(false);
   const [authStatus, setAuthStatus] = useState("checking");
@@ -203,6 +211,7 @@ export default function CheckoutPage() {
     setPlanKey(checkout.plan);
     setBilling(checkout.billing);
     setProductSlug(checkout.productSlug);
+    setQuantity(checkout.quantity);
 
     const params = new URLSearchParams(window.location.search);
     const payment = params.get("payment");
@@ -303,11 +312,20 @@ export default function CheckoutPage() {
 
   const plan = PLANS[planKey];
   const isFreePlan = planKey === "free" || billing === "free";
+  const isCardPurchase = ["jostap_nfc", "custom_nfc"].includes(planKey) && billing === "one_time";
+  const normalizedQuantity = isCardPurchase ? cleanQuantity(quantity) : 1;
+  const unitAmountKobo = selectedProduct
+    ? Number(selectedProduct.priceCents || 0)
+    : Number(plan.price || 0) * 100;
+  const totalAmountKobo = unitAmountKobo * normalizedQuantity;
   const selectedProductPrice = selectedProduct
     ? money(selectedProduct.priceCents, selectedProduct.currency)
     : "";
   const orderName = selectedProduct?.name || plan.name;
-  const orderPrice = selectedProductPrice || plan.displayPrice || `\u20A6${plan.price}`;
+  const unitPrice = selectedProductPrice || plan.displayPrice || `\u20A6${plan.price}`;
+  const orderPrice = isCardPurchase && normalizedQuantity > 1
+    ? money(totalAmountKobo, selectedProduct?.currency || "NGN")
+    : unitPrice;
   const billedToday = isFreePlan ? "\u20A60" : orderPrice;
   const nextChargeLabel =
     billing === "yearly" ? `${orderPrice}/year` : billing === "free" ? "\u20A60" : "No recurring charge";
@@ -343,6 +361,7 @@ export default function CheckoutPage() {
           plan: planKey,
           billingCycle: billing,
           productSlug,
+          quantity: normalizedQuantity,
           account,
         }),
       });
@@ -533,7 +552,12 @@ export default function CheckoutPage() {
                   {Object.entries(PLANS).map(([key, item]) => (
                     <button
                       key={key}
-                      onClick={() => setPlanKey(key)}
+                      onClick={() => {
+                        setPlanKey(key);
+                        if (!["jostap_nfc", "custom_nfc"].includes(key)) {
+                          setQuantity(1);
+                        }
+                      }}
                       type="button"
                       style={{
                         textAlign: "left",
@@ -563,6 +587,100 @@ export default function CheckoutPage() {
                       </span>
                     </button>
                   ))}
+                </div>
+              )}
+
+              {isCardPurchase && (
+                <div
+                  style={{
+                    border: "1px solid #E5E7EB",
+                    borderRadius: 12,
+                    background: "#fff",
+                    padding: 16,
+                    marginBottom: 20,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 16,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div>
+                      <p style={{ color: "#111827", fontSize: 14, fontWeight: 800, marginBottom: 4 }}>
+                        Number of card slots
+                      </p>
+                      <p style={{ color: "#6B7280", fontSize: 13, lineHeight: 1.5 }}>
+                        Buy multiple cards now for your team members.
+                      </p>
+                    </div>
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        border: "1px solid #D1D5DB",
+                        borderRadius: 10,
+                        overflow: "hidden",
+                        background: "#fff",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setQuantity((current) => cleanQuantity(Number(current) - 1))}
+                        style={{
+                          width: 42,
+                          height: 42,
+                          border: "none",
+                          borderRight: "1px solid #E5E7EB",
+                          background: "#f5f5f5",
+                          color: "#111827",
+                          fontSize: 18,
+                          fontWeight: 800,
+                          cursor: "pointer",
+                        }}
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={quantity}
+                        onChange={(event) => setQuantity(cleanQuantity(event.target.value))}
+                        style={{
+                          width: 72,
+                          height: 42,
+                          border: "none",
+                          outline: "none",
+                          textAlign: "center",
+                          color: "#111827",
+                          fontSize: 15,
+                          fontWeight: 800,
+                        }}
+                        aria-label="Number of card slots"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setQuantity((current) => cleanQuantity(Number(current) + 1))}
+                        style={{
+                          width: 42,
+                          height: 42,
+                          border: "none",
+                          borderLeft: "1px solid #E5E7EB",
+                          background: "#f5f5f5",
+                          color: "#111827",
+                          fontSize: 18,
+                          fontWeight: 800,
+                          cursor: "pointer",
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -737,7 +855,7 @@ export default function CheckoutPage() {
                     ? "Create account to continue"
                   : isFreePlan
                     ? "Activate free plan"
-                    : "Pay with Paystack"}
+                    : `Pay ${billedToday} with Paystack`}
               </button>
             </div>
           </form>
@@ -805,6 +923,11 @@ export default function CheckoutPage() {
               <p style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>
                 {selectedProduct?.subtitle || `${plan.billingLabel} - ${plan.cards}`}
               </p>
+              {isCardPurchase && normalizedQuantity > 1 && (
+                <p style={{ color: "#6B7280", fontSize: 12, fontWeight: 700, marginTop: 8 }}>
+                  {unitPrice} x {normalizedQuantity} card slots
+                </p>
+              )}
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -844,7 +967,7 @@ export default function CheckoutPage() {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6B7280", fontSize: 13 }}>
-                  Due today
+                  {isCardPurchase ? "Total due today" : "Due today"}
                 </span>
                 <span style={{ color: "#111827", fontSize: 13, fontWeight: 700 }}>
                   {billedToday}

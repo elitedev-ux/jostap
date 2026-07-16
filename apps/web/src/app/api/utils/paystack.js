@@ -79,6 +79,18 @@ function clean(value, maxLength = 160) {
   return String(value || "").trim().slice(0, maxLength);
 }
 
+function cleanQuantity(value) {
+  const quantity = Math.floor(Number(value || 1));
+  if (!Number.isFinite(quantity)) return 1;
+  return Math.max(1, quantity);
+}
+
+function cleanAmount(value) {
+  const amount = Math.round(Number(value || 0));
+  if (!Number.isFinite(amount)) return 0;
+  return Math.max(0, amount);
+}
+
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     String(value || ""),
@@ -268,6 +280,8 @@ async function recoverPaymentFromTransaction(supabase, transaction, reference, s
     name: clean(metadata.customer_name || userName || user.email),
     email: clean(transaction?.customer?.email || metadata.email || user.email),
     company: clean(metadata.company || user.company),
+    quantity: cleanQuantity(metadata.quantity),
+    unit_amount_cents: cleanAmount(metadata.unit_amount_cents || metadata.unitAmountCents),
   };
 
   const { data: payment, error } = await supabase

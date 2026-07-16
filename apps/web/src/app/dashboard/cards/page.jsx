@@ -556,10 +556,10 @@ export default function CardsPage() {
   const hasCards = cards.length > 0;
   const reachedCardLimit = cardLimit !== null && cards.length >= cardLimit;
   const companyLimitReached = reachedCardLimit && cardLimitReason === "company_purchase_limit";
-  const limitCtaHref = companyLimitReached ? "/shop" : "/pricing";
-  const limitCtaLabel = companyLimitReached ? "Buy more cards" : "Upgrade for more cards";
+  const limitCtaHref = companyLimitReached ? "/checkout?plan=jostap_nfc&billing=one_time" : "/pricing";
+  const limitCtaLabel = companyLimitReached ? "Buy more card slots" : "Upgrade for more cards";
   const limitMessage = companyLimitReached
-    ? `Your company account has ${cardLimit} purchased card slot${cardLimit === 1 ? "" : "s"}. Buy another card to create another card profile.`
+    ? `Your company account has ${cardLimit} purchased card slot${cardLimit === 1 ? "" : "s"}. Buy one or more card slots to create more team profiles.`
     : "Free users can create 1 card. Upgrade to create additional cards and unlock premium features.";
 
   return (
