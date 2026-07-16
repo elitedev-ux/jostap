@@ -200,7 +200,7 @@ export default function CheckoutPage() {
   const [billing, setBilling] = useState("one_time");
   const [productSlug, setProductSlug] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [accountType, setAccountType] = useState("individual");
+  const [accountType, setAccountType] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [loadingProduct, setLoadingProduct] = useState(false);
   const [authStatus, setAuthStatus] = useState("checking");
@@ -241,6 +241,7 @@ export default function CheckoutPage() {
         if (!active) return;
 
         if (!response.ok) {
+          setAccountType("individual");
           setAuthStatus("guest");
           return;
         }
@@ -255,6 +256,7 @@ export default function CheckoutPage() {
         }));
       } catch {
         if (active) {
+          setAccountType("individual");
           setAuthStatus("guest");
         }
       }
@@ -317,6 +319,7 @@ export default function CheckoutPage() {
     };
   }, [productSlug]);
 
+  const checkoutReady = authStatus !== "checking" && !loadingProduct && Boolean(accountType);
   const isTeamCheckout = accountType === "company";
   const visiblePlanKeys = isTeamCheckout ? TEAM_CARD_PLANS : INDIVIDUAL_CARD_PLANS;
   const plan = {
@@ -354,6 +357,8 @@ export default function CheckoutPage() {
     billing === "yearly" ? `${orderPrice}/year` : billing === "free" ? "\u20A60" : "No recurring charge";
 
   useEffect(() => {
+    if (!accountType) return;
+
     if (accountType === "company" && planKey !== "custom_nfc") {
       setPlanKey("custom_nfc");
       setBilling("one_time");
@@ -545,7 +550,22 @@ export default function CheckoutPage() {
                 </p>
               </div>
 
-              {selectedProduct ? (
+              {!checkoutReady ? (
+                <div
+                  style={{
+                    border: "1px solid #E5E7EB",
+                    borderRadius: 12,
+                    background: "#FAFBFF",
+                    padding: 16,
+                    marginBottom: 24,
+                    color: "#374151",
+                    fontSize: 14,
+                    fontWeight: 700,
+                  }}
+                >
+                  Preparing the correct card options...
+                </div>
+              ) : selectedProduct ? (
                 <div
                   style={{
                     border: "2px solid #0d6ffd",
@@ -639,7 +659,7 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              {isBulkCardPurchase && (
+              {checkoutReady && isBulkCardPurchase && (
                 <div
                   style={{
                     border: "1px solid #E5E7EB",
@@ -878,7 +898,7 @@ export default function CheckoutPage() {
               )}
 
               <button
-                disabled={loading || authStatus === "checking"}
+                disabled={loading || !checkoutReady}
                 type={authStatus === "guest" ? "button" : "submit"}
                 onClick={authStatus === "guest" ? redirectToAccount : undefined}
                 style={{
@@ -886,9 +906,9 @@ export default function CheckoutPage() {
                   marginTop: 20,
                   border: "none",
                   borderRadius: 10,
-                  background: loading || authStatus === "checking" ? "#8fc1ff" : "#0d6ffd",
+                  background: loading || !checkoutReady ? "#8fc1ff" : "#0d6ffd",
                   color: "#fff",
-                  cursor: loading || authStatus === "checking" ? "not-allowed" : "pointer",
+                  cursor: loading || !checkoutReady ? "not-allowed" : "pointer",
                   fontSize: 15,
                   fontWeight: 700,
                   padding: "13px 18px",
@@ -898,8 +918,8 @@ export default function CheckoutPage() {
                   ? isFreePlan
                     ? "Activating..."
                     : "Redirecting to Paystack..."
-                  : authStatus === "checking"
-                    ? "Checking account..."
+                  : !checkoutReady
+                    ? "Preparing checkout..."
                   : authStatus === "guest"
                     ? "Create account to continue"
                   : isFreePlan
@@ -941,45 +961,61 @@ export default function CheckoutPage() {
                 marginBottom: 18,
               }}
             >
-              <p
-                style={{
-                  color: "#0d6ffd",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  marginBottom: 5,
-                }}
-              >
-                {orderName}
-              </p>
-              <p
-                className="checkout-summary-price"
-                style={{
-                  color: "#111827",
-                  fontSize: 30,
-                  fontWeight: 800,
-                  letterSpacing: 0,
-                }}
-              >
-                {orderPrice}
-              </p>
-              {plan.previousPrice && (
-                <p style={{ color: "#6B7280", fontSize: 12, fontWeight: 700, marginTop: 4 }}>
-                  Regular: {plan.previousPrice}
-                </p>
-              )}
-              <p style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>
-                {selectedProduct?.subtitle || `${plan.billingLabel} - ${plan.cards}`}
-              </p>
-              {isBulkCardPurchase && normalizedQuantity > 1 && (
-                <p style={{ color: "#6B7280", fontSize: 12, fontWeight: 700, marginTop: 8 }}>
-                  {unitPrice} x {normalizedQuantity} card slots
-                </p>
+              {!checkoutReady ? (
+                <>
+                  <p style={{ color: "#0d6ffd", fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 5 }}>
+                    Preparing order
+                  </p>
+                  <p className="checkout-summary-price" style={{ color: "#111827", fontSize: 30, fontWeight: 800, letterSpacing: 0 }}>
+                    ...
+                  </p>
+                  <p style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>
+                    Confirming your account type before showing card pricing.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p
+                    style={{
+                      color: "#0d6ffd",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      marginBottom: 5,
+                    }}
+                  >
+                    {orderName}
+                  </p>
+                  <p
+                    className="checkout-summary-price"
+                    style={{
+                      color: "#111827",
+                      fontSize: 30,
+                      fontWeight: 800,
+                      letterSpacing: 0,
+                    }}
+                  >
+                    {orderPrice}
+                  </p>
+                  {plan.previousPrice && (
+                    <p style={{ color: "#6B7280", fontSize: 12, fontWeight: 700, marginTop: 4 }}>
+                      Regular: {plan.previousPrice}
+                    </p>
+                  )}
+                  <p style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>
+                    {selectedProduct?.subtitle || `${plan.billingLabel} - ${plan.cards}`}
+                  </p>
+                  {isBulkCardPurchase && normalizedQuantity > 1 && (
+                    <p style={{ color: "#6B7280", fontSize: 12, fontWeight: 700, marginTop: 8 }}>
+                      {unitPrice} x {normalizedQuantity} card slots
+                    </p>
+                  )}
+                </>
               )}
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {checkoutReady && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {plan.features.map((feature) => (
                 <div
                   key={feature}
@@ -994,7 +1030,7 @@ export default function CheckoutPage() {
                   <Check size={14} color="#0d6ffd" /> {feature}
                 </div>
               ))}
-            </div>
+            </div>}
 
             <div
               style={{
@@ -1006,30 +1042,30 @@ export default function CheckoutPage() {
                 gap: 10,
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
+              {checkoutReady && <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6B7280", fontSize: 13 }}>
                   {plan.trial}
                 </span>
                 <span style={{ color: "#111827", fontSize: 13, fontWeight: 600 }}>
                   {"\u20A60"}
                 </span>
-              </div>
+              </div>}
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6B7280", fontSize: 13 }}>
                   {isBulkCardPurchase ? "Total due today" : "Due today"}
                 </span>
                 <span style={{ color: "#111827", fontSize: 13, fontWeight: 700 }}>
-                  {billedToday}
+                  {checkoutReady ? billedToday : "..."}
                 </span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
+              {checkoutReady && <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6B7280", fontSize: 13 }}>
                   Next charge
                 </span>
                 <span style={{ color: "#111827", fontSize: 13, fontWeight: 700 }}>
                   {nextChargeLabel}
                 </span>
-              </div>
+              </div>}
             </div>
 
             <div

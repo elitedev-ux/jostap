@@ -517,11 +517,13 @@ export default function CardsPage() {
   const [cards, setCards] = useState([]);
   const [search, setSearch] = useState("");
   const [loadError, setLoadError] = useState("");
+  const [loadingCards, setLoadingCards] = useState(true);
   const [qrLocked, setQrLocked] = useState(true);
   const [cardLimit, setCardLimit] = useState(null);
   const [cardLimitReason, setCardLimitReason] = useState("plan_card_limit");
 
   const refreshCards = async (force = false) => {
+    setLoadingCards(true);
     try {
       const data = await getDashboardData({ period: "30d", force });
       const features = data.billing?.subscription?.features || {};
@@ -533,6 +535,8 @@ export default function CardsPage() {
     } catch (error) {
       setCards([]);
       setLoadError(error.message || "Unable to load cards.");
+    } finally {
+      setLoadingCards(false);
     }
   };
 
@@ -587,9 +591,26 @@ export default function CardsPage() {
             My Cards
           </h1>
           <p style={{ fontSize: 14, color: "#6B7280" }}>
-            {cards.length} cards created. Start with a blank card and publish when ready.
+            {loadingCards ? "Loading your card profiles..." : `${cards.length} cards created. Start with a blank card and publish when ready.`}
           </p>
         </div>
+        {loadingCards ? (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              fontSize: 14,
+              fontWeight: 600,
+              color: "#6B7280",
+              padding: "9px 18px",
+              borderRadius: 9,
+              background: "#E5E7EB",
+            }}
+          >
+            Loading cards...
+          </span>
+        ) : (
         <a
           href={reachedCardLimit ? limitCtaHref : "/create-card"}
           style={{
@@ -607,9 +628,10 @@ export default function CardsPage() {
         >
           <Plus size={15} /> {reachedCardLimit ? limitCtaLabel : "New Card"}
         </a>
+        )}
       </div>
 
-      {reachedCardLimit && (
+      {!loadingCards && reachedCardLimit && (
         <div
           style={{
             background: "#FFFBEB",
@@ -626,7 +648,7 @@ export default function CardsPage() {
         </div>
       )}
 
-      {hasCards && (
+      {!loadingCards && hasCards && (
         <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
           <div
             style={{
@@ -694,7 +716,7 @@ export default function CardsPage() {
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {filtered.map((card) => (
+        {!loadingCards && filtered.map((card) => (
           <CardRow
             key={card.id}
             card={card}
@@ -703,7 +725,15 @@ export default function CardsPage() {
         ))}
       </div>
 
-      {filtered.length === 0 && (
+      {loadingCards ? (
+        <div className="ui-empty-state">
+          <div className="ui-empty-state__icon">
+            <Search size={18} />
+          </div>
+          <p className="ui-empty-state__title">Loading cards</p>
+          <p className="ui-empty-state__copy">Checking your account limits and card profiles.</p>
+        </div>
+      ) : filtered.length === 0 && (
         <div className="ui-empty-state">
           <div className="ui-empty-state__icon">
             <Search size={18} />

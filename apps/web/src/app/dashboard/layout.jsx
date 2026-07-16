@@ -118,10 +118,13 @@ export default function DashboardLayout({ children }) {
     };
   }, []);
 
+  const shellLoaded = Boolean(account && billing);
   const accountName = account?.name || "Account";
   const accountAvatar = account?.kyc?.avatarUrl || "";
   const planName =
-    billing?.subscription?.plan === "trial"
+    !shellLoaded
+      ? "Loading plan"
+      : billing?.subscription?.plan === "trial"
       ? "Free Trial"
       : billing?.subscription?.plan === "custom_nfc"
         ? "Custom Card"
@@ -132,10 +135,10 @@ export default function DashboardLayout({ children }) {
             : billing?.subscription?.plan === "basic_renewal"
               ? "Team Access Renewal"
             : "Free";
-  const cardLimit = billing?.subscription?.cardLimit ?? 5;
-  const cardsUsed = billing?.usage?.cards ?? 0;
-  const cardLimitLabel = cardLimit ? `${cardsUsed} / ${cardLimit}` : `${cardsUsed}`;
-  const cardUsageProgress = cardLimit ? Math.min((cardsUsed / cardLimit) * 100, 100) : 100;
+  const cardLimit = shellLoaded ? billing?.subscription?.cardLimit ?? null : null;
+  const cardsUsed = shellLoaded ? billing?.usage?.cards ?? 0 : 0;
+  const cardLimitLabel = !shellLoaded ? "Loading" : cardLimit ? `${cardsUsed} / ${cardLimit}` : `${cardsUsed}`;
+  const cardUsageProgress = !shellLoaded ? 0 : cardLimit ? Math.min((cardsUsed / cardLimit) * 100, 100) : 100;
   const isPaidPremium =
     Boolean(billing?.subscription?.features?.hasPremiumFeatures) &&
     !["free", "trial"].includes(String(billing?.subscription?.plan || "free"));
@@ -289,14 +292,20 @@ export default function DashboardLayout({ children }) {
                   {planName}
                 </p>
                 <p className="dashboard-plan-card__status">
-                  {isPaidPremium
+                  {!shellLoaded
+                    ? "Loading account..."
+                    : isPaidPremium
                     ? "Premium active"
                     : billing?.subscription?.plan === "trial"
                     ? `${billing.subscription.trial?.daysRemaining || 0} days left`
                     : `${cardLimitLabel} cards used`}
                 </p>
               </div>
-              {isPaidPremium ? (
+              {!shellLoaded ? (
+                <span className="dashboard-plan-card__upgrade" aria-hidden="true">
+                  ...
+                </span>
+              ) : isPaidPremium ? (
                 <span className="dashboard-plan-card__badge">
                   <Gem size={12} /> Premium
                 </span>

@@ -264,11 +264,12 @@ export default function CardBuilderPage({ mode = "user" }) {
   const [imageMessage, setImageMessage] = useState("");
   const [qrLocked, setQrLocked] = useState(true);
   const [currentPlan, setCurrentPlan] = useState(isAdminMode ? "custom_nfc" : "free");
+  const [planLoaded, setPlanLoaded] = useState(isAdminMode);
   const [users, setUsers] = useState([]);
   const [assignedUserId, setAssignedUserId] = useState("");
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
-  const canUsePremiumFields = isAdminMode || hasPremiumFeatures(currentPlan);
-  const canCustomizeBrand = isAdminMode || hasCustomBranding(currentPlan);
+  const canUsePremiumFields = isAdminMode || (planLoaded && hasPremiumFeatures(currentPlan));
+  const canCustomizeBrand = isAdminMode || (planLoaded && hasCustomBranding(currentPlan));
   const previewFields = useMemo(() => {
     const next = new Set(activeFields);
     if (!canUsePremiumFields) {
@@ -311,15 +312,23 @@ export default function CardBuilderPage({ mode = "user" }) {
       try {
         const response = await fetch("/api/billing", { credentials: "same-origin" });
         const data = await response.json().catch(() => ({}));
-        if (!active || !response.ok) return;
+        if (!active) return;
+        if (!response.ok) {
+          setCurrentPlan("free");
+          setQrLocked(true);
+          setPlanLoaded(true);
+          return;
+        }
         const plan = data.subscription?.plan || "free";
         const features = data.subscription?.features || {};
         setCurrentPlan(plan);
         setQrLocked(features.hasDownloadableQr === undefined ? !hasDownloadableQr(plan) : !features.hasDownloadableQr);
+        setPlanLoaded(true);
       } catch {
         if (active) {
           setCurrentPlan("free");
           setQrLocked(true);
+          setPlanLoaded(true);
         }
       }
     }
@@ -329,6 +338,7 @@ export default function CardBuilderPage({ mode = "user" }) {
         if (isAdminMode) {
           setCurrentPlan("custom_nfc");
           setQrLocked(false);
+          setPlanLoaded(true);
           const [overviewResponse, cardResponse] = await Promise.all([
             fetch("/api/admin/overview", { credentials: "same-origin" }),
             editing ? fetch(`/api/admin/cards/${id}`, { credentials: "same-origin" }) : Promise.resolve(null),
@@ -378,7 +388,7 @@ export default function CardBuilderPage({ mode = "user" }) {
           return;
         }
 
-        loadBillingPlan();
+        await loadBillingPlan();
         if (editing) {
           const found = await getCard(id);
           if (!active) return;

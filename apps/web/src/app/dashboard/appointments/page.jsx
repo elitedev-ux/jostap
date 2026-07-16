@@ -45,6 +45,7 @@ function UpgradeGate() {
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState([]);
   const [loadError, setLoadError] = useState("");
+  const [loadingAppointments, setLoadingAppointments] = useState(true);
   const [locked, setLocked] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [busyId, setBusyId] = useState("");
@@ -53,6 +54,7 @@ export default function AppointmentsPage() {
   const [counts, setCounts] = useState({ total: 0, pending: 0, approved: 0, rejected: 0, cancelled: 0, completed: 0 });
 
   async function loadAppointments({ active = true, offset = 0, append = false } = {}) {
+    if (!append) setLoadingAppointments(true);
     try {
       const dashboardData = await getDashboardData({ period: "30d" });
       const billingData = dashboardData.billing || {};
@@ -64,6 +66,7 @@ export default function AppointmentsPage() {
       if (!canUseAppointments) {
         setLocked(true);
         setAppointments([]);
+        setLoadingAppointments(false);
         return;
       }
       setLocked(false);
@@ -91,6 +94,7 @@ export default function AppointmentsPage() {
         setPageInfo(data.pagination || { limit: APPOINTMENTS_PAGE_SIZE, offset, total: 0, hasMore: false });
         setCounts(data.counts || { total: 0, pending: 0, approved: 0, rejected: 0, cancelled: 0, completed: 0 });
         setLoadError("");
+        setLoadingAppointments(false);
       }
     } catch (error) {
       if (error.status === 401) {
@@ -101,6 +105,7 @@ export default function AppointmentsPage() {
       if (active) {
         setAppointments([]);
         setLoadError(error.message || "Unable to load appointments.");
+        setLoadingAppointments(false);
       }
     }
   }
@@ -145,6 +150,18 @@ export default function AppointmentsPage() {
       setBusyId("");
     }
   };
+
+  if (loadingAppointments && locked === null) {
+    return (
+      <div className="ui-empty-state">
+        <div className="ui-empty-state__icon">
+          <Calendar size={18} />
+        </div>
+        <p className="ui-empty-state__title">Loading appointments</p>
+        <p className="ui-empty-state__copy">Checking appointment access and recent requests.</p>
+      </div>
+    );
+  }
 
   if (locked) return <UpgradeGate />;
 

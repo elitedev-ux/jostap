@@ -46,6 +46,7 @@ export default function AnalyticsPage() {
   const [selectedCardId, setSelectedCardId] = useState("all");
   const [analytics, setAnalytics] = useState(null);
   const [loadError, setLoadError] = useState("");
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
   const [advancedLocked, setAdvancedLocked] = useState(true);
   const totals = analytics?.totals || {};
   const cardOptions = analytics?.cardOptions || [];
@@ -61,6 +62,7 @@ export default function AnalyticsPage() {
     let active = true;
 
     async function loadAnalytics() {
+      setLoadingAnalytics(true);
       try {
         const data = await getDashboardData({ period, cardId: selectedCardId });
         const features = data.billing?.subscription?.features || {};
@@ -81,6 +83,8 @@ export default function AnalyticsPage() {
         }
 
         if (active) setLoadError(error.message || "Unable to load analytics.");
+      } finally {
+        if (active) setLoadingAnalytics(false);
       }
     }
 
@@ -139,6 +143,7 @@ export default function AnalyticsPage() {
               id="analytics-card-filter"
               value={selectedCardId}
               onChange={(event) => setSelectedCardId(event.target.value)}
+              disabled={loadingAnalytics}
               style={{
                 minWidth: 180,
                 maxWidth: 260,
@@ -193,7 +198,7 @@ export default function AnalyticsPage() {
           </div>
           <button
             onClick={() => {
-              if (advancedLocked) window.location.href = "/pricing";
+              if (!loadingAnalytics && advancedLocked) window.location.href = "/pricing";
             }}
             style={{
               display: "flex",
@@ -209,7 +214,7 @@ export default function AnalyticsPage() {
               cursor: "pointer",
             }}
           >
-            {advancedLocked ? <LockKeyhole size={13} /> : <Download size={13} />} {advancedLocked ? "Upgrade" : "Export CSV"}
+            {loadingAnalytics ? <LockKeyhole size={13} /> : advancedLocked ? <LockKeyhole size={13} /> : <Download size={13} />} {loadingAnalytics ? "Loading..." : advancedLocked ? "Upgrade" : "Export CSV"}
           </button>
         </div>
       </div>
@@ -231,7 +236,16 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      {/* KPI row */}
+      {loadingAnalytics && !analytics ? (
+        <div className="ui-empty-state" style={{ marginBottom: 20 }}>
+          <div className="ui-empty-state__icon">
+            <TrendingUp size={18} />
+          </div>
+          <p className="ui-empty-state__title">Loading analytics</p>
+          <p className="ui-empty-state__copy">Checking your profile data and feature access.</p>
+        </div>
+      ) : (
+      <>
       <div
         style={{
           display: "grid",
@@ -605,6 +619,8 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>}
+      </>
+      )}
 
     </>
   );
