@@ -218,6 +218,7 @@ export async function GET(request) {
   const period = periodFromRequest(request);
   const start = periodStart(period);
   const now = new Date().toISOString();
+  const requestedCardId = new URL(request.url).searchParams.get("cardId") || "all";
 
   const [
     { data: profile, error: profileError },
@@ -250,12 +251,12 @@ export async function GET(request) {
       .order("created_at", { ascending: false }),
     supabase
       .from("card_engagement_events")
-      .select("event_type, referrer, user_agent, created_at")
+      .select("card_id, event_type, referrer, user_agent, created_at")
       .eq("user_id", user.id)
       .gte("created_at", start.toISOString()),
     supabase
       .from("appointments")
-      .select("id, status, created_at")
+      .select("id, card_id, status, created_at")
       .eq("assigned_user_id", user.id)
       .gte("created_at", start.toISOString()),
     supabase
@@ -289,21 +290,38 @@ export async function GET(request) {
     throw error;
   }
 
-  const cardRows = cards || [];
-  const eventRows = events || [];
-  const appointmentRows = appointments || [];
+  const allCardRows = cards || [];
+  const selectedCardId = allCardRows.some((card) => card.id === requestedCardId) ? requestedCardId : "all";
+  const analyticsCardRows =
+    selectedCardId === "all"
+      ? allCardRows
+      : allCardRows.filter((card) => card.id === selectedCardId);
+  const eventRows =
+    selectedCardId === "all"
+      ? events || []
+      : (events || []).filter((event) => event.card_id === selectedCardId);
+  const allAppointmentRows = appointments || [];
+  const appointmentRows =
+    selectedCardId === "all"
+      ? allAppointmentRows
+      : allAppointmentRows.filter((appointment) => appointment.card_id === selectedCardId);
   const leadRows = leads || [];
   const usage = {
-    cards: cardRows.length,
-    views: total(cardRows, "views"),
-    qrScans: total(cardRows, "qr_scans"),
-    taps: total(cardRows, "taps"),
-    appointments: appointmentRows.length,
+    cards: allCardRows.length,
+    views: total(allCardRows, "views"),
+    qrScans: total(allCardRows, "qr_scans"),
+    taps: total(allCardRows, "taps"),
+    appointments: allAppointmentRows.length,
     leads: leadRows.length,
   };
   const totals = {
-    ...usage,
-    contactDownloads: total(cardRows, "contact_downloads"),
+    cards: analyticsCardRows.length,
+    views: total(analyticsCardRows, "views"),
+    qrScans: total(analyticsCardRows, "qr_scans"),
+    taps: total(analyticsCardRows, "taps"),
+    appointments: appointmentRows.length,
+    leads: leadRows.length,
+    contactDownloads: total(analyticsCardRows, "contact_downloads"),
     pendingAppointments: appointmentRows.filter((appointment) => appointment.status === "pending").length,
     approvedAppointments: appointmentRows.filter((appointment) => appointment.status === "approved").length,
     completedAppointments: appointmentRows.filter((appointment) => appointment.status === "completed").length,
@@ -334,15 +352,23 @@ export async function GET(request) {
       invoices: (invoices || []).map(invoiceFromRow),
       usage,
     },
-    cards: cardRows.map((row) => cardResponse(row, request)),
+    cards: allCardRows.map((row) => cardResponse(row, request)),
     analytics: {
       totals,
       period,
+      selectedCardId,
+      cardOptions: allCardRows.map((card) => ({
+        id: card.id,
+        name: card.name,
+        title: card.title || "",
+        company: card.company || "",
+        slug: card.slug || "",
+      })),
       trend: addAppointmentsToTrend({
         trend: buildTrend({ events: eventRows, period }),
         appointments: appointmentRows,
       }),
-      cards: cardRows.map((card) => ({
+      cards: analyticsCardRows.map((card) => ({
         id: card.id,
         name: card.name,
         slug: card.slug,

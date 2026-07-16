@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
 import {
-  BarChart3,
   Download,
   LockKeyhole,
   TrendingUp,
-  Globe,
-  ChevronDown,
 } from "lucide-react";
 import {
   AreaChart,
@@ -37,7 +34,7 @@ function AdvancedAnalyticsGate() {
         <LockKeyhole size={18} />
       </div>
       <p className="ui-empty-state__title">Advanced analytics unlock with premium access</p>
-      <p className="ui-empty-state__copy">Free cards include basic analytics. Upgrade for deeper visitor insights, referrers, location data, and exports.</p>
+      <p className="ui-empty-state__copy">Upgrade for deeper visitor insights, referrers, location data, and exports.</p>
       <a href="/pricing" style={{ display: "inline-flex", marginTop: 16, background: "#0d6ffd", color: "#fff", borderRadius: 9, padding: "10px 16px", textDecoration: "none", fontSize: 13, fontWeight: 800 }}>
         Upgrade plan
       </a>
@@ -46,11 +43,12 @@ function AdvancedAnalyticsGate() {
 }
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState("30d");
-  const [card, setCard] = useState("All Cards");
+  const [selectedCardId, setSelectedCardId] = useState("all");
   const [analytics, setAnalytics] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [advancedLocked, setAdvancedLocked] = useState(true);
   const totals = analytics?.totals || {};
+  const cardOptions = analytics?.cardOptions || [];
   const chartData = analytics?.trend || [];
   const barData = chartData.map((item) => ({
     day: item.date,
@@ -64,7 +62,7 @@ export default function AnalyticsPage() {
 
     async function loadAnalytics() {
       try {
-        const data = await getDashboardData({ period });
+        const data = await getDashboardData({ period, cardId: selectedCardId });
         const features = data.billing?.subscription?.features || {};
 
         if (!active) return;
@@ -72,6 +70,9 @@ export default function AnalyticsPage() {
           ? !hasPremiumFeatures(data.billing?.subscription?.plan)
           : !features.hasPremiumFeatures);
         setAnalytics(data.analytics || null);
+        if (data.analytics?.selectedCardId && data.analytics.selectedCardId !== selectedCardId) {
+          setSelectedCardId(data.analytics.selectedCardId);
+        }
         setLoadError("");
       } catch (error) {
         if (error.status === 401) {
@@ -88,7 +89,7 @@ export default function AnalyticsPage() {
     return () => {
       active = false;
     };
-  }, [period]);
+  }, [period, selectedCardId]);
 
   return (
     <>
@@ -115,11 +116,12 @@ export default function AnalyticsPage() {
             Analytics
           </h1>
           <p style={{ fontSize: 14, color: "#6B7280" }}>
-            Track performance across all your cards.
+            Track performance across all team cards or one card profile.
           </p>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <div
+          <label
+            htmlFor="analytics-card-filter"
             style={{
               display: "flex",
               alignItems: "center",
@@ -127,14 +129,37 @@ export default function AnalyticsPage() {
               background: "#fff",
               border: "1px solid #E5E7EB",
               borderRadius: 8,
-              padding: "7px 12px",
-              cursor: "pointer",
+              padding: "0 10px",
               fontSize: 13,
               color: "#374151",
             }}
           >
-            {card} <ChevronDown size={13} color="#9CA3AF" />
-          </div>
+            <span style={{ color: "#6B7280", fontWeight: 700 }}>Profile</span>
+            <select
+              id="analytics-card-filter"
+              value={selectedCardId}
+              onChange={(event) => setSelectedCardId(event.target.value)}
+              style={{
+                minWidth: 180,
+                maxWidth: 260,
+                border: "none",
+                outline: "none",
+                background: "transparent",
+                color: "#111827",
+                cursor: "pointer",
+                fontSize: 13,
+                fontWeight: 700,
+                padding: "8px 0",
+              }}
+            >
+              <option value="all">All team profiles</option>
+              {cardOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {[option.name, option.title].filter(Boolean).join(" - ") || option.slug || "Untitled profile"}
+                </option>
+              ))}
+            </select>
+          </label>
           <div
             style={{
               display: "inline-flex",
