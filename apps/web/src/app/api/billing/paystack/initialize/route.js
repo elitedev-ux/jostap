@@ -17,6 +17,10 @@ import {
   isMissingShopProductsTable,
   shopProductFromRow,
 } from "../../../utils/shopProducts.js";
+import {
+  COMPANY_CARD_PURCHASE_PLANS,
+  isCompanyAccount,
+} from "../../../utils/cards.js";
 
 const PLANS = new Set(["jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
 const CYCLES = new Set(["one_time", "yearly"]);
@@ -147,20 +151,37 @@ export async function POST(request) {
     }
 
     const now = new Date().toISOString();
-    const { data: existing, error: lookupError } = await supabase
-      .from("subscriptions")
-      .select("id,plan,status,provider,current_period_end")
-      .eq("user_id", user.id)
-      .in("status", ["pending", "active", "past_due"])
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const [
+      { data: existing, error: lookupError },
+      { data: profile, error: profileError },
+    ] = await Promise.all([
+      supabase
+        .from("subscriptions")
+        .select("id,plan,status,provider,current_period_end")
+        .eq("user_id", user.id)
+        .in("status", ["pending", "active", "past_due"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("kyc_profiles")
+        .select("account_type")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
 
-    if (lookupError) {
-      throw lookupError;
+    if (lookupError || profileError) {
+      throw lookupError || profileError;
     }
 
-    if (plan !== "premium_renewal" && hasConfirmedPaidAccess(existing)) {
+    const isCompanyCardPurchase =
+      isCompanyAccount(profile) && COMPANY_CARD_PURCHASE_PLANS.includes(plan);
+
+    if (
+      plan !== "premium_renewal" &&
+      hasConfirmedPaidAccess(existing) &&
+      !isCompanyCardPurchase
+    ) {
       return badRequest("This account already has an active paid plan.");
     }
 
@@ -174,18 +195,26 @@ export async function POST(request) {
       current_period_end: addPeriod(billingCycle),
     };
 
+    const shouldReuseActiveCompanySubscription =
+      isCompanyCardPurchase && hasConfirmedPaidAccess(existing);
     const shouldInsertRenewal =
       plan === "premium_renewal" && hasConfirmedPaidAccess(existing);
-    const subscriptionQuery = existing && !shouldInsertRenewal
-      ? supabase.from("subscriptions").update(subscriptionPayload).eq("id", existing.id)
-      : supabase.from("subscriptions").insert(subscriptionPayload);
+    let subscription = existing;
 
-    const { data: subscription, error: subscriptionError } = await subscriptionQuery
-      .select("*")
-      .single();
+    if (!shouldReuseActiveCompanySubscription) {
+      const subscriptionQuery = existing && !shouldInsertRenewal
+        ? supabase.from("subscriptions").update(subscriptionPayload).eq("id", existing.id)
+        : supabase.from("subscriptions").insert(subscriptionPayload);
 
-    if (subscriptionError) {
-      throw subscriptionError;
+      const { data, error: subscriptionError } = await subscriptionQuery
+        .select("*")
+        .single();
+
+      if (subscriptionError) {
+        throw subscriptionError;
+      }
+
+      subscription = data;
     }
 
     const reference = makePaystackReference(user.id);

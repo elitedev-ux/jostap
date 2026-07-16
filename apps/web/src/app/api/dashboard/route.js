@@ -1,5 +1,5 @@
 import { json, unauthorized } from "../utils/http.js";
-import { cardFromRow, cardLimitForPlan } from "../utils/cards.js";
+import { cardFromRow, cardLimitForPlan, cardLimitForUserAccount } from "../utils/cards.js";
 import { accountFromUserAndKyc } from "../utils/profile.js";
 import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin } from "../utils/supabase.js";
@@ -141,12 +141,14 @@ function addAppointmentsToTrend({ trend, appointments }) {
   return trend;
 }
 
-function subscriptionFromRow(row, user) {
+function subscriptionFromRow(row, user, cardLimitInfo = null) {
   const trial = trialStateFromUser(user);
   const billingPlan = row?.plan || "free";
   const accessPlan = hasConfirmedPlanAccess(row) ? billingPlan : "free";
   const features = accessFromPlanAndTrial(accessPlan, trial);
-  const cardLimit = features.hasPremiumFeatures ? null : cardLimitForPlan(accessPlan);
+  const defaultCardLimit = features.hasPremiumFeatures ? null : cardLimitForPlan(accessPlan);
+  const cardLimit = cardLimitInfo ? cardLimitInfo.limit : defaultCardLimit;
+  const cardLimitReason = cardLimitInfo?.reason || (cardLimit === null ? "unlimited" : "plan_card_limit");
 
   if (!row) {
     return {
@@ -158,6 +160,8 @@ function subscriptionFromRow(row, user) {
       currentPeriodStart: "",
       currentPeriodEnd: "",
       cardLimit,
+      cardLimitReason,
+      purchasedCardSlots: cardLimitInfo?.purchasedSlots ?? null,
       trial,
       features,
     };
@@ -174,6 +178,8 @@ function subscriptionFromRow(row, user) {
     currentPeriodStart: row.current_period_start || "",
     currentPeriodEnd: row.current_period_end || "",
     cardLimit,
+    cardLimitReason,
+    purchasedCardSlots: cardLimitInfo?.purchasedSlots ?? null,
     trial,
     features,
   };
@@ -310,11 +316,21 @@ export async function GET(request) {
     ...announcement,
     isRead: readIds.has(announcement.id),
   }));
+  const subscription = preferredSubscription(subscriptionRows || []);
+  const billingPlan = hasConfirmedPlanAccess(subscription)
+    ? subscription?.plan || "free"
+    : "free";
+  const cardLimitInfo = await cardLimitForUserAccount(
+    supabase,
+    user.id,
+    billingPlan,
+    profile,
+  );
 
   return json({
     account: accountFromUserAndKyc(user, profile),
     billing: {
-      subscription: subscriptionFromRow(preferredSubscription(subscriptionRows || []), user),
+      subscription: subscriptionFromRow(subscription, user, cardLimitInfo),
       invoices: (invoices || []).map(invoiceFromRow),
       usage,
     },

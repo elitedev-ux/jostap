@@ -15,6 +15,7 @@ export function isEmail(value) {
 }
 
 const FREE_CARD_LIMIT = 1;
+export const COMPANY_CARD_PURCHASE_PLANS = ["jostap_nfc", "custom_nfc"];
 const MULTI_VALUE_SOCIAL_FIELDS = new Set([
   "twitter",
   "instagram",
@@ -165,8 +166,56 @@ export function cardLimitForPlan(plan) {
   return String(plan || "free").toLowerCase() === "free" ? FREE_CARD_LIMIT : null;
 }
 
-export async function assertCanCreateCard(supabase, userId, plan) {
+export function isCompanyAccount(profile) {
+  return String(profile?.account_type || profile?.accountType || "").toLowerCase() === "company";
+}
+
+export async function purchasedCardSlotsForUser(supabase, userId) {
+  const { count, error } = await supabase
+    .from("payments")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("provider", "paystack")
+    .eq("status", "succeeded")
+    .in("order_plan", COMPANY_CARD_PURCHASE_PLANS);
+
+  if (error) throw error;
+  return Number(count || 0);
+}
+
+async function profileForUser(supabase, userId) {
+  const { data, error } = await supabase
+    .from("kyc_profiles")
+    .select("account_type")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data || null;
+}
+
+export async function cardLimitForUserAccount(supabase, userId, plan, profile = null) {
+  const kycProfile = profile || (await profileForUser(supabase, userId));
+
+  if (isCompanyAccount(kycProfile)) {
+    const purchasedSlots = await purchasedCardSlotsForUser(supabase, userId);
+    return {
+      limit: purchasedSlots,
+      reason: "company_purchase_limit",
+      purchasedSlots,
+    };
+  }
+
   const limit = cardLimitForPlan(plan);
+  return {
+    limit,
+    reason: limit === null ? "unlimited" : "plan_card_limit",
+    purchasedSlots: null,
+  };
+}
+
+export async function assertCanCreateCard(supabase, userId, plan) {
+  const { limit, reason } = await cardLimitForUserAccount(supabase, userId, plan);
   if (limit === null) return;
 
   const { count, error } = await supabase
@@ -177,9 +226,16 @@ export async function assertCanCreateCard(supabase, userId, plan) {
   if (error) throw error;
 
   if (Number(count || 0) >= limit) {
-    const error = new Error("Free users can create 1 card. Upgrade to create additional cards.");
+    const message =
+      reason === "company_purchase_limit"
+        ? `Company accounts can create ${limit} card profile${limit === 1 ? "" : "s"}, matching successful card purchases. Purchase another card to create more profiles.`
+        : "Free users can create 1 card. Upgrade to create additional cards.";
+    const error = new Error(message);
     error.code = "PLAN_CARD_LIMIT";
     error.status = 402;
+    error.reason = reason;
+    error.limit = limit;
+    error.used = Number(count || 0);
     throw error;
   }
 }

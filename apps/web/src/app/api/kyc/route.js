@@ -3,7 +3,10 @@ import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin } from "../utils/supabase.js";
 import { kycProfileFromRow } from "../utils/profile.js";
 
+const ACCOUNT_TYPES = new Set(["individual", "company"]);
+
 const REQUIRED_FIELDS = [
+  "accountType",
   "phone",
   "jobTitle",
   "businessName",
@@ -15,6 +18,11 @@ const REQUIRED_FIELDS = [
 
 function clean(value) {
   return String(value || "").trim();
+}
+
+function normalizeAccountType(value) {
+  const accountType = clean(value).toLowerCase();
+  return ACCOUNT_TYPES.has(accountType) ? accountType : "individual";
 }
 
 export async function GET(request) {
@@ -55,6 +63,7 @@ export async function POST(request) {
   }
 
   const payload = {
+    accountType: normalizeAccountType(body.accountType),
     phone: clean(body.phone),
     jobTitle: clean(body.jobTitle),
     businessName: clean(body.businessName),
@@ -77,6 +86,7 @@ export async function POST(request) {
     .upsert(
       {
         user_id: user.id,
+        account_type: payload.accountType,
         phone: payload.phone,
         job_title: payload.jobTitle,
         business_name: payload.businessName,

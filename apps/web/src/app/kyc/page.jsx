@@ -32,6 +32,19 @@ const goals = [
   "Manage cards for a team",
 ];
 
+const accountTypes = [
+  {
+    value: "individual",
+    label: "Individual",
+    description: "For one person managing a personal JOSTAP profile.",
+  },
+  {
+    value: "company",
+    label: "Company",
+    description: "For a business planning to manage cards for a team.",
+  },
+];
+
 function Field({ label, children, required = true }) {
   return (
     <label style={{ display: "block" }}>
@@ -57,6 +70,7 @@ export default function KycPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
+    accountType: "individual",
     phone: "",
     jobTitle: "",
     businessName: "",
@@ -290,6 +304,73 @@ export default function KycPage() {
                   gap: 16,
                 }}
               >
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <span
+                    style={{
+                      display: "block",
+                      color: "#374151",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      marginBottom: 8,
+                    }}
+                  >
+                    Account type <span style={{ color: "#0d6ffd" }}>*</span>
+                  </span>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 12,
+                    }}
+                  >
+                    {accountTypes.map((type) => {
+                      const selected = form.accountType === type.value;
+
+                      return (
+                        <button
+                          key={type.value}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => update("accountType", type.value)}
+                          style={{
+                            textAlign: "left",
+                            border: `1px solid ${
+                              selected ? "#0d6ffd" : "#D1D5DB"
+                            }`,
+                            borderRadius: 10,
+                            background: selected ? "#EFF6FF" : "#fff",
+                            color: "#111827",
+                            padding: "14px 15px",
+                            cursor: "pointer",
+                            boxShadow: selected
+                              ? "0 10px 24px rgba(13,111,253,0.12)"
+                              : "none",
+                          }}
+                        >
+                          <strong
+                            style={{
+                              display: "block",
+                              fontSize: 14,
+                              marginBottom: 5,
+                            }}
+                          >
+                            {type.label}
+                          </strong>
+                          <span
+                            style={{
+                              display: "block",
+                              color: "#6B7280",
+                              fontSize: 12,
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {type.description}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 <Field label="Phone number">
                   <input
                     required
@@ -316,7 +397,11 @@ export default function KycPage() {
                       update("businessName", event.target.value)
                     }
                     style={inputStyle}
-                    placeholder="Your company or brand"
+                    placeholder={
+                      form.accountType === "company"
+                        ? "Your company name"
+                        : "Your company or brand"
+                    }
                   />
                 </Field>
                 <Field label="Business type">

@@ -1,5 +1,5 @@
 import { json, unauthorized } from "../utils/http.js";
-import { cardLimitForPlan } from "../utils/cards.js";
+import { cardLimitForPlan, cardLimitForUserAccount } from "../utils/cards.js";
 import { getSessionUser } from "../utils/session.js";
 import { getSupabaseAdmin } from "../utils/supabase.js";
 import { accessFromPlanAndTrial, trialStateFromUser } from "../utils/trial.js";
@@ -16,12 +16,14 @@ function preferredSubscription(rows = []) {
   return rows.find((row) => hasConfirmedPlanAccess(row)) || rows[0] || null;
 }
 
-function subscriptionFromRow(row, user) {
+function subscriptionFromRow(row, user, cardLimitInfo = null) {
   const trial = trialStateFromUser(user);
   const billingPlan = row?.plan || "free";
   const accessPlan = hasConfirmedPlanAccess(row) ? billingPlan : "free";
   const features = accessFromPlanAndTrial(accessPlan, trial);
-  const cardLimit = features.hasPremiumFeatures ? null : cardLimitForPlan(accessPlan);
+  const defaultCardLimit = features.hasPremiumFeatures ? null : cardLimitForPlan(accessPlan);
+  const cardLimit = cardLimitInfo ? cardLimitInfo.limit : defaultCardLimit;
+  const cardLimitReason = cardLimitInfo?.reason || (cardLimit === null ? "unlimited" : "plan_card_limit");
 
   if (!row) {
     return {
@@ -33,6 +35,8 @@ function subscriptionFromRow(row, user) {
       currentPeriodStart: "",
       currentPeriodEnd: "",
       cardLimit,
+      cardLimitReason,
+      purchasedCardSlots: cardLimitInfo?.purchasedSlots ?? null,
       trial,
       features,
     };
@@ -49,6 +53,8 @@ function subscriptionFromRow(row, user) {
     currentPeriodStart: row.current_period_start || "",
     currentPeriodEnd: row.current_period_end || "",
     cardLimit,
+    cardLimitReason,
+    purchasedCardSlots: cardLimitInfo?.purchasedSlots ?? null,
     trial,
     features,
   };
@@ -80,6 +86,7 @@ export async function GET(request) {
     { data: invoices, error: invoicesError },
     { data: cards, error: cardsError },
     { data: appointments, error: appointmentsError },
+    { data: profile, error: profileError },
   ] = await Promise.all([
     supabase
       .from("subscriptions")
@@ -94,10 +101,11 @@ export async function GET(request) {
       .order("issued_at", { ascending: false }),
     supabase.from("cards").select("id, views, taps, qr_scans").eq("user_id", user.id),
     supabase.from("appointments").select("id").eq("assigned_user_id", user.id),
+    supabase.from("kyc_profiles").select("account_type").eq("user_id", user.id).maybeSingle(),
   ]);
 
   const error =
-    subscriptionError || invoicesError || cardsError || appointmentsError;
+    subscriptionError || invoicesError || cardsError || appointmentsError || profileError;
 
   if (error) {
     throw error;
@@ -112,8 +120,19 @@ export async function GET(request) {
     appointments: (appointments || []).length,
   };
 
+  const subscription = preferredSubscription(subscriptionRows || []);
+  const billingPlan = hasConfirmedPlanAccess(subscription)
+    ? subscription?.plan || "free"
+    : "free";
+  const cardLimitInfo = await cardLimitForUserAccount(
+    supabase,
+    user.id,
+    billingPlan,
+    profile,
+  );
+
   return json({
-    subscription: subscriptionFromRow(preferredSubscription(subscriptionRows || []), user),
+    subscription: subscriptionFromRow(subscription, user, cardLimitInfo),
     invoices: (invoices || []).map(invoiceFromRow),
     usage,
   });

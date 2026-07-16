@@ -521,6 +521,7 @@ export default function CardsPage() {
   const [loadError, setLoadError] = useState("");
   const [qrLocked, setQrLocked] = useState(true);
   const [cardLimit, setCardLimit] = useState(null);
+  const [cardLimitReason, setCardLimitReason] = useState("plan_card_limit");
 
   const refreshCards = async (force = false) => {
     try {
@@ -529,6 +530,7 @@ export default function CardsPage() {
       setCards(data.cards || []);
       setQrLocked(features.hasDownloadableQr === undefined ? !hasDownloadableQr(data.billing?.subscription?.plan) : !features.hasDownloadableQr);
       setCardLimit(data.billing?.subscription?.cardLimit ?? null);
+      setCardLimitReason(data.billing?.subscription?.cardLimitReason || "plan_card_limit");
       setLoadError("");
     } catch (error) {
       setCards([]);
@@ -555,6 +557,12 @@ export default function CardsPage() {
 
   const hasCards = cards.length > 0;
   const reachedCardLimit = cardLimit !== null && cards.length >= cardLimit;
+  const companyLimitReached = reachedCardLimit && cardLimitReason === "company_purchase_limit";
+  const limitCtaHref = companyLimitReached ? "/shop" : "/pricing";
+  const limitCtaLabel = companyLimitReached ? "Buy more cards" : "Upgrade for more cards";
+  const limitMessage = companyLimitReached
+    ? `Your company account has ${cardLimit} purchased card slot${cardLimit === 1 ? "" : "s"}. Buy another card to create another card profile.`
+    : "Free users can create 1 card. Upgrade to create additional cards and unlock premium features.";
 
   return (
     <>
@@ -585,7 +593,7 @@ export default function CardsPage() {
           </p>
         </div>
         <a
-          href={reachedCardLimit ? "/pricing" : "/create-card"}
+          href={reachedCardLimit ? limitCtaHref : "/create-card"}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -599,7 +607,7 @@ export default function CardsPage() {
             background: reachedCardLimit ? "#ff9f0d" : "#0d6ffd",
           }}
         >
-          <Plus size={15} /> {reachedCardLimit ? "Upgrade for more cards" : "New Card"}
+          <Plus size={15} /> {reachedCardLimit ? limitCtaLabel : "New Card"}
         </a>
       </div>
 
@@ -616,7 +624,7 @@ export default function CardsPage() {
             marginBottom: 18,
           }}
         >
-          Free users can create 1 card. Upgrade to create additional cards and unlock premium features.
+          {limitMessage}
         </div>
       )}
 
@@ -710,7 +718,7 @@ export default function CardsPage() {
               ? "Try searching by card name, company, template, or public URL slug."
               : "Create your first digital card. New cards will appear here after publishing."}
           </p>
-          {!hasCards && (
+          {!hasCards && !reachedCardLimit && (
             <a
               href="/create-card"
               style={{

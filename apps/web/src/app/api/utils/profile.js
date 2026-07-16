@@ -20,6 +20,7 @@ export function kycProfileFromRow(row) {
 
   return {
     id: row.id,
+    accountType: row.account_type || "individual",
     phone: row.phone || "",
     jobTitle: row.job_title || "",
     businessName: row.business_name || "",

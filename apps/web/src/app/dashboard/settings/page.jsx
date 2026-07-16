@@ -20,6 +20,19 @@ import { clearDashboardDataCache } from "../../../utils/dashboardDataStore";
 
 const TABS = ["Profile", "Notifications", "Security", "Integrations"];
 
+const accountTypes = [
+  {
+    value: "individual",
+    label: "Individual",
+    description: "Personal JOSTAP profile",
+  },
+  {
+    value: "company",
+    label: "Company",
+    description: "Business or team account",
+  },
+];
+
 function Section({ title, desc, children }) {
   return (
     <div
@@ -87,6 +100,7 @@ export default function SettingsPage() {
   const [saveError, setSaveError] = useState("");
   const avatarInputRef = useRef(null);
   const [profile, setProfile] = useState({
+    accountType: "individual",
     name: "",
     email: "",
     title: "",
@@ -159,6 +173,7 @@ export default function SettingsPage() {
             ...current,
             name: user.name || current.name,
             email: user.email || current.email,
+            accountType: kyc.accountType || current.accountType,
             title: kyc.jobTitle || current.title,
             company: kyc.businessName || user.company || current.company,
             phone: kyc.phone || current.phone,
@@ -214,6 +229,7 @@ export default function SettingsPage() {
         ...current,
         name: user.name || current.name,
         email: user.email || current.email,
+        accountType: kyc.accountType || current.accountType,
         title: kyc.jobTitle || current.title,
         company: kyc.businessName || user.company || current.company,
         phone: kyc.phone || current.phone,
@@ -541,6 +557,70 @@ export default function SettingsPage() {
                 marginBottom: 16,
               }}
             >
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "#374151",
+                    display: "block",
+                    marginBottom: 8,
+                  }}
+                >
+                  Account type
+                </label>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 12,
+                  }}
+                >
+                  {accountTypes.map((type) => {
+                    const selected = profile.accountType === type.value;
+
+                    return (
+                      <button
+                        key={type.value}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => update("accountType", type.value)}
+                        style={{
+                          textAlign: "left",
+                          border: `1px solid ${
+                            selected ? "#0d6ffd" : "#E5E7EB"
+                          }`,
+                          borderRadius: 10,
+                          background: selected ? "#EFF6FF" : "#fff",
+                          color: "#111827",
+                          padding: "12px 14px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <strong
+                          style={{
+                            display: "block",
+                            fontSize: 13,
+                            marginBottom: 4,
+                          }}
+                        >
+                          {type.label}
+                        </strong>
+                        <span
+                          style={{
+                            display: "block",
+                            color: "#6B7280",
+                            fontSize: 12,
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          {type.description}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <div>
                 <label
                   style={{

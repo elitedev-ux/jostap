@@ -26,7 +26,16 @@ export async function POST(request, { params }) {
     await assertCanCreateCard(supabase, user.id, plan);
   } catch (error) {
     if (error.code === "PLAN_CARD_LIMIT") {
-      return json({ error: error.message, upgradeRequired: true }, { status: 402 });
+      return json(
+        {
+          error: error.message,
+          upgradeRequired: true,
+          reason: error.reason || "plan_card_limit",
+          cardLimit: error.limit ?? null,
+          cardsUsed: error.used ?? null,
+        },
+        { status: 402 },
+      );
     }
     throw error;
   }

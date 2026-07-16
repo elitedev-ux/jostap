@@ -132,6 +132,7 @@ try {
 
   const { error: smokeKycError } = await supabase.from("kyc_profiles").insert({
     user_id: smokeUser.id,
+    account_type: "individual",
     phone: "+10000000000",
     job_title: "Health Check",
     business_name: "JOSTAP",

@@ -9,6 +9,11 @@ function clean(value) {
   return String(value || "").trim();
 }
 
+function normalizeAccountType(value) {
+  const accountType = clean(value).toLowerCase();
+  return accountType === "company" ? "company" : "individual";
+}
+
 async function deleteStorageFolder(supabase, bucket, folder) {
   const { data: files, error: listError } = await supabase.storage
     .from(bucket)
@@ -56,6 +61,7 @@ export async function PATCH(request) {
   const bio = clean(body.bio);
   const avatarUrl = toOriginStorageUrl(clean(body.avatarUrl));
   const profileSlug = normalizeSlug(body.slug || body.profileSlug);
+  const accountType = normalizeAccountType(body.accountType);
   const businessType = clean(body.businessType) || "Small business";
   const primaryGoal =
     clean(body.primaryGoal) || "Share my digital business card";
@@ -99,6 +105,7 @@ export async function PATCH(request) {
     .upsert(
       {
         user_id: user.id,
+        account_type: accountType,
         phone,
         job_title: title,
         business_name: company,

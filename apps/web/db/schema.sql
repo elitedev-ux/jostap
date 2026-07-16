@@ -77,6 +77,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS kyc_profiles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  account_type text NOT NULL DEFAULT 'individual' CHECK (account_type IN ('individual', 'company')),
   phone text NOT NULL,
   job_title text NOT NULL,
   business_name text NOT NULL,
@@ -96,8 +97,14 @@ CREATE TABLE IF NOT EXISTS kyc_profiles (
 ALTER TABLE kyc_profiles ADD COLUMN IF NOT EXISTS bio text;
 ALTER TABLE kyc_profiles ADD COLUMN IF NOT EXISTS profile_slug text;
 ALTER TABLE kyc_profiles ADD COLUMN IF NOT EXISTS avatar_url text;
+ALTER TABLE kyc_profiles ADD COLUMN IF NOT EXISTS account_type text NOT NULL DEFAULT 'individual';
+ALTER TABLE kyc_profiles DROP CONSTRAINT IF EXISTS kyc_profiles_account_type_check;
+ALTER TABLE kyc_profiles
+  ADD CONSTRAINT kyc_profiles_account_type_check
+  CHECK (account_type IN ('individual', 'company'));
 
 CREATE INDEX IF NOT EXISTS kyc_profiles_user_id_idx ON kyc_profiles (user_id);
+CREATE INDEX IF NOT EXISTS kyc_profiles_account_type_idx ON kyc_profiles (account_type);
 
 CREATE TABLE IF NOT EXISTS cards (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
