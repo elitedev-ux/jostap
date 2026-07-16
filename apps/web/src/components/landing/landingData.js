@@ -25,23 +25,6 @@ export const steps = [
 
 export const plans = [
   {
-    name: "Free",
-    price: "\u20A60",
-    desc: "Best for personal networking",
-    features: [
-      "1 digital business card",
-      "Public profile page",
-      "JOSTAP branded QR code",
-      "Contact sharing",
-      "Save contact (vCard)",
-      "Social media links",
-      "Basic analytics",
-    ],
-    cta: "Get Started",
-    href: "/auth/signup",
-    highlight: false,
-  },
-  {
     name: "JOSTAP Card",
     price: "\u20A620,000",
     note: "\u20A615,000 yearly subscription",

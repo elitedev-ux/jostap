@@ -16,22 +16,17 @@ const PAID_CARD_FEATURES = [
   "1 year premium access included",
 ];
 
+const TEAM_FEATURES = [
+  "Team card profile access",
+  "Physical NFC card",
+  "Digital business profile",
+  "Lead capture",
+  "Appointment booking",
+  "Advanced analytics",
+  "Yearly team subscription: \u20A610,000",
+];
+
 const PLANS = [
-  {
-    name: "Free",
-    slug: "free",
-    price: "\u20A60",
-    billing: "free",
-    features: [
-      "1 digital business card",
-      "Public profile page",
-      "JOSTAP branded QR code",
-      "Contact sharing",
-      "Save contact (vCard)",
-      "Social media links",
-      "Basic analytics",
-    ],
-  },
   {
     name: "JOSTAP Card",
     slug: "jostap_nfc",
@@ -46,6 +41,13 @@ const PLANS = [
     billing: "one_time",
     features: PAID_CARD_FEATURES,
   },
+  {
+    name: "Team",
+    slug: "jostap_nfc",
+    price: "\u20A620,000",
+    billing: "one_time",
+    features: TEAM_FEATURES,
+  },
 ];
 
 const INVOICES = [];
@@ -59,9 +61,9 @@ const USAGE = [
 ];
 
 const PLAN_SLUGS = {
-  Free: "free",
   "JOSTAP Card": "jostap_nfc",
   "Custom Card": "custom_nfc",
+  Team: "jostap_nfc",
 };
 
 function formatMoney(cents, currency = "usd") {

@@ -29,23 +29,6 @@ const TEAM_FEATURES = [
 
 const PLANS = [
   {
-    name: "Free",
-    price: "\u20A60",
-    note: "",
-    desc: "Best for personal networking",
-    cta: "Get Started",
-    href: "/auth/signup",
-    features: [
-      ["1 Digital Business Card", true],
-      ["Public Profile Page", true],
-      ["JOSTAP Branded QR Code", true],
-      ["Contact Sharing", true],
-      ["Save Contact (vCard)", true],
-      ["Social Media Links", true],
-      ["Basic Analytics", true],
-    ],
-  },
-  {
     name: "JOSTAP Card",
     price: "\u20A620,000",
     note: "\u20A615,000 yearly subscription",
@@ -78,7 +61,7 @@ const PLANS = [
 const FAQS = [
   {
     q: "Do I need a physical NFC card to use JOSTAP?",
-    a: "No. You can start free with a digital card, public profile, branded QR code, contact sharing, vCard save, and basic analytics.",
+    a: "A physical NFC card gives you the tap-to-share experience. Every paid card also connects to your digital profile and QR code.",
   },
   {
     q: "Are NFC cards subscriptions?",
@@ -145,7 +128,7 @@ export default function PricingPage() {
             JOSTAP Pricing
           </h1>
           <p style={{ fontSize: 17, color: "#6B7280", lineHeight: 1.65 }}>
-            Start with a free digital card, then upgrade to JOSTAP Card or Custom Card for physical NFC sharing and premium growth features.
+            Choose JOSTAP Card, Custom Card, or Team for physical NFC sharing, digital profile access, and premium growth features.
           </p>
         </div>
       </section>
@@ -174,7 +157,7 @@ export default function PricingPage() {
       <section style={{ padding: "0 24px 80px", textAlign: "center" }}>
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
           <h2 style={{ fontSize: 32, fontWeight: 800, color: "#111827", marginBottom: 14 }}>Ready to get started?</h2>
-          <p style={{ fontSize: 16, color: "#6B7280", marginBottom: 32 }}>Create your free profile now. Add an NFC card whenever you are ready.</p>
+          <p style={{ fontSize: 16, color: "#6B7280", marginBottom: 32 }}>Create your profile and choose the card option that fits your business.</p>
           <a href="/auth/signup" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, color: "#fff", textDecoration: "none", padding: "13px 28px", borderRadius: 10, background: "#0d6ffd" }}>
             Get Started <ArrowRight size={15} />
           </a>
