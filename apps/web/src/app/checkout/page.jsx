@@ -100,6 +100,11 @@ const BILLING_ALIASES = {
   monthly: "one_time",
 };
 
+const INDIVIDUAL_CARD_PLANS = ["jostap_nfc", "custom_nfc"];
+const TEAM_CARD_PLANS = ["custom_nfc"];
+const TEAM_CUSTOM_CARD_PRICE = 20000;
+const TEAM_CUSTOM_CARD_PRICE_KOBO = TEAM_CUSTOM_CARD_PRICE * 100;
+
 function money(cents, currency = "NGN") {
   return new Intl.NumberFormat("en-NG", {
     style: "currency",
@@ -195,6 +200,7 @@ export default function CheckoutPage() {
   const [billing, setBilling] = useState("one_time");
   const [productSlug, setProductSlug] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [accountType, setAccountType] = useState("individual");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [loadingProduct, setLoadingProduct] = useState(false);
   const [authStatus, setAuthStatus] = useState("checking");
@@ -241,6 +247,7 @@ export default function CheckoutPage() {
 
         const user = data.user || {};
         setAuthStatus("authenticated");
+        setAccountType(user.kyc?.accountType === "company" ? "company" : "individual");
         setAccount((current) => ({
           name: current.name || user.name || "",
           email: current.email || user.email || "",
@@ -310,13 +317,29 @@ export default function CheckoutPage() {
     };
   }, [productSlug]);
 
-  const plan = PLANS[planKey];
+  const isTeamCheckout = accountType === "company";
+  const visiblePlanKeys = isTeamCheckout ? TEAM_CARD_PLANS : INDIVIDUAL_CARD_PLANS;
+  const plan = {
+    ...(PLANS[planKey] || PLANS.jostap_nfc),
+    ...(isTeamCheckout && planKey === "custom_nfc"
+      ? {
+          price: TEAM_CUSTOM_CARD_PRICE,
+          displayPrice: "\u20A620,000",
+          billingLabel: "Team card slot",
+          cards: "Custom card for team member",
+          trial: "\u20A610,000 yearly team subscription after the included first year",
+        }
+      : {}),
+  };
   const isFreePlan = planKey === "free" || billing === "free";
-  const isCardPurchase = ["jostap_nfc", "custom_nfc"].includes(planKey) && billing === "one_time";
-  const normalizedQuantity = isCardPurchase ? cleanQuantity(quantity) : 1;
+  const isCardPurchase = visiblePlanKeys.includes(planKey) && billing === "one_time";
+  const isBulkCardPurchase = isTeamCheckout && planKey === "custom_nfc" && billing === "one_time";
+  const normalizedQuantity = isBulkCardPurchase ? cleanQuantity(quantity) : 1;
   const unitAmountKobo = selectedProduct
     ? Number(selectedProduct.priceCents || 0)
-    : Number(plan.price || 0) * 100;
+    : isTeamCheckout && planKey === "custom_nfc"
+      ? TEAM_CUSTOM_CARD_PRICE_KOBO
+      : Number(plan.price || 0) * 100;
   const totalAmountKobo = unitAmountKobo * normalizedQuantity;
   const selectedProductPrice = selectedProduct
     ? money(selectedProduct.priceCents, selectedProduct.currency)
@@ -329,6 +352,19 @@ export default function CheckoutPage() {
   const billedToday = isFreePlan ? "\u20A60" : orderPrice;
   const nextChargeLabel =
     billing === "yearly" ? `${orderPrice}/year` : billing === "free" ? "\u20A60" : "No recurring charge";
+
+  useEffect(() => {
+    if (accountType === "company" && planKey !== "custom_nfc") {
+      setPlanKey("custom_nfc");
+      setBilling("one_time");
+      return;
+    }
+
+    if (accountType !== "company" && !INDIVIDUAL_CARD_PLANS.includes(planKey)) {
+      setPlanKey("jostap_nfc");
+      setBilling("one_time");
+    }
+  }, [accountType, planKey]);
 
   const updateAccount = (key, value) => {
     setAccount((current) => ({ ...current, [key]: value }));
@@ -502,10 +538,10 @@ export default function CheckoutPage() {
                     marginBottom: 6,
                   }}
                 >
-                  Start your JOSTAP plan
+                  Order your JOSTAP card
                 </h1>
                 <p style={{ color: "#6B7280", fontSize: 14, lineHeight: 1.6 }}>
-                  Free plans can be activated immediately. Paid card orders continue through Paystack secure checkout.
+                  Card orders continue through Paystack secure checkout.
                 </p>
               </div>
 
@@ -549,12 +585,24 @@ export default function CheckoutPage() {
                     marginBottom: 24,
                   }}
                 >
-                  {Object.entries(PLANS).map(([key, item]) => (
+                  {visiblePlanKeys.map((key) => {
+                    const item = {
+                      ...PLANS[key],
+                      ...(isTeamCheckout && key === "custom_nfc"
+                        ? {
+                            price: TEAM_CUSTOM_CARD_PRICE,
+                            displayPrice: "\u20A620,000",
+                            billingLabel: "Team card slot",
+                          }
+                        : {}),
+                    };
+
+                    return (
                     <button
                       key={key}
                       onClick={() => {
                         setPlanKey(key);
-                        if (!["jostap_nfc", "custom_nfc"].includes(key)) {
+                        if (!TEAM_CARD_PLANS.includes(key)) {
                           setQuantity(1);
                         }
                       }}
@@ -586,11 +634,12 @@ export default function CheckoutPage() {
                         {(item.displayPrice || `\u20A6${item.price}`)} - {item.billingLabel}
                       </span>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
-              {isCardPurchase && (
+              {isBulkCardPurchase && (
                 <div
                   style={{
                     border: "1px solid #E5E7EB",
@@ -923,7 +972,7 @@ export default function CheckoutPage() {
               <p style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>
                 {selectedProduct?.subtitle || `${plan.billingLabel} - ${plan.cards}`}
               </p>
-              {isCardPurchase && normalizedQuantity > 1 && (
+              {isBulkCardPurchase && normalizedQuantity > 1 && (
                 <p style={{ color: "#6B7280", fontSize: 12, fontWeight: 700, marginTop: 8 }}>
                   {unitPrice} x {normalizedQuantity} card slots
                 </p>
@@ -967,7 +1016,7 @@ export default function CheckoutPage() {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6B7280", fontSize: 13 }}>
-                  {isCardPurchase ? "Total due today" : "Due today"}
+                  {isBulkCardPurchase ? "Total due today" : "Due today"}
                 </span>
                 <span style={{ color: "#111827", fontSize: 13, fontWeight: 700 }}>
                   {billedToday}

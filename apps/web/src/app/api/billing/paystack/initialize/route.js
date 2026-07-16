@@ -28,6 +28,7 @@ const PLAN_ALIASES = {
   professional: "jostap_nfc",
   business: "custom_nfc",
 };
+const TEAM_CUSTOM_CARD_AMOUNT_KOBO = 2000000;
 
 function normalizePlan(value) {
   const plan = String(value || "jostap_nfc").toLowerCase();
@@ -134,35 +135,6 @@ export async function POST(request) {
       return badRequest("Choose a valid paid plan and billing cycle.");
     }
 
-    const isCardPurchasePlan = COMPANY_CARD_PURCHASE_PLANS.includes(plan) && billingCycle === "one_time";
-    const quantity = isCardPurchasePlan ? cleanQuantity(body?.quantity) : 1;
-
-    try {
-      assertPaystackConfigured();
-    } catch (error) {
-      console.error("Paystack configuration error:", error);
-      return json({ error: "Payment checkout is not available right now." }, { status: 503 });
-    }
-
-    const currency = paystackCurrency().toUpperCase();
-    const productCurrency = String(selectedProduct?.currency || currency).toUpperCase();
-
-    if (selectedProduct && productCurrency !== currency) {
-      return badRequest("This card currency is not available for Paystack checkout right now.");
-    }
-
-    const configuredAmountKobo = await planAmountKobo(supabase, plan, billingCycle);
-    const unitAmountKobo = configuredAmountKobo ||
-      (selectedProduct
-        ? Math.max(0, Math.round(Number(selectedProduct.priceCents || 0)))
-        : 0);
-    const amountKobo = unitAmountKobo * quantity;
-
-    if (!amountKobo) {
-      return badRequest("This card does not have a configured Paystack amount.");
-    }
-
-    const now = new Date().toISOString();
     const [
       { data: existing, error: lookupError },
       { data: profile, error: profileError },
@@ -186,8 +158,46 @@ export async function POST(request) {
       throw lookupError || profileError;
     }
 
+    const isCompany = isCompanyAccount(profile);
+    const isCardPurchasePlan = COMPANY_CARD_PURCHASE_PLANS.includes(plan) && billingCycle === "one_time";
+    const isTeamCardPurchase = isCompany && isCardPurchasePlan;
+
+    if (isTeamCardPurchase && plan !== "custom_nfc") {
+      return badRequest("Team accounts should purchase Custom Card slots.");
+    }
+
+    const quantity = isTeamCardPurchase ? cleanQuantity(body?.quantity) : 1;
+
+    try {
+      assertPaystackConfigured();
+    } catch (error) {
+      console.error("Paystack configuration error:", error);
+      return json({ error: "Payment checkout is not available right now." }, { status: 503 });
+    }
+
+    const currency = paystackCurrency().toUpperCase();
+    const productCurrency = String(selectedProduct?.currency || currency).toUpperCase();
+
+    if (selectedProduct && productCurrency !== currency) {
+      return badRequest("This card currency is not available for Paystack checkout right now.");
+    }
+
+    const configuredAmountKobo = isTeamCardPurchase
+      ? TEAM_CUSTOM_CARD_AMOUNT_KOBO
+      : await planAmountKobo(supabase, plan, billingCycle);
+    const unitAmountKobo = configuredAmountKobo ||
+      (selectedProduct
+        ? Math.max(0, Math.round(Number(selectedProduct.priceCents || 0)))
+        : 0);
+    const amountKobo = unitAmountKobo * quantity;
+
+    if (!amountKobo) {
+      return badRequest("This card does not have a configured Paystack amount.");
+    }
+
+    const now = new Date().toISOString();
     const isCompanyCardPurchase =
-      isCompanyAccount(profile) && COMPANY_CARD_PURCHASE_PLANS.includes(plan);
+      isCompany && COMPANY_CARD_PURCHASE_PLANS.includes(plan);
 
     if (
       plan !== "premium_renewal" &&
