@@ -52,6 +52,7 @@ export const EMPTY_CARD = {
   showServices: true,
   showTestimonials: true,
   showGallery: false,
+  galleryImages: [],
   showFaq: false,
 };
 

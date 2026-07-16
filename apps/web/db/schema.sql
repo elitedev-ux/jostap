@@ -143,16 +143,27 @@ CREATE TABLE IF NOT EXISTS card_engagement_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   card_id uuid NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
   user_id uuid REFERENCES users(id) ON DELETE SET NULL,
-  event_type text NOT NULL CHECK (event_type IN ('profile_view', 'qr_scan', 'nfc_tap', 'contact_download')),
+  event_type text NOT NULL CHECK (event_type IN ('profile_view', 'qr_scan', 'nfc_tap', 'contact_download', 'social_click')),
   referrer text,
   user_agent text,
   ip_hash text,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE card_engagement_events ADD COLUMN IF NOT EXISTS metadata jsonb NOT NULL DEFAULT '{}'::jsonb;
+DO $$
+BEGIN
+  ALTER TABLE card_engagement_events DROP CONSTRAINT IF EXISTS card_engagement_events_event_type_check;
+  ALTER TABLE card_engagement_events
+    ADD CONSTRAINT card_engagement_events_event_type_check
+    CHECK (event_type IN ('profile_view', 'qr_scan', 'nfc_tap', 'contact_download', 'social_click'));
+END $$;
 
 CREATE INDEX IF NOT EXISTS card_engagement_events_card_id_idx ON card_engagement_events (card_id);
 CREATE INDEX IF NOT EXISTS card_engagement_events_card_created_idx ON card_engagement_events (card_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS card_engagement_events_user_created_idx ON card_engagement_events (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS card_engagement_events_type_created_idx ON card_engagement_events (event_type, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS leads (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

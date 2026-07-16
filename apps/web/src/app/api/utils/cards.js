@@ -68,9 +68,11 @@ const ALLOWED_ACTIVE_FIELDS = new Set([
   "audiomack",
   "youtubeMusic",
   "videoUrl",
+  "gallery",
   "saveContact",
   "exchangeContact",
 ]);
+const GALLERY_IMAGE_LIMIT = 6;
 
 function sanitizeActiveFields(value) {
   if (!Array.isArray(value)) return [];
@@ -107,6 +109,26 @@ function toSocialValue(key, value) {
     return normalizeMultiText(value);
   }
   return normalizeText(value) || "";
+}
+
+function normalizeGalleryImages(value) {
+  if (!Array.isArray(value)) return [];
+
+  const images = [];
+  for (const item of value) {
+    const url = toOriginStorageUrl(normalizeText(item?.url || item, 1000));
+    if (!url) continue;
+
+    images.push({
+      id: normalizeText(item?.id, 80) || `gallery-${images.length + 1}`,
+      url,
+      caption: normalizeText(item?.caption, 160),
+    });
+
+    if (images.length >= GALLERY_IMAGE_LIMIT) break;
+  }
+
+  return images;
 }
 
 export function planCapabilities(plan) {
@@ -264,6 +286,7 @@ export function applyPlanLimits(card, plan) {
     next.theme.showServices = false;
     next.theme.showTestimonials = false;
     next.theme.showGallery = false;
+    next.theme.galleryImages = [];
     next.theme.showFaq = false;
     next.socialLinks.calendly = "";
   }
@@ -333,6 +356,16 @@ export function cardFromRow(row) {
     showServices: theme.showServices ?? true,
     showTestimonials: theme.showTestimonials ?? true,
     showGallery: theme.showGallery ?? false,
+    galleryImages: Array.isArray(theme.galleryImages)
+      ? theme.galleryImages
+          .map((item, index) => ({
+            id: normalizeText(item?.id, 80) || `gallery-${index + 1}`,
+            url: toCdnStorageUrl(item?.url || ""),
+            caption: normalizeText(item?.caption, 160),
+          }))
+          .filter((item) => item.url)
+          .slice(0, GALLERY_IMAGE_LIMIT)
+      : [],
     showFaq: theme.showFaq ?? false,
     views: Number(row.views || 0),
     taps: Number(row.taps || 0),
@@ -352,6 +385,7 @@ export function cardFromRow(row) {
 export function cardPayload(body) {
   const slug = normalizeSlug(body.slug || body.name);
   const activeFields = sanitizeActiveFields(body.activeFields);
+  const galleryImages = normalizeGalleryImages(body.galleryImages);
 
   for (const [key, enabled] of [
     ["saveContact", body.saveContactEnabled],
@@ -378,7 +412,8 @@ export function cardPayload(body) {
       activeFields,
       showServices: body.showServices ?? true,
       showTestimonials: body.showTestimonials ?? true,
-      showGallery: body.showGallery ?? false,
+      showGallery: Boolean(body.showGallery && galleryImages.length),
+      galleryImages,
       showFaq: body.showFaq ?? false,
       logoUrl: toOriginStorageUrl(normalizeText(body.logoUrl, 1000)),
       coverUrl: toOriginStorageUrl(normalizeText(body.coverUrl, 1000)),

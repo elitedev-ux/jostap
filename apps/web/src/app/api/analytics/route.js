@@ -47,6 +47,7 @@ function buildEmptyTrend(period) {
       taps: 0,
       qr: 0,
       contactDownloads: 0,
+      socialClicks: 0,
       appointments: 0,
     };
   });
@@ -106,6 +107,7 @@ function buildTrend({ events, period }) {
     if (event.event_type === "nfc_tap") bucket.taps += 1;
     if (event.event_type === "qr_scan") bucket.qr += 1;
     if (event.event_type === "contact_download") bucket.contactDownloads += 1;
+    if (event.event_type === "social_click") bucket.socialClicks += 1;
   }
 
   return buckets;
@@ -163,6 +165,7 @@ export async function GET(request) {
     taps: total(cardRows, "taps"),
     qrScans: total(cardRows, "qr_scans"),
     contactDownloads: total(cardRows, "contact_downloads"),
+    socialClicks: eventRows.filter((event) => event.event_type === "social_click").length,
     appointments: appointmentRows.length,
     pendingAppointments: appointmentRows.filter((appointment) => appointment.status === "pending").length,
     approvedAppointments: appointmentRows.filter((appointment) => appointment.status === "approved").length,

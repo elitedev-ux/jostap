@@ -26,6 +26,7 @@ import { useParams } from "react-router";
 import logo from "../../assets/jostap logo.png3.png";
 import { EMPTY_CARD, createCard, getCard, updateCard } from "../../utils/cardsStore";
 import { IMAGE_UPLOAD_TARGETS, prepareImageForUpload } from "../../utils/imageCompression";
+import { GALLERY_IMAGE_LIMIT } from "../../utils/uploadRules";
 import { displayCardUrl } from "../../utils/publicUrl";
 import CardPhonePreview, {
   BrandMark,
@@ -177,6 +178,14 @@ function hasMeaningfulValue(value) {
   return Boolean(String(value || "").trim());
 }
 
+function galleryImages(value) {
+  return Array.isArray(value) ? value.filter((item) => item?.url).slice(0, GALLERY_IMAGE_LIMIT) : [];
+}
+
+function galleryImageId() {
+  return `gallery-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
 function activeFieldSetForLoadedCard(card) {
   const fields = Array.isArray(card?.activeFields) && card.activeFields.length
     ? new Set(card.activeFields)
@@ -278,6 +287,7 @@ export default function CardBuilderPage({ mode = "user" }) {
     return next;
   }, [activeFields, canUsePremiumFields]);
   const showAppointmentPreview = canUsePremiumFields && previewFields.has("calendly");
+  const galleryItems = galleryImages(card.galleryImages);
 
   const update = (key, value) => {
     if (key === "brandColor" && !canCustomizeBrand) {
@@ -475,6 +485,93 @@ export default function CardBuilderPage({ mode = "user" }) {
     await uploadCardImage("coverUrl", file, "cover photo", IMAGE_UPLOAD_TARGETS.cover);
   };
 
+  const uploadGalleryImage = async (file) => {
+    setImageMessage("");
+    if (!canUsePremiumFields) {
+      setMessage("Gallery unlocks with a JOSTAP Card plan.");
+      return;
+    }
+
+    if (galleryItems.length >= GALLERY_IMAGE_LIMIT) {
+      setImageMessage(`You can upload up to ${GALLERY_IMAGE_LIMIT} gallery images per card.`);
+      return;
+    }
+
+    try {
+      const prepared = await prepareImageForUpload(file, IMAGE_UPLOAD_TARGETS.gallery);
+      const id = galleryImageId();
+      setCard((current) => ({
+        ...current,
+        showGallery: true,
+        galleryImages: [...galleryImages(current.galleryImages), { id, url: prepared.previewUrl, caption: "" }],
+      }));
+
+      const form = new FormData();
+      form.append("file", prepared.file);
+      const response = await fetch("/api/cards/media", {
+        method: "POST",
+        credentials: "same-origin",
+        body: form,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to upload gallery image.");
+
+      setCard((current) => ({
+        ...current,
+        showGallery: true,
+        galleryImages: galleryImages(current.galleryImages).map((item) =>
+          item.id === id ? { ...item, url: data.url } : item,
+        ),
+      }));
+    } catch (error) {
+      setImageMessage(error.message || "Unable to upload gallery image.");
+    }
+  };
+
+  const updateGalleryCaption = (imageId, caption) => {
+    setCard((current) => ({
+      ...current,
+      galleryImages: galleryImages(current.galleryImages).map((item) =>
+        item.id === imageId ? { ...item, caption } : item,
+      ),
+    }));
+  };
+
+  const removeGalleryImage = (imageId) => {
+    setCard((current) => {
+      const nextImages = galleryImages(current.galleryImages).filter((item) => item.id !== imageId);
+      return {
+        ...current,
+        showGallery: nextImages.length ? current.showGallery : false,
+        galleryImages: nextImages,
+      };
+    });
+  };
+
+  const moveGalleryImage = (imageId, direction) => {
+    setCard((current) => {
+      const nextImages = galleryImages(current.galleryImages);
+      const index = nextImages.findIndex((item) => item.id === imageId);
+      const targetIndex = index + direction;
+      if (index < 0 || targetIndex < 0 || targetIndex >= nextImages.length) return current;
+      const [item] = nextImages.splice(index, 1);
+      nextImages.splice(targetIndex, 0, item);
+      return { ...current, galleryImages: nextImages };
+    });
+  };
+
+  const toggleGallery = () => {
+    if (!canUsePremiumFields) {
+      setMessage("Gallery unlocks with a JOSTAP Card plan.");
+      return;
+    }
+
+    setCard((current) => ({
+      ...current,
+      showGallery: !current.showGallery,
+    }));
+  };
+
   const toggleField = (key) => {
     if (PREMIUM_ONLY_FIELDS.has(key) && !canUsePremiumFields) {
       setMessage("Premium features like appointment booking and video unlock with a JOSTAP Card plan.");
@@ -522,6 +619,10 @@ export default function CardBuilderPage({ mode = "user" }) {
       setMessage("Please wait for image uploads to finish before saving.");
       return;
     }
+    if (galleryImages(card.galleryImages).some((image) => /^(data:image\/|blob:)/i.test(image.url || ""))) {
+      setMessage("Please wait for gallery uploads to finish before saving.");
+      return;
+    }
     const slug = card.slug || slugFromName(card.name);
     if (!slug) {
       setMessage("Add a public card slug before continuing.");
@@ -534,6 +635,8 @@ export default function CardBuilderPage({ mode = "user" }) {
         brandColor: canCustomizeBrand ? card.brandColor : "",
         calendly: canUsePremiumFields ? card.calendly : "",
         videoUrl: canUsePremiumFields ? card.videoUrl : "",
+        showGallery: canUsePremiumFields ? Boolean(card.showGallery && galleryItems.length) : false,
+        galleryImages: canUsePremiumFields ? galleryItems : [],
       };
       const payload = {
         ...limitedCard,
@@ -542,7 +645,7 @@ export default function CardBuilderPage({ mode = "user" }) {
         template: "Navy Pro",
         showServices: canUsePremiumFields,
         showTestimonials: canUsePremiumFields,
-        showGallery: false,
+        showGallery: Boolean(limitedCard.showGallery && limitedCard.galleryImages.length),
         showFaq: false,
         active: editing ? Boolean(card.active) : true,
       };
@@ -577,7 +680,12 @@ export default function CardBuilderPage({ mode = "user" }) {
         </a>
         <div className="card-builder-live-preview">
           <CardPhonePreview
-            card={{ ...card, brandColor: canCustomizeBrand ? card.brandColor : "" }}
+            card={{
+              ...card,
+              brandColor: canCustomizeBrand ? card.brandColor : "",
+              showGallery: canUsePremiumFields ? card.showGallery : false,
+              galleryImages: canUsePremiumFields ? galleryItems : [],
+            }}
             activeFields={previewFields}
             qrLocked={qrLocked}
           />
@@ -605,6 +713,72 @@ export default function CardBuilderPage({ mode = "user" }) {
               <UploadTile label="Cover Photo" icon={Image} preview={card.coverUrl} onUpload={uploadCover} onRemove={() => update("coverUrl", "")} />
             </div>
             {imageMessage && <p className="card-builder-note">{imageMessage}</p>}
+          </section>
+
+          <section className="card-builder-section">
+            <div className="card-builder-section-title">
+              <div>
+                <h2>Gallery</h2>
+                <p>Show photos of your work, products, projects, or events on this card profile.</p>
+              </div>
+              <button
+                type="button"
+                className={`card-builder-mini-toggle ${card.showGallery && canUsePremiumFields ? "is-on" : ""}`}
+                onClick={toggleGallery}
+                aria-pressed={Boolean(card.showGallery && canUsePremiumFields)}
+              >
+                <span />
+              </button>
+            </div>
+            {!canUsePremiumFields ? (
+              <div className="card-builder-locked-row">
+                <LockKeyhole size={16} />
+                <span>Gallery unlocks with a JOSTAP Card plan.</span>
+                <a href="/pricing">Upgrade</a>
+              </div>
+            ) : (
+              <>
+                <div className="card-builder-gallery-toolbar">
+                  <UploadTile
+                    label={galleryItems.length >= GALLERY_IMAGE_LIMIT ? "Gallery full" : "Add gallery image"}
+                    icon={Image}
+                    onUpload={uploadGalleryImage}
+                    preview=""
+                    onRemove={() => {}}
+                  />
+                  <p>{galleryItems.length}/{GALLERY_IMAGE_LIMIT} images uploaded. Captions are optional.</p>
+                </div>
+
+                {galleryItems.length > 0 && (
+                  <div className="card-builder-gallery-list">
+                    {galleryItems.map((image, index) => (
+                      <div className="card-builder-gallery-item" key={image.id}>
+                        <img src={image.url} alt="" loading="lazy" decoding="async" />
+                        <div>
+                          <input
+                            value={image.caption || ""}
+                            onChange={(event) => updateGalleryCaption(image.id, event.target.value)}
+                            placeholder="Optional caption"
+                            maxLength={160}
+                          />
+                          <div className="card-builder-gallery-actions">
+                            <button type="button" onClick={() => moveGalleryImage(image.id, -1)} disabled={index === 0}>
+                              Up
+                            </button>
+                            <button type="button" onClick={() => moveGalleryImage(image.id, 1)} disabled={index === galleryItems.length - 1}>
+                              Down
+                            </button>
+                            <button type="button" onClick={() => removeGalleryImage(image.id)}>
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </section>
 
           <section className="card-builder-section">
@@ -1075,8 +1249,36 @@ export default function CardBuilderPage({ mode = "user" }) {
         .card-builder-header a { color: #0d6ffd; border: 1px solid #bfdbfe; background: #eaf3ff; border-radius: 10px; text-decoration: none; padding: 10px 14px; font-size: 13px; font-weight: 800; }
         .card-builder-section { margin-bottom: 34px; }
         .card-builder-section h2 { margin: 0 0 18px; font-size: 23px; }
-        .card-builder-section-title { display: flex; align-items: center; gap: 18px; }
+        .card-builder-section-title { display: flex; align-items: center; justify-content: space-between; gap: 18px; max-width: 620px; }
+        .card-builder-section-title h2 { margin-bottom: 4px; }
+        .card-builder-section-title p { margin: 0; color: #64748b; font-size: 13px; line-height: 1.5; max-width: 460px; }
         .card-builder-section-title button { border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; color: #6b7280; padding: 10px 18px; font-weight: 800; }
+        .card-builder-mini-toggle {
+          width: 48px;
+          height: 28px;
+          border-radius: 999px !important;
+          padding: 2px !important;
+          background: #e5e7eb !important;
+          border-color: #d1d5db !important;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: flex-start;
+          flex: 0 0 auto;
+        }
+        .card-builder-mini-toggle span {
+          width: 22px;
+          height: 22px;
+          border-radius: 999px;
+          background: #fff;
+          box-shadow: 0 1px 4px rgba(15, 23, 42, .22);
+          transition: transform .2s ease;
+        }
+        .card-builder-mini-toggle.is-on {
+          background: #0d6ffd !important;
+          border-color: #0d6ffd !important;
+        }
+        .card-builder-mini-toggle.is-on span { transform: translateX(20px); }
         .card-builder-upload-grid { display: grid; grid-template-columns: repeat(2, minmax(150px, 1fr)); gap: 12px; max-width: 420px; }
         .card-builder-upload-wrap { display: grid; gap: 8px; }
         .card-builder-upload { min-height: 82px; border: 1px solid #e5e7eb; background: #f5f5f5; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; color: #374151; font-weight: 800; font-size: 13px; overflow: hidden; }
@@ -1085,6 +1287,17 @@ export default function CardBuilderPage({ mode = "user" }) {
         .card-builder-upload-remove { border: 1px solid #fecaca; background: #fff; color: #b91c1c; border-radius: 8px; padding: 8px 10px; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
         .card-builder-upload-remove:hover { background: #fef2f2; }
         .card-builder-note { color: #8a5a12; font-size: 12px; font-weight: 700; }
+        .card-builder-gallery-toolbar { max-width: 620px; display: grid; grid-template-columns: minmax(160px, 220px) minmax(0, 1fr); gap: 12px; align-items: center; }
+        .card-builder-gallery-toolbar p { margin: 0; color: #64748b; font-size: 13px; line-height: 1.5; font-weight: 700; }
+        .card-builder-gallery-list { margin-top: 14px; max-width: 620px; display: grid; gap: 12px; }
+        .card-builder-gallery-item { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 10px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+        .card-builder-gallery-item > img { width: 96px; height: 96px; object-fit: cover; border-radius: 10px; background: #f8fafc; }
+        .card-builder-gallery-item input { width: 100%; min-height: 42px; border: 1px solid #e5e7eb; border-radius: 9px; padding: 0 11px; color: #111827; outline: none; }
+        .card-builder-gallery-item input:focus { border-color: #0d6ffd; box-shadow: 0 0 0 3px #eaf3ff; }
+        .card-builder-gallery-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 9px; }
+        .card-builder-gallery-actions button { border: 1px solid #e5e7eb; border-radius: 8px; background: #f8fafc; color: #374151; padding: 7px 9px; font-size: 12px; font-weight: 850; cursor: pointer; }
+        .card-builder-gallery-actions button:last-child { color: #b91c1c; border-color: #fecaca; background: #fff; }
+        .card-builder-gallery-actions button:disabled { opacity: .45; cursor: not-allowed; }
         .card-builder-colors { display: flex; flex-wrap: wrap; gap: 10px; }
         .card-builder-colors button { width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(0,0,0,.08); cursor: pointer; transition: transform 0.2s ease; }
         .card-builder-colors button:hover { transform: scale(1.15); }
@@ -1172,7 +1385,8 @@ export default function CardBuilderPage({ mode = "user" }) {
           .card-builder-page { grid-template-columns: 1fr; }
           .card-builder-left { position: static; min-height: auto; }
           .card-builder-panel { border-radius: 32px 32px 0 0; padding: 28px 18px; }
-          .card-builder-field-grid, .card-builder-upload-grid { grid-template-columns: 1fr; }
+          .card-builder-field-grid, .card-builder-upload-grid, .card-builder-gallery-toolbar, .card-builder-gallery-item { grid-template-columns: 1fr; }
+          .card-builder-gallery-item > img { width: 100%; height: auto; aspect-ratio: 1 / 1; }
           .card-builder-header, .card-builder-footer { flex-direction: column; align-items: stretch; }
         }
       `}</style>

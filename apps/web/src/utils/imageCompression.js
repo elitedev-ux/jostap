@@ -8,6 +8,7 @@ export const IMAGE_UPLOAD_TARGETS = {
   avatar: { maxWidth: 512, maxHeight: 512, quality: 0.82 },
   cardProfile: { maxWidth: 512, maxHeight: 512, quality: 0.82 },
   cover: { maxWidth: 1024, maxHeight: 576, quality: 0.8 },
+  gallery: { maxWidth: 1200, maxHeight: 1200, quality: 0.78 },
 };
 
 function fileBaseName(file) {

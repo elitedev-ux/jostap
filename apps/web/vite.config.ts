@@ -19,6 +19,16 @@ export default defineConfig({
   build: {
     target: 'es2022',
     ssrEmitAssets: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/recharts')) return 'vendor-recharts';
+          if (id.includes('node_modules/react-icons')) return 'vendor-react-icons';
+          if (id.includes('node_modules/qrcode')) return 'vendor-qrcode';
+          return undefined;
+        },
+      },
+    },
   },
   optimizeDeps: {
     // Explicitly include fast-glob, since it gets dynamically imported and we

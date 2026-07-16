@@ -81,20 +81,34 @@ async function incrementCardCounter(supabase, cardId, column, currentValue) {
 
 export async function recordCardEngagement(supabase, { card, type, request }) {
   const counter = EVENT_COUNTERS[type];
-  if (!card?.id || !counter) return;
+  if (!card?.id) return;
 
-  await incrementCardCounter(supabase, card.id, counter, card[counter]);
+  if (counter) {
+    await incrementCardCounter(supabase, card.id, counter, card[counter]);
+  }
 
-  const { error } = await supabase.from("card_engagement_events").insert({
+  const payload = {
     card_id: card.id,
     user_id: card.user_id || null,
     event_type: type,
     referrer: referrerFromRequest(request),
     user_agent: userAgentFromRequest(request),
     ip_hash: ipHash(request),
-  });
+    metadata: card.metadata || {},
+  };
 
-  if (error && error.code !== "42P01") {
+  const { error } = await supabase.from("card_engagement_events").insert(payload);
+
+  if (error?.code === "42703") {
+    const { metadata: _metadata, ...fallbackPayload } = payload;
+    const fallback = await supabase.from("card_engagement_events").insert(fallbackPayload);
+    if (fallback.error && fallback.error.code !== "42P01" && fallback.error.code !== "23514") {
+      throw fallback.error;
+    }
+    return;
+  }
+
+  if (error && error.code !== "42P01" && error.code !== "23514") {
     throw error;
   }
 }

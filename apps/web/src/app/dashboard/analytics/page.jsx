@@ -53,7 +53,7 @@ export default function AnalyticsPage() {
   const chartData = analytics?.trend || [];
   const barData = chartData.map((item) => ({
     day: item.date,
-    clicks: Number(item.taps || 0) + Number(item.qr || 0) + Number(item.contactDownloads || 0),
+    clicks: Number(item.taps || 0) + Number(item.qr || 0) + Number(item.contactDownloads || 0) + Number(item.socialClicks || 0),
   }));
   const deviceData = analytics?.devices || [];
   const referrers = analytics?.sources || [];
@@ -259,6 +259,7 @@ export default function AnalyticsPage() {
           ["NFC Taps", totals.taps || 0, "live", "#059669", "#ECFDF5"],
           ["QR Scans", totals.qrScans || 0, "live", "#ff9f0d", "#F5F3FF"],
           ["Contact Saves", totals.contactDownloads || 0, "live", "#D97706", "#FFFBEB"],
+          ["Social Visits", totals.socialClicks || 0, "tracked", "#DB2777", "#FCE7F3"],
           ["Appointments", totals.appointments || 0, `${totals.pendingAppointments || 0} pending`, "#0f172a", "#f5f5f5"],
         ].map(([label, val, change, color, bg]) => (
           <div
@@ -336,6 +337,7 @@ export default function AnalyticsPage() {
                 ["gV", "#0d6ffd"],
                 ["gT", "#059669"],
                 ["gQ", "#ff9f0d"],
+                ["gS", "#DB2777"],
                 ["gA", "#0f172a"],
               ].map(([id, c]) => (
                 <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
@@ -391,6 +393,14 @@ export default function AnalyticsPage() {
               strokeWidth={2}
               fill="url(#gQ)"
               name="QR Scans"
+            />
+            <Area
+              type="monotone"
+              dataKey="socialClicks"
+              stroke="#DB2777"
+              strokeWidth={2}
+              fill="url(#gS)"
+              name="Social Visits"
             />
             <Area
               type="monotone"

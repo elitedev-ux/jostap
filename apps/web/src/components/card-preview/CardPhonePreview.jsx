@@ -366,10 +366,15 @@ export function activeFieldsForCard(card, options = {}) {
     ...SOCIAL_FIELDS,
     "videoUrl",
     "calendly",
+    "gallery",
     "saveContact",
     "exchangeContact",
   ]) {
     if (hasValue(card?.[key])) fields.add(key);
+  }
+
+  if (card?.showGallery && Array.isArray(card.galleryImages) && card.galleryImages.length) {
+    fields.add("gallery");
   }
 
   fields.add("saveContact");
@@ -387,6 +392,8 @@ function socialTilesForPreview(card, activeFields) {
     const entries = normalizedValues(card[key]);
     return entries.map((value, index) => ({
       key: `${key}-${index}`,
+      platform: key,
+      index,
       label: FIELD_LABELS[key],
       href: platformUrl(key, value),
       Icon: BRAND_META[key]?.icon,
@@ -395,6 +402,32 @@ function socialTilesForPreview(card, activeFields) {
       text: BRAND_META[key]?.text || "#fff",
     }));
   });
+}
+
+function galleryImagesForPreview(card) {
+  if (!card?.showGallery || !Array.isArray(card.galleryImages)) return [];
+
+  return card.galleryImages
+    .map((item, index) => ({
+      id: String(item?.id || `gallery-${index + 1}`),
+      url: normalizedOptionalUrl(item?.url),
+      caption: String(item?.caption || "").trim().slice(0, 160),
+    }))
+    .filter((item) => item.url)
+    .slice(0, 6);
+}
+
+function trackedSocialHref(card, tile, enabled) {
+  if (!enabled || !tile?.href || tile.href === "#") return tile?.href || "#";
+  const token = encodeURIComponent(card?.id || card?.slug || "");
+  if (!token) return tile.href;
+
+  const params = new URLSearchParams({
+    index: String(tile.index || 0),
+    fallback: tile.href,
+  });
+
+  return `/api/public/card/${token}/social/${encodeURIComponent(tile.platform)}?${params.toString()}`;
 }
 
 function extraDetailsForPreview(card, activeFields) {
@@ -429,6 +462,7 @@ export default function CardPhonePreview({
   publicUrl,
   onSaveContact,
   onExchangeContact,
+  trackSocialClicks = false,
   includeStyles = true,
 }) {
   const [exchangeOpen, setExchangeOpen] = useState(false);
@@ -446,6 +480,7 @@ export default function CardPhonePreview({
     .filter(([, , , href]) => href);
   const socialTiles = socialTilesForPreview(card || {}, visibleFields);
   const extraDetails = extraDetailsForPreview(card || {}, visibleFields);
+  const galleryImages = galleryImagesForPreview(card || {});
   const directVideo = directVideoUrl(card?.videoUrl);
   const embeddedVideo = embedVideoUrl(card?.videoUrl);
   const showVideo = Boolean(visibleFields.has("videoUrl") && card?.videoUrl);
@@ -704,14 +739,30 @@ export default function CardPhonePreview({
           )}
           {socialTiles.length > 0 && (
             <div className="card-preview-social-card">
-              {socialTiles.map(({ key, label, href, Icon, glyph, color: tileColor, text }) => (
-                <a href={href || "#"} key={key}>
+              {socialTiles.map(({ key, platform, index, label, href, Icon, glyph, color: tileColor, text }) => (
+                <a href={trackedSocialHref(card, { href, platform, index }, trackSocialClicks)} key={key} target="_blank" rel="noopener noreferrer">
                   <span className="card-preview-social-icon" style={{ background: tileColor, color: text }}>
                     {Icon ? <Icon size={28} /> : glyph ? glyph : <User size={28} />}
                   </span>
                   <small>{label}</small>
                 </a>
               ))}
+            </div>
+          )}
+          {galleryImages.length > 0 && (
+            <div className="card-preview-gallery">
+              <div className="card-preview-gallery__header">
+                <strong>Gallery</strong>
+                <span>{galleryImages.length} photo{galleryImages.length === 1 ? "" : "s"}</span>
+              </div>
+              <div className="card-preview-gallery__grid">
+                {galleryImages.map((image) => (
+                  <figure key={image.id}>
+                    <img src={image.url} alt={image.caption || "Gallery image"} loading="lazy" decoding="async" />
+                    {image.caption && <figcaption>{image.caption}</figcaption>}
+                  </figure>
+                ))}
+              </div>
             </div>
           )}
           {showVideo && (
@@ -879,6 +930,7 @@ export default function CardPhonePreview({
         .card-preview-wrap.is-compact .card-preview-quick-actions,
         .card-preview-wrap.is-compact .card-preview-info-list,
         .card-preview-wrap.is-compact .card-preview-social-card,
+        .card-preview-wrap.is-compact .card-preview-gallery,
         .card-preview-wrap.is-compact .card-preview-video-card,
         .card-preview-wrap.is-compact .card-preview-qr,
         .card-preview-wrap.is-compact .card-preview-action-stack { display: none; }
@@ -917,6 +969,14 @@ export default function CardPhonePreview({
         .card-preview-social-card a:hover { transform: scale(1.05); }
         .card-preview-social-icon { width: 54px; height: 54px; border-radius: 17px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 18px rgba(15,23,42,0.08); }
         .card-preview-social-card small { font-size: 12px; font-weight: 800; color: #0f172a; text-align: center; overflow-wrap: anywhere; }
+        .card-preview-gallery { margin: 0 22px 22px; padding: 16px; border: 1px solid #eef2f7; border-radius: 18px; background: #fff; }
+        .card-preview-gallery__header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+        .card-preview-gallery__header strong { color: #0f172a; font-size: 14px; font-weight: 900; }
+        .card-preview-gallery__header span { color: #64748b; font-size: 11px; font-weight: 800; }
+        .card-preview-gallery__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .card-preview-gallery figure { margin: 0; min-width: 0; border-radius: 14px; overflow: hidden; background: #f8fafc; border: 1px solid #eef2f7; }
+        .card-preview-gallery img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; }
+        .card-preview-gallery figcaption { padding: 8px 9px 9px; color: #475569; font-size: 11px; line-height: 1.35; font-weight: 750; overflow-wrap: anywhere; }
         .card-preview-video-card { margin: 0 22px 22px; min-height: 150px; border-radius: 18px; background: #f8fafc; border: 1px solid #eef2f7; display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--card-brand); aspect-ratio: 16 / 9; }
         .card-preview-video-card strong { font-size: 24px; letter-spacing: 0; }
         .card-preview-video-card iframe, .card-preview-video-card video { width: 100%; height: 100%; border: 0; object-fit: cover; display: block; }

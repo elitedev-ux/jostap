@@ -3,6 +3,7 @@ export const PROFILE_IMAGE_SOURCE_MAX_BYTES = 8 * 1024 * 1024;
 export const PROFILE_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp";
 export const PROFILE_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 export const PROFILE_IMAGE_RULES = "JPG, PNG, or WebP, max 8MB. Images are optimized to WebP before upload.";
+export const GALLERY_IMAGE_LIMIT = 6;
 
 export function isAllowedProfileImage(file) {
   return Boolean(

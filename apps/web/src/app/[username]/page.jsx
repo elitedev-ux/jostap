@@ -166,7 +166,12 @@ export function PublicCardProfile({ token }) {
     <main className="public-profile">
       <div className="public-profile__shell">
         <CardPhonePreview
-          card={{ ...card, brandColor }}
+          card={{
+            ...card,
+            brandColor,
+            showGallery: includePremium && card.showGallery,
+            galleryImages: includePremium ? card.galleryImages : [],
+          }}
           activeFields={visibleFields}
           qrLocked={!includePremium}
           onSaveContact={async () => {
@@ -175,6 +180,7 @@ export function PublicCardProfile({ token }) {
             }).catch(() => {});
           }}
           onExchangeContact={submitExchangeContact}
+          trackSocialClicks
         />
 
         {appointmentBookingEnabled && (
