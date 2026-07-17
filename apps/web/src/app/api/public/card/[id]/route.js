@@ -30,6 +30,7 @@ async function findPublicCard(supabase, token, select = "*") {
       .select(select)
       .eq("active", true)
       .eq("id", value)
+      .limit(1)
       .maybeSingle();
 
     if (byId.error || byId.data) return byId;
@@ -40,6 +41,8 @@ async function findPublicCard(supabase, token, select = "*") {
     .select(select)
     .eq("active", true)
     .eq("slug", value)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 }
 
@@ -51,7 +54,31 @@ async function recordPublicEngagement(supabase, { card, type, request }) {
   });
 
   if (!limited) {
-    await recordCardEngagement(supabase, { card, type, request });
+    try {
+      await recordCardEngagement(supabase, { card, type, request });
+    } catch (error) {
+      console.error("Unable to record public card engagement", {
+        cardId: card.id,
+        type,
+        message: error?.message,
+        code: error?.code,
+      });
+    }
+  }
+}
+
+async function safeActivePlanForUser(supabase, userId) {
+  if (!userId) return "free";
+
+  try {
+    return await activePlanForUser(supabase, userId);
+  } catch (error) {
+    console.error("Unable to resolve public card plan", {
+      userId,
+      message: error?.message,
+      code: error?.code,
+    });
+    return "free";
   }
 }
 
@@ -76,11 +103,7 @@ export async function GET(request, { params }) {
     request,
   });
 
-  let plan = "free";
-
-  if (row.user_id) {
-    plan = await activePlanForUser(supabase, row.user_id);
-  }
+  const plan = await safeActivePlanForUser(supabase, row.user_id);
 
   return json({
     card: {

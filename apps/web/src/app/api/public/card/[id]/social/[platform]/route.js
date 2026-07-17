@@ -132,11 +132,52 @@ async function findPublicCard(supabase, token, select = "*") {
   if (!value) return { data: null, error: null };
 
   if (isUuid(value)) {
-    const byId = await supabase.from("cards").select(select).eq("active", true).eq("id", value).maybeSingle();
+    const byId = await supabase
+      .from("cards")
+      .select(select)
+      .eq("active", true)
+      .eq("id", value)
+      .limit(1)
+      .maybeSingle();
     if (byId.error || byId.data) return byId;
   }
 
-  return supabase.from("cards").select(select).eq("active", true).eq("slug", value).maybeSingle();
+  return supabase
+    .from("cards")
+    .select(select)
+    .eq("active", true)
+    .eq("slug", value)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+}
+
+async function safeActivePlanForUser(supabase, userId) {
+  if (!userId) return "free";
+
+  try {
+    return await activePlanForUser(supabase, userId);
+  } catch (error) {
+    console.error("Unable to resolve public card social plan", {
+      userId,
+      message: error?.message,
+      code: error?.code,
+    });
+    return "free";
+  }
+}
+
+async function safeRecordCardEngagement(supabase, payload) {
+  try {
+    await recordCardEngagement(supabase, payload);
+  } catch (error) {
+    console.error("Unable to record public card social engagement", {
+      cardId: payload?.card?.id,
+      type: payload?.type,
+      message: error?.message,
+      code: error?.code,
+    });
+  }
 }
 
 function redirectTo(url) {
@@ -167,10 +208,7 @@ export async function GET(request, { params }) {
   if (error) throw error;
   if (!row) return fallback ? redirectTo(fallback) : json({ error: "Card not found." }, { status: 404 });
 
-  let plan = "free";
-  if (row.user_id) {
-    plan = await activePlanForUser(supabase, row.user_id);
-  }
+  const plan = await safeActivePlanForUser(supabase, row.user_id);
 
   const includePremium = PREMIUM_FEATURE_PLANS.has(String(plan || "").toLowerCase());
   const card = cardFromRow(row);
@@ -196,7 +234,7 @@ export async function GET(request, { params }) {
   });
 
   if (!limited) {
-    await recordCardEngagement(supabase, {
+    await safeRecordCardEngagement(supabase, {
       card: {
         ...row,
         metadata: { platform, index },
