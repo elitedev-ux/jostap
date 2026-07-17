@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { CheckCircle2, Package, RefreshCcw, ShoppingBag, Sparkles } from "lucide-react";
-import ShopNfcCardPreview from "../../../components/shop/ShopNfcCardPreview";
 import "./shop.css";
+
+const ShopNfcCardPreview = lazy(() => import("../../../components/shop/ShopNfcCardPreview"));
 
 const DEFAULT_PRODUCTS = [
   {
@@ -48,6 +49,16 @@ function checkoutPathFor(product) {
   }
 
   return product.checkoutPath || "/checkout?plan=jostap_nfc&billing=one_time";
+}
+
+function ShopPreviewFallback({ compact = false }) {
+  return (
+    <div className={compact ? "shop-nfc-preview shop-nfc-preview--compact" : "shop-nfc-preview"}>
+      <div className="shop-nfc-preview__scene">
+        <span>Loading card preview</span>
+      </div>
+    </div>
+  );
 }
 
 export default function ShopPage() {
@@ -115,7 +126,9 @@ export default function ShopPage() {
         <div className="shop-page__feature">
           {featuredProduct ? (
             <>
-              <ShopNfcCardPreview product={featuredProduct} />
+              <Suspense fallback={<ShopPreviewFallback />}>
+                <ShopNfcCardPreview product={featuredProduct} />
+              </Suspense>
               <div className="shop-page__feature-copy">
                 <span>{featuredProduct.badge || inventoryLabel(featuredProduct.inventoryStatus)}</span>
                 <h2>{featuredProduct.name}</h2>
@@ -160,7 +173,9 @@ export default function ShopPage() {
           return (
             <article className="shop-product" key={product.id || product.slug}>
               <div className="shop-product__preview">
-                <ShopNfcCardPreview product={product} compact />
+                <Suspense fallback={<ShopPreviewFallback compact />}>
+                  <ShopNfcCardPreview product={product} compact />
+                </Suspense>
               </div>
               <div className="shop-product__body">
                 <div className="shop-product__topline">

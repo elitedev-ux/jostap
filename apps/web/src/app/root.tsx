@@ -24,13 +24,9 @@ import {
 import './global.css';
 
 import { LoadFonts } from 'virtual:load-fonts.jsx';
-import fetch from '@/__create/fetch';
-import { toPng } from 'html-to-image';
 import { useNavigate } from 'react-router';
 import { serializeError } from 'serialize-error';
 import { Toaster, toast } from 'sonner';
-import { useDevServerHeartbeat } from '../__create/useDevServerHeartbeat';
-import '../__create/design-mode';
 import favicon from '../assets/jostap favicon bg.png';
 import FloatingWhatsapp from '../components/FloatingWhatsapp';
 import type { Route } from './+types/root';
@@ -71,10 +67,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 const LoadFontsSSR = import.meta.env.SSR ? LoadFonts : null;
 const CREATE_BRIDGE_ENABLED =
   import.meta.env.DEV || import.meta.env.NEXT_PUBLIC_CREATE_ENV === 'DEVELOPMENT';
-
-if (CREATE_BRIDGE_ENABLED && globalThis.window && globalThis.window !== undefined) {
-  globalThis.window.fetch = fetch;
-}
 
 function canUseCreateBridge() {
   return (
@@ -314,20 +306,9 @@ type ClientOnlyProps = {
 };
 
 export const ClientOnly: React.FC<ClientOnlyProps> = ({ loader }) => {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // ErrorBoundaryWrapper sits outside the isMounted gate so it commits on
-  // the first (empty) render and is a stable ancestor by the time children
-  // mount. Catastrophic errors (e.g. stack overflow in user code) can blow
-  // the call stack before React commits a boundary mounted in the same pass
-  // as the throwing child; keeping the boundary always-mounted avoids that.
   return (
     <ErrorBoundaryWrapper>
-      {isMounted ? <LoaderWrapper loader={loader} /> : null}
+      <LoaderWrapper loader={loader} />
     </ErrorBoundaryWrapper>
   );
 };
@@ -368,6 +349,50 @@ export function useHmrConnection(): boolean {
 
   return connected;
 }
+
+const useCreateBridgeRuntime = () => {
+  useEffect(() => {
+    if (!CREATE_BRIDGE_ENABLED || typeof window === 'undefined') {
+      return undefined;
+    }
+
+    let disposed = false;
+    let activityTimer: number | undefined;
+    let lastHeartbeat = 0;
+
+    void import('@/__create/fetch').then(({ default: bridgeFetch }) => {
+      if (!disposed) {
+        window.fetch = bridgeFetch;
+      }
+    });
+
+    void import('../__create/design-mode');
+
+    const sendHeartbeat = () => {
+      const now = Date.now();
+      if (now - lastHeartbeat < 180_000) return;
+      lastHeartbeat = now;
+      fetch('/', { method: 'GET' }).catch(() => {});
+    };
+
+    const scheduleHeartbeat = () => {
+      window.clearTimeout(activityTimer);
+      activityTimer = window.setTimeout(sendHeartbeat, 60_000);
+    };
+
+    window.addEventListener('pointerdown', scheduleHeartbeat, { passive: true });
+    window.addEventListener('keydown', scheduleHeartbeat);
+    window.addEventListener('scroll', scheduleHeartbeat, { passive: true });
+
+    return () => {
+      disposed = true;
+      window.clearTimeout(activityTimer);
+      window.removeEventListener('pointerdown', scheduleHeartbeat);
+      window.removeEventListener('keydown', scheduleHeartbeat);
+      window.removeEventListener('scroll', scheduleHeartbeat);
+    };
+  }, []);
+};
 
 const healthyResponseType = 'sandbox:web:healthcheck:response';
 const useHandshakeParent = () => {
@@ -427,6 +452,7 @@ export const useHandleScreenshotRequest = () => {
           const width = window.innerWidth;
           const aspectRatio = 16 / 9;
           const height = Math.floor(width / aspectRatio);
+          const { toPng } = await import('html-to-image');
 
           // html-to-image already handles CORS, fonts, and CSS inlining
           const dataUrl = await toPng(document.body, {
@@ -462,9 +488,9 @@ export const useHandleScreenshotRequest = () => {
 };
 export function Layout({ children }: { children: ReactNode }) {
   const { nonce } = useLoaderData<typeof loader>();
+  useCreateBridgeRuntime();
   useHandshakeParent();
   useHandleScreenshotRequest();
-  useDevServerHeartbeat();
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location?.pathname;

@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { CheckCircle2, Package, RefreshCcw, ShoppingBag, Sparkles } from "lucide-react";
 import Footer from "../../components/Footer";
 import Navbar from "../../components/Navbar";
-import ShopNfcCardPreview from "../../components/shop/ShopNfcCardPreview";
 import "../dashboard/shop/shop.css";
 import "./page.css";
+
+const ShopNfcCardPreview = lazy(() => import("../../components/shop/ShopNfcCardPreview"));
 
 const DEFAULT_PRODUCTS = [
   {
@@ -55,6 +56,16 @@ function checkoutPathFor(product) {
 
 function signupPathFor(product) {
   return `/auth/signup?callbackUrl=${encodeURIComponent(checkoutPathFor(product))}`;
+}
+
+function ShopPreviewFallback({ compact = false }) {
+  return (
+    <div className={compact ? "shop-nfc-preview shop-nfc-preview--compact" : "shop-nfc-preview"}>
+      <div className="shop-nfc-preview__scene">
+        <span>Loading card preview</span>
+      </div>
+    </div>
+  );
 }
 
 export default function PublicShopPage() {
@@ -124,7 +135,9 @@ export default function PublicShopPage() {
           <div className="shop-page__feature">
             {featuredProduct ? (
               <>
-                <ShopNfcCardPreview product={featuredProduct} />
+                <Suspense fallback={<ShopPreviewFallback />}>
+                  <ShopNfcCardPreview product={featuredProduct} />
+                </Suspense>
                 <div className="shop-page__feature-copy">
                   <span>{featuredProduct.badge || inventoryLabel(featuredProduct.inventoryStatus)}</span>
                   <h2>{featuredProduct.name}</h2>
@@ -176,7 +189,9 @@ export default function PublicShopPage() {
             return (
               <article className="shop-product" key={product.id || product.slug}>
                 <div className="shop-product__preview">
-                  <ShopNfcCardPreview product={product} compact />
+                  <Suspense fallback={<ShopPreviewFallback compact />}>
+                    <ShopNfcCardPreview product={product} compact />
+                  </Suspense>
                 </div>
                 <div className="shop-product__body">
                   <div className="shop-product__topline">

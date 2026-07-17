@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import lagosVibesBack from "../../assets/Lagos Vibes Back.png";
-import lagosVibesFront from "../../assets/Lagos Vibes front.png";
+import lagosVibesBack from "../../assets/lagos-vibes-back.optimized.jpg";
+import lagosVibesFront from "../../assets/lagos-vibes-front.optimized.jpg";
 
 const BUILT_IN_ARTWORK = {
   lagos_vibes: {

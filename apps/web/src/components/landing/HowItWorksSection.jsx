@@ -1,4 +1,4 @@
-import websiteMockup from "../../assets/website design (1).png";
+import websiteMockup from "../../assets/website-design.optimized.jpg";
 import { steps } from "./landingData";
 
 export default function HowItWorksSection() {

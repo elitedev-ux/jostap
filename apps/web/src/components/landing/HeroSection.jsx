@@ -1,5 +1,5 @@
 import { ArrowRight, BarChart3, CalendarDays, QrCode, Wifi } from "lucide-react";
-import heroMockup from "../../assets/JOSTAP Design.png";
+import heroMockup from "../../assets/jostap-design.optimized.jpg";
 
 export default function HeroSection() {
   const heroSignals = [
