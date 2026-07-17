@@ -99,7 +99,7 @@ export async function recordCardEngagement(supabase, { card, type, request }) {
 
   const { error } = await supabase.from("card_engagement_events").insert(payload);
 
-  if (error?.code === "42703") {
+  if (error?.code === "42703" || error?.code === "PGRST204") {
     const { metadata: _metadata, ...fallbackPayload } = payload;
     const fallback = await supabase.from("card_engagement_events").insert(fallbackPayload);
     if (fallback.error && fallback.error.code !== "42P01" && fallback.error.code !== "23514") {
