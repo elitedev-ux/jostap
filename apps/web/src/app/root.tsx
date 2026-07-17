@@ -306,9 +306,17 @@ type ClientOnlyProps = {
 };
 
 export const ClientOnly: React.FC<ClientOnlyProps> = ({ loader }) => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Keep route content client-mounted so visitors do not see the raw SSR shell
+  // before the app is fully hydrated.
   return (
     <ErrorBoundaryWrapper>
-      <LoaderWrapper loader={loader} />
+      {isMounted ? <LoaderWrapper loader={loader} /> : null}
     </ErrorBoundaryWrapper>
   );
 };
