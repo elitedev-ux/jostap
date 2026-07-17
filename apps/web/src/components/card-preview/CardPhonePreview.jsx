@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, Globe, Mail, MapPin, Phone, Send, User, X } from "lucide-react";
+import { Building2, Globe, Images, Mail, MapPin, Phone, Send, User, X } from "lucide-react";
 import { FaLinkedinIn, FaSkype } from "react-icons/fa";
 import {
   SiDiscord,
@@ -466,6 +466,7 @@ export default function CardPhonePreview({
   includeStyles = true,
 }) {
   const [exchangeOpen, setExchangeOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const [exchangeForm, setExchangeForm] = useState(EMPTY_EXCHANGE_FORM);
   const [exchangeStatus, setExchangeStatus] = useState({ submitting: false, error: "", success: "" });
   const visibleFields = activeSetFrom(activeFields);
@@ -750,20 +751,13 @@ export default function CardPhonePreview({
             </div>
           )}
           {galleryImages.length > 0 && (
-            <div className="card-preview-gallery">
-              <div className="card-preview-gallery__header">
-                <strong>Gallery</strong>
-                <span>{galleryImages.length} photo{galleryImages.length === 1 ? "" : "s"}</span>
-              </div>
-              <div className="card-preview-gallery__grid">
-                {galleryImages.map((image) => (
-                  <figure key={image.id}>
-                    <img src={image.url} alt={image.caption || "Gallery image"} loading="lazy" decoding="async" />
-                    {image.caption && <figcaption>{image.caption}</figcaption>}
-                  </figure>
-                ))}
-              </div>
-            </div>
+            <button className="card-preview-gallery-trigger" type="button" onClick={() => setGalleryOpen(true)}>
+              <span>
+                <Images size={18} />
+              </span>
+              <strong>Gallery</strong>
+              <small>{galleryImages.length} photo{galleryImages.length === 1 ? "" : "s"}</small>
+            </button>
           )}
           {showVideo && (
             <div className="card-preview-video-card">
@@ -785,6 +779,30 @@ export default function CardPhonePreview({
           </div>
         </div>
       </div>
+
+      {galleryOpen && galleryImages.length > 0 && (
+        <div className="card-preview-gallery-modal" role="dialog" aria-modal="true" aria-labelledby="card-gallery-title">
+          <div className="card-preview-gallery-panel">
+            <div className="card-preview-gallery-header">
+              <div>
+                <h3 id="card-gallery-title">Gallery</h3>
+                <p>{galleryImages.length} photo{galleryImages.length === 1 ? "" : "s"} from {card?.name || "this profile"}.</p>
+              </div>
+              <button type="button" onClick={() => setGalleryOpen(false)} aria-label="Close gallery">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="card-preview-gallery-grid">
+              {galleryImages.map((image) => (
+                <figure key={image.id}>
+                  <img src={image.url} alt={image.caption || "Gallery image"} loading="lazy" decoding="async" />
+                  {image.caption && <figcaption>{image.caption}</figcaption>}
+                </figure>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {canExchangeContact && exchangeOpen && (
         <div className="card-preview-exchange-modal" role="dialog" aria-modal="true" aria-labelledby="exchange-contact-title">
@@ -930,7 +948,7 @@ export default function CardPhonePreview({
         .card-preview-wrap.is-compact .card-preview-quick-actions,
         .card-preview-wrap.is-compact .card-preview-info-list,
         .card-preview-wrap.is-compact .card-preview-social-card,
-        .card-preview-wrap.is-compact .card-preview-gallery,
+        .card-preview-wrap.is-compact .card-preview-gallery-trigger,
         .card-preview-wrap.is-compact .card-preview-video-card,
         .card-preview-wrap.is-compact .card-preview-qr,
         .card-preview-wrap.is-compact .card-preview-action-stack { display: none; }
@@ -969,14 +987,82 @@ export default function CardPhonePreview({
         .card-preview-social-card a:hover { transform: scale(1.05); }
         .card-preview-social-icon { width: 54px; height: 54px; border-radius: 17px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 18px rgba(15,23,42,0.08); }
         .card-preview-social-card small { font-size: 12px; font-weight: 800; color: #0f172a; text-align: center; overflow-wrap: anywhere; }
-        .card-preview-gallery { margin: 0 22px 22px; padding: 16px; border: 1px solid #eef2f7; border-radius: 18px; background: #fff; }
-        .card-preview-gallery__header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-        .card-preview-gallery__header strong { color: #0f172a; font-size: 14px; font-weight: 900; }
-        .card-preview-gallery__header span { color: #64748b; font-size: 11px; font-weight: 800; }
-        .card-preview-gallery__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-        .card-preview-gallery figure { margin: 0; min-width: 0; border-radius: 14px; overflow: hidden; background: #f8fafc; border: 1px solid #eef2f7; }
-        .card-preview-gallery img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; }
-        .card-preview-gallery figcaption { padding: 8px 9px 9px; color: #475569; font-size: 11px; line-height: 1.35; font-weight: 750; overflow-wrap: anywhere; }
+        .card-preview-gallery-trigger {
+          margin: 0 22px 22px;
+          width: calc(100% - 44px);
+          min-height: 58px;
+          display: grid;
+          grid-template-columns: 40px minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 12px;
+          border: 1px solid var(--card-brand-ring);
+          border-radius: 16px;
+          background: #fff;
+          color: #0f172a;
+          cursor: pointer;
+          text-align: left;
+          transition: transform .2s ease, border-color .2s ease, background .2s ease;
+        }
+        .card-preview-gallery-trigger:hover { transform: translateY(-1px); border-color: var(--card-brand); background: var(--card-brand-soft); }
+        .card-preview-gallery-trigger span {
+          width: 38px;
+          height: 38px;
+          border-radius: 13px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--card-brand-soft);
+          color: var(--card-brand);
+        }
+        .card-preview-gallery-trigger strong { font-size: 15px; font-weight: 900; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .card-preview-gallery-trigger small { color: #64748b; font-size: 12px; font-weight: 850; white-space: nowrap; }
+        .card-preview-gallery-modal {
+          position: fixed;
+          inset: 0;
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          background: rgba(15, 23, 42, .54);
+          backdrop-filter: blur(8px);
+        }
+        .card-preview-gallery-panel {
+          width: min(760px, 100%);
+          max-height: min(760px, calc(100vh - 40px));
+          overflow: auto;
+          border-radius: 22px;
+          border: 1px solid rgba(226, 232, 240, .9);
+          background: #fff;
+          box-shadow: 0 28px 90px rgba(15, 23, 42, .24);
+        }
+        .card-preview-gallery-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 22px 22px 16px;
+          border-bottom: 1px solid #eef2f7;
+        }
+        .card-preview-gallery-header h3 { margin: 0; color: #0f172a; font-size: 24px; line-height: 1.1; font-weight: 900; letter-spacing: 0; }
+        .card-preview-gallery-header p { margin: 6px 0 0; color: #64748b; font-size: 13px; line-height: 1.45; }
+        .card-preview-gallery-header button {
+          width: 38px;
+          height: 38px;
+          border-radius: 12px;
+          border: 1px solid #dbe4f0;
+          background: #fff;
+          color: #334155;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+        .card-preview-gallery-grid { padding: 18px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .card-preview-gallery-grid figure { margin: 0; min-width: 0; border-radius: 16px; overflow: hidden; background: #f8fafc; border: 1px solid #eef2f7; }
+        .card-preview-gallery-grid img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; }
+        .card-preview-gallery-grid figcaption { padding: 10px 11px 11px; color: #475569; font-size: 12px; line-height: 1.35; font-weight: 750; overflow-wrap: anywhere; }
         .card-preview-video-card { margin: 0 22px 22px; min-height: 150px; border-radius: 18px; background: #f8fafc; border: 1px solid #eef2f7; display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--card-brand); aspect-ratio: 16 / 9; }
         .card-preview-video-card strong { font-size: 24px; letter-spacing: 0; }
         .card-preview-video-card iframe, .card-preview-video-card video { width: 100%; height: 100%; border: 0; object-fit: cover; display: block; }
@@ -1112,6 +1198,9 @@ export default function CardPhonePreview({
           .card-preview-wrap:not(.is-compact) { width: 100%; }
           .card-preview-wrap:not(.is-compact) .card-preview-phone { width: 100%; box-sizing: border-box; }
           .card-preview-wrap:not(.is-compact) .card-preview-copy h2 { font-size: 18px; line-height: 1.15; }
+          .card-preview-gallery-modal { padding: 12px; align-items: flex-end; }
+          .card-preview-gallery-panel { max-height: calc(100vh - 24px); border-radius: 18px; }
+          .card-preview-gallery-grid { grid-template-columns: 1fr; padding: 14px; }
         }
       `}</style>
       )}
