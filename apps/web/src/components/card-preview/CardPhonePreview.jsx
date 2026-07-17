@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Building2, Globe, Images, Mail, MapPin, Phone, Send, User, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { Building2, ChevronLeft, ChevronRight, Globe, Images, Mail, MapPin, Phone, Send, User, X } from "lucide-react";
 import { FaLinkedinIn, FaSkype } from "react-icons/fa";
 import {
   SiDiscord,
@@ -467,6 +467,8 @@ export default function CardPhonePreview({
 }) {
   const [exchangeOpen, setExchangeOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const galleryTouchStartX = useRef(null);
   const [exchangeForm, setExchangeForm] = useState(EMPTY_EXCHANGE_FORM);
   const [exchangeStatus, setExchangeStatus] = useState({ submitting: false, error: "", success: "" });
   const visibleFields = activeSetFrom(activeFields);
@@ -493,6 +495,31 @@ export default function CardPhonePreview({
   const showExchangeContact = visibleFields.has("exchangeContact");
   const canExchangeContact = showExchangeContact && typeof onExchangeContact === "function";
   const Root = framed ? "div" : "section";
+  const activeGalleryIndex = galleryImages.length ? Math.min(galleryIndex, galleryImages.length - 1) : 0;
+  const activeGalleryImage = galleryImages[activeGalleryIndex] || galleryImages[0];
+  const showGalleryControls = galleryImages.length > 1;
+  const openGallery = () => {
+    setGalleryIndex(0);
+    setGalleryOpen(true);
+  };
+  const showPreviousGalleryImage = () => {
+    setGalleryIndex((current) => (current - 1 + galleryImages.length) % galleryImages.length);
+  };
+  const showNextGalleryImage = () => {
+    setGalleryIndex((current) => (current + 1) % galleryImages.length);
+  };
+  const handleGalleryTouchStart = (event) => {
+    galleryTouchStartX.current = event.touches?.[0]?.clientX ?? null;
+  };
+  const handleGalleryTouchEnd = (event) => {
+    if (!showGalleryControls || galleryTouchStartX.current === null) return;
+    const touchEndX = event.changedTouches?.[0]?.clientX ?? galleryTouchStartX.current;
+    const delta = touchEndX - galleryTouchStartX.current;
+    galleryTouchStartX.current = null;
+    if (Math.abs(delta) < 40) return;
+    if (delta < 0) showNextGalleryImage();
+    else showPreviousGalleryImage();
+  };
 
   if (compact) {
     return (
@@ -751,7 +778,7 @@ export default function CardPhonePreview({
             </div>
           )}
           {galleryImages.length > 0 && (
-            <button className="card-preview-gallery-trigger" type="button" onClick={() => setGalleryOpen(true)}>
+            <button className="card-preview-gallery-trigger" type="button" onClick={openGallery}>
               <span>
                 <Images size={18} />
               </span>
@@ -792,13 +819,52 @@ export default function CardPhonePreview({
                 <X size={18} />
               </button>
             </div>
-            <div className="card-preview-gallery-grid">
-              {galleryImages.map((image) => (
-                <figure key={image.id}>
-                  <img src={image.url} alt={image.caption || "Gallery image"} loading="lazy" decoding="async" />
-                  {image.caption && <figcaption>{image.caption}</figcaption>}
-                </figure>
-              ))}
+            <div
+              className="card-preview-gallery-carousel"
+              onTouchStart={handleGalleryTouchStart}
+              onTouchEnd={handleGalleryTouchEnd}
+            >
+              {showGalleryControls && (
+                <button
+                  className="card-preview-gallery-nav is-prev"
+                  type="button"
+                  onClick={showPreviousGalleryImage}
+                  aria-label="Previous gallery image"
+                >
+                  <ChevronLeft size={22} />
+                </button>
+              )}
+              <figure>
+                <img src={activeGalleryImage.url} alt={activeGalleryImage.caption || "Gallery image"} decoding="async" />
+                {activeGalleryImage.caption && <figcaption>{activeGalleryImage.caption}</figcaption>}
+              </figure>
+              {showGalleryControls && (
+                <button
+                  className="card-preview-gallery-nav is-next"
+                  type="button"
+                  onClick={showNextGalleryImage}
+                  aria-label="Next gallery image"
+                >
+                  <ChevronRight size={22} />
+                </button>
+              )}
+            </div>
+            <div className="card-preview-gallery-meta">
+              <span>{activeGalleryIndex + 1} / {galleryImages.length}</span>
+              {showGalleryControls && (
+                <div className="card-preview-gallery-dots" aria-label="Gallery image selector">
+                  {galleryImages.map((image, index) => (
+                    <button
+                      key={image.id}
+                      type="button"
+                      className={index === activeGalleryIndex ? "is-active" : ""}
+                      onClick={() => setGalleryIndex(index)}
+                      aria-label={`Show gallery image ${index + 1}`}
+                      aria-pressed={index === activeGalleryIndex}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1059,10 +1125,91 @@ export default function CardPhonePreview({
           justify-content: center;
           cursor: pointer;
         }
-        .card-preview-gallery-grid { padding: 18px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-        .card-preview-gallery-grid figure { margin: 0; min-width: 0; border-radius: 16px; overflow: hidden; background: #f8fafc; border: 1px solid #eef2f7; }
-        .card-preview-gallery-grid img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; }
-        .card-preview-gallery-grid figcaption { padding: 10px 11px 11px; color: #475569; font-size: 12px; line-height: 1.35; font-weight: 750; overflow-wrap: anywhere; }
+        .card-preview-gallery-carousel {
+          position: relative;
+          padding: 18px;
+          background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+        }
+        .card-preview-gallery-carousel figure {
+          margin: 0;
+          min-width: 0;
+          border-radius: 18px;
+          overflow: hidden;
+          background: #0f172a;
+          border: 1px solid #eef2f7;
+          box-shadow: 0 18px 45px rgba(15,23,42,.12);
+        }
+        .card-preview-gallery-carousel img {
+          width: 100%;
+          max-height: min(62vh, 560px);
+          aspect-ratio: 4 / 3;
+          object-fit: contain;
+          display: block;
+          background: #0f172a;
+        }
+        .card-preview-gallery-carousel figcaption {
+          padding: 12px 14px 13px;
+          color: #334155;
+          background: #fff;
+          font-size: 13px;
+          line-height: 1.4;
+          font-weight: 750;
+          overflow-wrap: anywhere;
+        }
+        .card-preview-gallery-nav {
+          position: absolute;
+          top: 50%;
+          z-index: 2;
+          transform: translateY(-50%);
+          width: 42px;
+          height: 42px;
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,.75);
+          background: rgba(15,23,42,.72);
+          color: #fff;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 14px 30px rgba(15,23,42,.2);
+          backdrop-filter: blur(8px);
+        }
+        .card-preview-gallery-nav:hover { background: rgba(15,23,42,.9); }
+        .card-preview-gallery-nav.is-prev { left: 30px; }
+        .card-preview-gallery-nav.is-next { right: 30px; }
+        .card-preview-gallery-meta {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          padding: 0 20px 18px;
+        }
+        .card-preview-gallery-meta > span {
+          color: #64748b;
+          font-size: 12px;
+          font-weight: 900;
+          white-space: nowrap;
+        }
+        .card-preview-gallery-dots {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 7px;
+          flex-wrap: wrap;
+        }
+        .card-preview-gallery-dots button {
+          width: 9px;
+          height: 9px;
+          border: none;
+          border-radius: 999px;
+          background: #cbd5e1;
+          padding: 0;
+          cursor: pointer;
+        }
+        .card-preview-gallery-dots button.is-active {
+          width: 24px;
+          background: var(--card-brand);
+        }
         .card-preview-video-card { margin: 0 22px 22px; min-height: 150px; border-radius: 18px; background: #f8fafc; border: 1px solid #eef2f7; display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--card-brand); aspect-ratio: 16 / 9; }
         .card-preview-video-card strong { font-size: 24px; letter-spacing: 0; }
         .card-preview-video-card iframe, .card-preview-video-card video { width: 100%; height: 100%; border: 0; object-fit: cover; display: block; }
@@ -1200,7 +1347,12 @@ export default function CardPhonePreview({
           .card-preview-wrap:not(.is-compact) .card-preview-copy h2 { font-size: 18px; line-height: 1.15; }
           .card-preview-gallery-modal { padding: 12px; align-items: flex-end; }
           .card-preview-gallery-panel { max-height: calc(100vh - 24px); border-radius: 18px; }
-          .card-preview-gallery-grid { grid-template-columns: 1fr; padding: 14px; }
+          .card-preview-gallery-carousel { padding: 14px; }
+          .card-preview-gallery-carousel img { max-height: 58vh; aspect-ratio: 1 / 1; }
+          .card-preview-gallery-nav { width: 38px; height: 38px; }
+          .card-preview-gallery-nav.is-prev { left: 20px; }
+          .card-preview-gallery-nav.is-next { right: 20px; }
+          .card-preview-gallery-meta { padding: 0 16px 16px; align-items: flex-start; }
         }
       `}</style>
       )}

@@ -28,8 +28,8 @@ const accountTypes = [
   },
   {
     value: "company",
-    label: "Company",
-    description: "Business or team account",
+    label: "Team",
+    description: "Manage multiple card profiles for team members",
   },
 ];
 
@@ -242,6 +242,7 @@ export default function SettingsPage() {
         slug: kyc.profileSlug || current.slug,
         avatarUrl: kyc.avatarUrl || current.avatarUrl,
       }));
+      clearDashboardDataCache();
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (error) {
@@ -620,6 +621,16 @@ export default function SettingsPage() {
                     );
                   })}
                 </div>
+                <p
+                  style={{
+                    margin: "10px 0 0",
+                    color: "#6B7280",
+                    fontSize: 12,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Team accounts can create card profiles based on successful team card purchases.
+                </p>
               </div>
               <div>
                 <label

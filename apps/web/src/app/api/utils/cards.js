@@ -72,7 +72,7 @@ const ALLOWED_ACTIVE_FIELDS = new Set([
   "saveContact",
   "exchangeContact",
 ]);
-const GALLERY_IMAGE_LIMIT = 6;
+const GALLERY_IMAGE_LIMIT = 5;
 
 function sanitizeActiveFields(value) {
   if (!Array.isArray(value)) return [];
@@ -220,7 +220,26 @@ async function profileForUser(supabase, userId) {
   return data || null;
 }
 
+async function isAdminUser(supabase, userId) {
+  const { data, error } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.role === "admin";
+}
+
 export async function cardLimitForUserAccount(supabase, userId, plan, profile = null) {
+  if (await isAdminUser(supabase, userId)) {
+    return {
+      limit: null,
+      reason: "admin_unlimited",
+      purchasedSlots: null,
+    };
+  }
+
   const kycProfile = profile || (await profileForUser(supabase, userId));
 
   if (isCompanyAccount(kycProfile)) {
@@ -254,7 +273,7 @@ export async function assertCanCreateCard(supabase, userId, plan) {
   if (Number(count || 0) >= limit) {
     const message =
       reason === "company_purchase_limit"
-        ? `Company accounts can create ${limit} card profile${limit === 1 ? "" : "s"}, matching successful card purchases. Purchase another card to create more profiles.`
+        ? `Team accounts can create ${limit} card profile${limit === 1 ? "" : "s"}, matching successful card purchases. Purchase another card to create more profiles.`
         : "Free users can create 1 card. Upgrade to create additional cards.";
     const error = new Error(message);
     error.code = "PLAN_CARD_LIMIT";

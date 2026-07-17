@@ -235,8 +235,9 @@ function CardRow({ card, qrLocked }) {
             gap: 8,
           }}
         >
-          <div>
+          <div className="cards-list-title-group">
             <div
+              className="cards-list-title-row"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -244,10 +245,11 @@ function CardRow({ card, qrLocked }) {
                 marginBottom: 3,
               }}
             >
-              <h3 style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>
+              <h3 className="cards-list-card-title" style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>
                 {card.name || "Untitled Card"}
               </h3>
               <span
+                className="cards-list-status"
                 style={{
                   fontSize: 11,
                   fontWeight: 600,
@@ -273,19 +275,19 @@ function CardRow({ card, qrLocked }) {
                 {card.active ? "Published" : "Draft"}
               </span>
             </div>
-            <p style={{ fontSize: 13, color: "#6B7280" }}>
+            <p className="cards-list-subtitle" style={{ fontSize: 13, color: "#6B7280" }}>
               {role} - {company}
             </p>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 20, marginBottom: 14 }}>
+        <div className="cards-list-stats" style={{ display: "flex", gap: 20, marginBottom: 14 }}>
           {[
             [Eye, card.views || 0, "views"],
             [Wifi, card.taps || 0, "NFC taps"],
             [QrCode, card.qr || 0, "QR scans"],
           ].map(([Icon, value, label]) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div className="cards-list-stat" key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <Icon size={13} color="#9CA3AF" />
               <div>
                 <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
@@ -297,7 +299,7 @@ function CardRow({ card, qrLocked }) {
           ))}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div className="cards-list-tags" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           {[card.template, `Created ${card.created || "today"}`].map((label) => (
               <span
                 key={label}
@@ -559,11 +561,11 @@ export default function CardsPage() {
 
   const hasCards = cards.length > 0;
   const reachedCardLimit = cardLimit !== null && cards.length >= cardLimit;
-  const companyLimitReached = reachedCardLimit && cardLimitReason === "company_purchase_limit";
-  const limitCtaHref = companyLimitReached ? "/checkout?plan=custom_nfc&billing=one_time&team=1" : "/pricing";
-  const limitCtaLabel = companyLimitReached ? "Buy more card slots" : "Upgrade for more cards";
-  const limitMessage = companyLimitReached
-    ? `Your company account has ${cardLimit} purchased card slot${cardLimit === 1 ? "" : "s"}. Buy one or more card slots to create more team profiles.`
+  const teamLimitReached = reachedCardLimit && cardLimitReason === "company_purchase_limit";
+  const limitCtaHref = teamLimitReached ? "/checkout?plan=custom_nfc&billing=one_time&team=1" : "/pricing";
+  const limitCtaLabel = teamLimitReached ? "Buy more card slots" : "Upgrade for more cards";
+  const limitMessage = teamLimitReached
+    ? `Your team account has ${cardLimit} purchased card slot${cardLimit === 1 ? "" : "s"}. Buy one or more card slots to create more team profiles.`
     : "Free users can create 1 card. Upgrade to create additional cards and unlock premium features.";
 
   return (
@@ -649,8 +651,9 @@ export default function CardsPage() {
       )}
 
       {!loadingCards && hasCards && (
-        <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+        <div className="cards-list-toolbar" style={{ display: "flex", gap: 10, marginBottom: 20 }}>
           <div
+            className="cards-list-search"
             style={{
               display: "flex",
               alignItems: "center",
@@ -679,6 +682,7 @@ export default function CardsPage() {
             />
           </div>
           <button
+            className="cards-list-filter"
             style={{
               display: "flex",
               alignItems: "center",
@@ -715,7 +719,7 @@ export default function CardsPage() {
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div className="cards-list-stack" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {!loadingCards && filtered.map((card) => (
           <CardRow
             key={card.id}
@@ -772,6 +776,7 @@ export default function CardsPage() {
         @media (max-width: 900px) {
           .cards-list-row {
             grid-template-columns: 160px minmax(0, 1fr) !important;
+            gap: 14px !important;
           }
           .cards-list-preview {
             width: 160px !important;
@@ -786,26 +791,136 @@ export default function CardsPage() {
           }
         }
         @media (max-width: 640px) {
+          .cards-list-toolbar {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px !important;
+            margin-bottom: 16px !important;
+          }
+          .cards-list-search {
+            max-width: none !important;
+            min-width: 0 !important;
+            padding: 9px 11px !important;
+          }
+          .cards-list-filter {
+            min-width: 88px;
+            justify-content: center;
+            padding: 9px 12px !important;
+          }
+          .cards-list-stack {
+            gap: 12px !important;
+          }
           .cards-list-row {
             grid-template-columns: 1fr !important;
-            padding: 16px !important;
+            gap: 14px !important;
+            padding: 12px !important;
+            border-radius: 14px !important;
+            overflow: hidden;
           }
           .cards-list-preview {
             width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
           }
           .cards-list-card-preview {
-            aspect-ratio: 1.72 / 1 !important;
-            padding: 14px !important;
+            aspect-ratio: 1.9 / 1 !important;
+            min-height: 132px;
+            max-height: 168px;
+            padding: 12px !important;
+            border-radius: 11px !important;
+            box-shadow: 0 12px 26px rgba(15,23,42,0.12) !important;
           }
           .cards-list-card-preview__name {
             font-size: 13px !important;
+            line-height: 1.15 !important;
+            margin-bottom: 4px !important;
           }
           .cards-list-card-preview__meta {
             font-size: 11px !important;
+            line-height: 1.2 !important;
+          }
+          .cards-list-details {
+            width: 100%;
+            min-width: 0 !important;
+          }
+          .cards-list-title-group {
+            min-width: 0;
+            width: 100%;
+          }
+          .cards-list-title-row {
+            align-items: flex-start !important;
+            gap: 8px !important;
+            margin-bottom: 7px !important;
+            min-width: 0;
+          }
+          .cards-list-card-title {
+            flex: 1 1 auto;
+            min-width: 0;
+            margin: 0 !important;
+            font-size: 15px !important;
+            line-height: 1.25 !important;
+            overflow-wrap: anywhere;
+          }
+          .cards-list-status {
+            flex: 0 0 auto;
+            margin-top: 1px;
+            padding: 3px 8px !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+          }
+          .cards-list-subtitle {
+            margin: 0 0 12px !important;
+            font-size: 12px !important;
+            line-height: 1.45 !important;
+            overflow-wrap: anywhere;
+          }
+          .cards-list-stats {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px !important;
+            margin-bottom: 12px !important;
+          }
+          .cards-list-stat {
+            min-width: 0;
+            gap: 5px !important;
+            align-items: flex-start !important;
+          }
+          .cards-list-stat > div {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+          }
+          .cards-list-stat span {
+            line-height: 1.15;
+          }
+          .cards-list-tags {
+            gap: 7px !important;
+          }
+          .cards-list-tags span {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
           }
           .cards-list-qr,
           .cards-list-actions {
             grid-column: auto;
+          }
+          .cards-list-qr {
+            width: 100% !important;
+            box-sizing: border-box;
+            border-radius: 12px !important;
+          }
+          .cards-list-actions {
+            width: 100%;
+            flex-wrap: wrap;
+            gap: 8px !important;
+          }
+          .cards-list-actions > a {
+            flex: 1 1 110px;
+            justify-content: center;
+            min-height: 34px;
           }
         }
       `}</style>

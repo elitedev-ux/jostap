@@ -40,8 +40,8 @@ const accountTypes = [
   },
   {
     value: "company",
-    label: "Company",
-    description: "For a business planning to manage cards for a team.",
+    label: "Team",
+    description: "For a business planning to manage multiple card profiles.",
   },
 ];
 
