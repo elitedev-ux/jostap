@@ -14,6 +14,15 @@ function normalizeAccountType(value) {
   return accountType === "company" ? "company" : "individual";
 }
 
+const ACCOUNT_TYPE_ADMIN_EMAILS = new Set([
+  "oluwatobijam199@gmail.com",
+  "tosinsamuel51@gmail.com",
+]);
+
+function canManageAccountType(user) {
+  return ACCOUNT_TYPE_ADMIN_EMAILS.has(String(user?.email || "").trim().toLowerCase());
+}
+
 async function deleteStorageFolder(supabase, bucket, folder) {
   const { data: files, error: listError } = await supabase.storage
     .from(bucket)
@@ -61,11 +70,25 @@ export async function PATCH(request) {
   const bio = clean(body.bio);
   const avatarUrl = toOriginStorageUrl(clean(body.avatarUrl));
   const profileSlug = normalizeSlug(body.slug || body.profileSlug);
-  const accountType = normalizeAccountType(body.accountType);
+  const requestedAccountType = normalizeAccountType(body.accountType);
   const businessType = clean(body.businessType) || "Small business";
   const primaryGoal =
     clean(body.primaryGoal) || "Share my digital business card";
   const supabase = getSupabaseAdmin();
+
+  const { data: existingProfile, error: existingProfileError } = await supabase
+    .from("kyc_profiles")
+    .select("account_type")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (existingProfileError) {
+    throw existingProfileError;
+  }
+
+  const accountType = canManageAccountType(user)
+    ? requestedAccountType
+    : existingProfile?.account_type || "individual";
 
   if (!name || !email || !title || !company || !phone || !country || !city) {
     return badRequest("Name, email, job title, company, phone, country, and city are required.");

@@ -927,13 +927,19 @@ export default function CardsPage() {
           .cards-list-stat {
             min-width: 0;
             gap: 5px !important;
-            align-items: flex-start !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border: 1px solid #E5E7EB;
+            border-radius: 10px;
+            background: #ffffff;
+            padding: 8px 6px;
           }
           .cards-list-stat > div {
             min-width: 0;
             display: flex;
             flex-direction: column;
             gap: 1px;
+            text-align: center;
           }
           .cards-list-stat span {
             line-height: 1.15;
@@ -999,10 +1005,24 @@ export default function CardsPage() {
             font-size: 9.75px !important;
           }
           .cards-list-stats {
-            grid-template-columns: 1fr !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 6px !important;
           }
           .cards-list-stat {
-            align-items: center !important;
+            flex-direction: column !important;
+            gap: 4px !important;
+            padding: 7px 4px !important;
+          }
+          .cards-list-stat svg {
+            width: 12px !important;
+            height: 12px !important;
+          }
+          .cards-list-stat span:first-child {
+            font-size: 13px !important;
+          }
+          .cards-list-stat span:last-child {
+            font-size: 10px !important;
+            white-space: normal !important;
           }
           .cards-list-actions > a,
           .cards-list-menu {

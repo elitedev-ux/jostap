@@ -30,6 +30,7 @@ import {
   displayCardUrl,
   publicCardUrl,
 } from "../../utils/publicUrl";
+import { GALLERY_IMAGE_LIMIT } from "../../utils/uploadRules";
 
 const DEFAULT_COLOR = "#3657E8";
 const PREMIUM_ONLY_FIELDS = new Set(["calendly", "videoUrl"]);
@@ -414,24 +415,7 @@ function galleryImagesForPreview(card) {
       caption: String(item?.caption || "").trim().slice(0, 160),
     }))
     .filter((item) => item.url)
-    .slice(0, 6);
-}
-
-function trackedSocialHref(card, tile, enabled) {
-  if (!enabled || !tile?.href || tile.href === "#") return tile?.href || "#";
-  const token = encodeURIComponent(card?.id || card?.slug || "");
-  if (!token) return tile.href;
-
-  const params = new URLSearchParams({
-    index: String(tile.index || 0),
-    fallback: tile.href,
-  });
-
-  return `/api/public/card/${token}/social/${encodeURIComponent(tile.platform)}?${params.toString()}`;
-}
-
-function trackedOutboundHref(card, field, href, enabled) {
-  return trackedSocialHref(card, { href, platform: field, index: 0 }, enabled);
+    .slice(0, GALLERY_IMAGE_LIMIT);
 }
 
 function extraDetailsForPreview(card, activeFields) {
@@ -466,7 +450,6 @@ export default function CardPhonePreview({
   publicUrl,
   onSaveContact,
   onExchangeContact,
-  trackSocialClicks = false,
   includeStyles = true,
 }) {
   const [exchangeOpen, setExchangeOpen] = useState(false);
@@ -716,7 +699,7 @@ export default function CardPhonePreview({
           {contactButtons.length > 0 && (
             <div className="card-preview-quick-actions">
               {contactButtons.map(([key, Icon, label, href]) => (
-                <a href={trackedOutboundHref(card, key, href, trackSocialClicks && key === "website")} key={key}>
+                <a href={href} key={key}>
                   <span>
                     <Icon size={22} />
                   </span>
@@ -760,7 +743,7 @@ export default function CardPhonePreview({
                   </>
                 );
                 return href ? (
-                  <a href={trackedOutboundHref(card, key, href, trackSocialClicks && key === "portfolio")} key={key}>
+                  <a href={href} key={key}>
                     {content}
                   </a>
                 ) : (
@@ -771,8 +754,8 @@ export default function CardPhonePreview({
           )}
           {socialTiles.length > 0 && (
             <div className="card-preview-social-card">
-              {socialTiles.map(({ key, platform, index, label, href, Icon, glyph, color: tileColor, text }) => (
-                <a href={trackedSocialHref(card, { href, platform, index }, trackSocialClicks)} key={key} target="_blank" rel="noopener noreferrer">
+              {socialTiles.map(({ key, label, href, Icon, glyph, color: tileColor, text }) => (
+                <a href={href || "#"} key={key} target="_blank" rel="noopener noreferrer">
                   <span className="card-preview-social-icon" style={{ background: tileColor, color: text }}>
                     {Icon ? <Icon size={28} /> : glyph ? glyph : <User size={28} />}
                   </span>

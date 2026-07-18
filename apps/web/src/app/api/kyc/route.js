@@ -14,6 +14,15 @@ function normalizeAccountType(value) {
   return ACCOUNT_TYPES.has(accountType) ? accountType : "individual";
 }
 
+const ACCOUNT_TYPE_ADMIN_EMAILS = new Set([
+  "oluwatobijam199@gmail.com",
+  "tosinsamuel51@gmail.com",
+]);
+
+function canManageAccountType(user) {
+  return ACCOUNT_TYPE_ADMIN_EMAILS.has(String(user?.email || "").trim().toLowerCase());
+}
+
 export async function GET(request) {
   const user = await getSessionUser(request);
 
@@ -51,7 +60,22 @@ export async function POST(request) {
     return badRequest("Invalid request body.");
   }
 
-  const accountType = normalizeAccountType(body.accountType);
+  const supabase = getSupabaseAdmin();
+  const requestedAccountType = normalizeAccountType(body.accountType);
+  const { data: existingProfile, error: existingProfileError } = await supabase
+    .from("kyc_profiles")
+    .select("account_type")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (existingProfileError) {
+    throw existingProfileError;
+  }
+
+  const accountType =
+    !existingProfile || canManageAccountType(user)
+      ? requestedAccountType
+      : existingProfile.account_type || "individual";
   const businessName = clean(body.businessName);
   const fallbackIndividualName =
     [user.first_name, user.last_name].map(clean).filter(Boolean).join(" ") ||
@@ -78,7 +102,6 @@ export async function POST(request) {
     return badRequest("Please complete all required fields.", { missing });
   }
 
-  const supabase = getSupabaseAdmin();
   const { data: row, error } = await supabase
     .from("kyc_profiles")
     .upsert(

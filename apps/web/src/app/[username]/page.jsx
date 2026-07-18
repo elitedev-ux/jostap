@@ -180,7 +180,6 @@ export function PublicCardProfile({ token }) {
             }).catch(() => {});
           }}
           onExchangeContact={submitExchangeContact}
-          trackSocialClicks
         />
 
         {appointmentBookingEnabled && (

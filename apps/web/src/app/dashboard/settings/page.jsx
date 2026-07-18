@@ -33,6 +33,15 @@ const accountTypes = [
   },
 ];
 
+const ACCOUNT_TYPE_ADMIN_EMAILS = new Set([
+  "oluwatobijam199@gmail.com",
+  "tosinsamuel51@gmail.com",
+]);
+
+function canManageAccountType(email) {
+  return ACCOUNT_TYPE_ADMIN_EMAILS.has(String(email || "").trim().toLowerCase());
+}
+
 function Section({ title, desc, children }) {
   return (
     <div
@@ -95,6 +104,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("Profile");
   const [saved, setSaved] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [canSwitchAccountType, setCanSwitchAccountType] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -169,6 +179,7 @@ export default function SettingsPage() {
 
         if (active) {
           setHasPassword(user.auth?.hasPassword !== false);
+          setCanSwitchAccountType(canManageAccountType(user.email));
           setProfile((current) => ({
             ...current,
             name: user.name || current.name,
@@ -570,57 +581,89 @@ export default function SettingsPage() {
                 >
                   Account type
                 </label>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 12,
-                  }}
-                >
-                  {accountTypes.map((type) => {
-                    const selected = profile.accountType === type.value;
+                {canSwitchAccountType ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 12,
+                    }}
+                  >
+                    {accountTypes.map((type) => {
+                      const selected = profile.accountType === type.value;
 
-                    return (
-                      <button
-                        key={type.value}
-                        type="button"
-                        aria-pressed={selected}
-                        onClick={() => update("accountType", type.value)}
-                        style={{
-                          textAlign: "left",
-                          border: `1px solid ${
-                            selected ? "#0d6ffd" : "#E5E7EB"
-                          }`,
-                          borderRadius: 10,
-                          background: selected ? "#EFF6FF" : "#fff",
-                          color: "#111827",
-                          padding: "12px 14px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <strong
+                      return (
+                        <button
+                          key={type.value}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => update("accountType", type.value)}
                           style={{
-                            display: "block",
-                            fontSize: 13,
-                            marginBottom: 4,
+                            textAlign: "left",
+                            border: `1px solid ${
+                              selected ? "#0d6ffd" : "#E5E7EB"
+                            }`,
+                            borderRadius: 10,
+                            background: selected ? "#EFF6FF" : "#fff",
+                            color: "#111827",
+                            padding: "12px 14px",
+                            cursor: "pointer",
                           }}
                         >
-                          {type.label}
-                        </strong>
-                        <span
-                          style={{
-                            display: "block",
-                            color: "#6B7280",
-                            fontSize: 12,
-                            lineHeight: 1.45,
-                          }}
-                        >
-                          {type.description}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                          <strong
+                            style={{
+                              display: "block",
+                              fontSize: 13,
+                              marginBottom: 4,
+                            }}
+                          >
+                            {type.label}
+                          </strong>
+                          <span
+                            style={{
+                              display: "block",
+                              color: "#6B7280",
+                              fontSize: 12,
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            {type.description}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      border: "1px solid #E5E7EB",
+                      borderRadius: 10,
+                      background: "#F9FAFB",
+                      padding: "12px 14px",
+                    }}
+                  >
+                    <strong
+                      style={{
+                        display: "block",
+                        fontSize: 13,
+                        color: "#111827",
+                        marginBottom: 4,
+                      }}
+                    >
+                      {profile.accountType === "company" ? "Team" : "Individual"}
+                    </strong>
+                    <span
+                      style={{
+                        display: "block",
+                        color: "#6B7280",
+                        fontSize: 12,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      Account type changes are handled by the JOSTAP admin team.
+                    </span>
+                  </div>
+                )}
                 <p
                   style={{
                     margin: "10px 0 0",
@@ -629,7 +672,9 @@ export default function SettingsPage() {
                     lineHeight: 1.5,
                   }}
                 >
-                  Team accounts can create card profiles based on successful team card purchases.
+                  {canSwitchAccountType
+                    ? "Only approved admin emails can switch accounts between Individual and Team."
+                    : "Contact support if this account needs to become a team account."}
                 </p>
               </div>
               <div>

@@ -179,7 +179,6 @@ export default function PublicCardByIdPage() {
             }).catch(() => {});
           }}
           onExchangeContact={submitExchangeContact}
-          trackSocialClicks
         />
 
         {appointmentBookingEnabled && (
