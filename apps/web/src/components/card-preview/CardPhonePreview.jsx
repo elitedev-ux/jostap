@@ -430,6 +430,10 @@ function trackedSocialHref(card, tile, enabled) {
   return `/api/public/card/${token}/social/${encodeURIComponent(tile.platform)}?${params.toString()}`;
 }
 
+function trackedOutboundHref(card, field, href, enabled) {
+  return trackedSocialHref(card, { href, platform: field, index: 0 }, enabled);
+}
+
 function extraDetailsForPreview(card, activeFields) {
   return EXTRA_FIELDS.filter(([key]) => activeFields.has(key) && card[key]).map(
     ([key, label, Icon]) => ({
@@ -712,7 +716,7 @@ export default function CardPhonePreview({
           {contactButtons.length > 0 && (
             <div className="card-preview-quick-actions">
               {contactButtons.map(([key, Icon, label, href]) => (
-                <a href={href} key={key}>
+                <a href={trackedOutboundHref(card, key, href, trackSocialClicks && key === "website")} key={key}>
                   <span>
                     <Icon size={22} />
                   </span>
@@ -756,7 +760,7 @@ export default function CardPhonePreview({
                   </>
                 );
                 return href ? (
-                  <a href={href} key={key}>
+                  <a href={trackedOutboundHref(card, key, href, trackSocialClicks && key === "portfolio")} key={key}>
                     {content}
                   </a>
                 ) : (

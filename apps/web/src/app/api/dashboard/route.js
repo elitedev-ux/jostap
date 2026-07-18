@@ -220,7 +220,7 @@ export async function GET(request) {
   const period = periodFromRequest(request);
   const start = periodStart(period);
   const now = new Date().toISOString();
-  const requestedCardId = new URL(request.url).searchParams.get("cardId") || "all";
+  const requestedCardIdParam = new URL(request.url).searchParams.get("cardId") || "all";
 
   const [
     { data: profile, error: profileError },
@@ -293,6 +293,8 @@ export async function GET(request) {
   }
 
   const allCardRows = cards || [];
+  const isTeamAccount = String(profile?.account_type || "").toLowerCase() === "company";
+  const requestedCardId = isTeamAccount ? requestedCardIdParam : "all";
   const selectedCardId = allCardRows.some((card) => card.id === requestedCardId) ? requestedCardId : "all";
   const analyticsCardRows =
     selectedCardId === "all"

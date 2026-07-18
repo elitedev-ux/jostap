@@ -5,17 +5,6 @@ import { kycProfileFromRow } from "../utils/profile.js";
 
 const ACCOUNT_TYPES = new Set(["individual", "company"]);
 
-const REQUIRED_FIELDS = [
-  "accountType",
-  "phone",
-  "jobTitle",
-  "businessName",
-  "businessType",
-  "country",
-  "city",
-  "primaryGoal",
-];
-
 function clean(value) {
   return String(value || "").trim();
 }
@@ -62,19 +51,28 @@ export async function POST(request) {
     return badRequest("Invalid request body.");
   }
 
+  const accountType = normalizeAccountType(body.accountType);
+  const businessName = clean(body.businessName);
+  const fallbackIndividualName =
+    [user.first_name, user.last_name].map(clean).filter(Boolean).join(" ") ||
+    "Personal profile";
   const payload = {
-    accountType: normalizeAccountType(body.accountType),
+    accountType,
     phone: clean(body.phone),
     jobTitle: clean(body.jobTitle),
-    businessName: clean(body.businessName),
-    businessType: clean(body.businessType),
+    businessName: accountType === "company" ? businessName : businessName || fallbackIndividualName,
+    businessType: clean(body.businessType) || (accountType === "individual" ? "Solo professional" : ""),
     country: clean(body.country),
     city: clean(body.city),
     website: clean(body.website) || null,
     primaryGoal: clean(body.primaryGoal),
   };
 
-  const missing = REQUIRED_FIELDS.filter((field) => !payload[field]);
+  const requiredFields =
+    payload.accountType === "company"
+      ? ["accountType", "phone", "jobTitle", "businessName", "businessType", "country", "city", "primaryGoal"]
+      : ["accountType", "phone", "jobTitle", "businessType", "country", "city", "primaryGoal"];
+  const missing = requiredFields.filter((field) => !payload[field]);
 
   if (missing.length) {
     return badRequest("Please complete all required fields.", { missing });

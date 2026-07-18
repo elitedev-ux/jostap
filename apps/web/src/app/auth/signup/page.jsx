@@ -59,7 +59,7 @@ export default function SignUpPage() {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
-    company: "",
+    phone: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -125,6 +125,7 @@ export default function SignUpPage() {
     setError("");
 
     try {
+      window.localStorage?.setItem("jostap_signup_phone", form.phone);
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -132,7 +133,7 @@ export default function SignUpPage() {
         body: JSON.stringify({
           firstName: form.firstName,
           lastName: form.lastName,
-          company: form.company,
+          phone: form.phone,
           email: form.email,
           password: form.password,
         }),
@@ -271,11 +272,13 @@ export default function SignUpPage() {
               />
             </label>
             <label className="auth-field">
-              <span>Company</span>
+              <span>Phone Number</span>
               <input
-                value={form.company}
-                onChange={(event) => update("company", event.target.value)}
-                placeholder="Company name"
+                type="tel"
+                value={form.phone}
+                onChange={(event) => update("phone", event.target.value)}
+                placeholder="+234 800 000 0000"
+                required
               />
             </label>
             <label className="auth-field">

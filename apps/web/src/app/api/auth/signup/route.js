@@ -20,7 +20,7 @@ export async function POST(request) {
 
   const firstName = String(body.firstName || "").trim();
   const lastName = String(body.lastName || "").trim();
-  const company = String(body.company || "").trim() || null;
+  const phone = String(body.phone || "").trim();
   const email = normalizeEmail(body.email);
   const password = String(body.password || "");
   const limited = authRateLimit(request, "signup", email || "missing-email", {
@@ -29,8 +29,8 @@ export async function POST(request) {
   });
   if (limited) return limited;
 
-  if (!firstName || !lastName || !email || !password) {
-    return badRequest("First name, last name, email, and password are required.");
+  if (!firstName || !lastName || !phone || !email || !password) {
+    return badRequest("First name, last name, phone number, email, and password are required.");
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -45,24 +45,36 @@ export async function POST(request) {
 
   const passwordHash = await hashPassword(password);
   const supabase = getSupabaseAdmin();
+  const userPayload = {
+    first_name: firstName,
+    last_name: lastName,
+    company: null,
+    phone,
+    email,
+    password_hash: passwordHash,
+  };
 
   try {
-    const { data: user, error } = await supabase
+    let result = await supabase
       .from("users")
-      .insert({
-        first_name: firstName,
-        last_name: lastName,
-        company,
-        email,
-        password_hash: passwordHash,
-      })
+      .insert(userPayload)
       .select("id, first_name, last_name, company, email, role, email_verified_at, created_at")
       .single();
 
-    if (error) {
-      throw error;
+    if (result.error?.code === "42703" || result.error?.code === "PGRST204") {
+      const { phone: _phone, ...fallbackPayload } = userPayload;
+      result = await supabase
+        .from("users")
+        .insert(fallbackPayload)
+        .select("id, first_name, last_name, company, email, role, email_verified_at, created_at")
+        .single();
     }
 
+    if (result.error) {
+      throw result.error;
+    }
+
+    const user = result.data;
     await createEmailVerificationChallenge(supabase, user);
 
     return json(

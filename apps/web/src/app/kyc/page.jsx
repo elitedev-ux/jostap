@@ -14,22 +14,36 @@ const inputStyle = {
   boxSizing: "border-box",
 };
 
-const businessTypes = [
+const individualBusinessTypes = [
   "Solo professional",
+  "Creator",
+  "Consultant",
+  "Freelancer",
+  "Student",
+  "Other",
+];
+
+const teamBusinessTypes = [
   "Small business",
   "Agency or studio",
   "Startup",
   "Enterprise team",
-  "Creator",
+  "Retail team",
   "Other",
 ];
 
-const goals = [
+const individualGoals = [
   "Share my digital business card",
   "Capture leads from networking",
   "Book appointments",
   "Track card analytics",
+];
+
+const teamGoals = [
   "Manage cards for a team",
+  "Capture leads from networking",
+  "Track card analytics",
+  "Book appointments",
 ];
 
 const accountTypes = [
@@ -69,20 +83,41 @@ export default function KycPage() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [typeChosen, setTypeChosen] = useState(false);
   const [form, setForm] = useState({
     accountType: "individual",
     phone: "",
     jobTitle: "",
     businessName: "",
-    businessType: "Small business",
+    businessType: "Solo professional",
     country: "",
     city: "",
     website: "",
     primaryGoal: "Share my digital business card",
   });
 
+  const isTeam = form.accountType === "company";
+  const visibleBusinessTypes = isTeam ? teamBusinessTypes : individualBusinessTypes;
+  const visibleGoals = isTeam ? teamGoals : individualGoals;
+
   const update = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const chooseType = (value) => {
+    setTypeChosen(true);
+    setForm((current) => ({
+      ...current,
+      accountType: value,
+      businessType:
+        value === "company"
+          ? (teamBusinessTypes.includes(current.businessType) ? current.businessType : "Small business")
+          : (individualBusinessTypes.includes(current.businessType) ? current.businessType : "Solo professional"),
+      primaryGoal:
+        value === "company"
+          ? (teamGoals.includes(current.primaryGoal) ? current.primaryGoal : "Manage cards for a team")
+          : (individualGoals.includes(current.primaryGoal) ? current.primaryGoal : "Share my digital business card"),
+    }));
   };
 
   useEffect(() => {
@@ -115,11 +150,17 @@ export default function KycPage() {
           return;
         }
 
+        const savedSignupPhone =
+          typeof window !== "undefined"
+            ? window.localStorage?.getItem("jostap_signup_phone") || ""
+            : "";
+
         setForm((current) => ({
           ...current,
-          businessName: userData.user?.company || current.businessName,
+          phone: profileData.profile?.phone || current.phone || savedSignupPhone,
           ...(profileData.profile || {}),
         }));
+        setTypeChosen(Boolean(profileData.profile?.accountType));
       } catch (error) {
         if (active) {
           setError(error.message || "Unable to load onboarding.");
@@ -144,11 +185,15 @@ export default function KycPage() {
     setError("");
 
     try {
+      const payload = {
+        ...form,
+        businessName: isTeam ? form.businessName : form.businessName || "",
+      };
       const response = await fetch("/api/kyc", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       const data = await response.json().catch(() => ({}));
 
@@ -296,25 +341,19 @@ export default function KycPage() {
               Loading account setup...
             </div>
           ) : (
-            <form onSubmit={handleSubmit}>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 16,
-                }}
-              >
-                <div style={{ gridColumn: "1 / -1" }}>
+            <>
+              {!typeChosen ? (
+                <div>
                   <span
                     style={{
                       display: "block",
                       color: "#374151",
                       fontSize: 13,
                       fontWeight: 700,
-                      marginBottom: 8,
+                      marginBottom: 10,
                     }}
                   >
-                    Account type <span style={{ color: "#0d6ffd" }}>*</span>
+                    Choose account type <span style={{ color: "#0d6ffd" }}>*</span>
                   </span>
                   <div
                     style={{
@@ -323,171 +362,175 @@ export default function KycPage() {
                       gap: 12,
                     }}
                   >
-                    {accountTypes.map((type) => {
-                      const selected = form.accountType === type.value;
-
-                      return (
-                        <button
-                          key={type.value}
-                          type="button"
-                          aria-pressed={selected}
-                          onClick={() => update("accountType", type.value)}
-                          style={{
-                            textAlign: "left",
-                            border: `1px solid ${
-                              selected ? "#0d6ffd" : "#D1D5DB"
-                            }`,
-                            borderRadius: 10,
-                            background: selected ? "#EFF6FF" : "#fff",
-                            color: "#111827",
-                            padding: "14px 15px",
-                            cursor: "pointer",
-                            boxShadow: selected
-                              ? "0 10px 24px rgba(13,111,253,0.12)"
-                              : "none",
-                          }}
-                        >
-                          <strong
-                            style={{
-                              display: "block",
-                              fontSize: 14,
-                              marginBottom: 5,
-                            }}
-                          >
-                            {type.label}
-                          </strong>
-                          <span
-                            style={{
-                              display: "block",
-                              color: "#6B7280",
-                              fontSize: 12,
-                              lineHeight: 1.5,
-                            }}
-                          >
-                            {type.description}
-                          </span>
-                        </button>
-                      );
-                    })}
+                    {accountTypes.map((type) => (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => chooseType(type.value)}
+                        style={{
+                          textAlign: "left",
+                          border: "1px solid #D1D5DB",
+                          borderRadius: 10,
+                          background: "#fff",
+                          color: "#111827",
+                          padding: "16px 15px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <strong style={{ display: "block", fontSize: 15, marginBottom: 6 }}>
+                          {type.label}
+                        </strong>
+                        <span style={{ display: "block", color: "#6B7280", fontSize: 12, lineHeight: 1.5 }}>
+                          {type.description}
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <Field label="Phone number">
-                  <input
-                    required
-                    value={form.phone}
-                    onChange={(event) => update("phone", event.target.value)}
-                    style={inputStyle}
-                    placeholder="+234 800 000 0000"
-                  />
-                </Field>
-                <Field label="Job title">
-                  <input
-                    required
-                    value={form.jobTitle}
-                    onChange={(event) => update("jobTitle", event.target.value)}
-                    style={inputStyle}
-                    placeholder="Founder, Sales Lead, Designer..."
-                  />
-                </Field>
-                <Field label="Business name">
-                  <input
-                    required
-                    value={form.businessName}
-                    onChange={(event) =>
-                      update("businessName", event.target.value)
-                    }
-                    style={inputStyle}
-                    placeholder={
-                      form.accountType === "company"
-                        ? "Your company name"
-                        : "Your company or brand"
-                    }
-                  />
-                </Field>
-                <Field label="Business type">
-                  <select
-                    required
-                    value={form.businessType}
-                    onChange={(event) =>
-                      update("businessType", event.target.value)
-                    }
-                    style={inputStyle}
-                  >
-                    {businessTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Country">
-                  <input
-                    required
-                    value={form.country}
-                    onChange={(event) => update("country", event.target.value)}
-                    style={inputStyle}
-                    placeholder="Nigeria"
-                  />
-                </Field>
-                <Field label="City">
-                  <input
-                    required
-                    value={form.city}
-                    onChange={(event) => update("city", event.target.value)}
-                    style={inputStyle}
-                    placeholder="Lagos"
-                  />
-                </Field>
-                <Field label="Website or portfolio" required={false}>
-                  <input
-                    value={form.website}
-                    onChange={(event) => update("website", event.target.value)}
-                    style={inputStyle}
-                    placeholder="https://example.com"
-                  />
-                </Field>
-                <Field label="Primary goal">
-                  <select
-                    required
-                    value={form.primaryGoal}
-                    onChange={(event) =>
-                      update("primaryGoal", event.target.value)
-                    }
-                    style={inputStyle}
-                  >
-                    {goals.map((goal) => (
-                      <option key={goal} value={goal}>
-                        {goal}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
+              ) : (
+                <form onSubmit={handleSubmit}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
+                    <div>
+                      <span style={{ display: "inline-flex", borderRadius: 999, background: "#EFF6FF", color: "#0d6ffd", padding: "5px 10px", fontSize: 12, fontWeight: 800 }}>
+                        {isTeam ? "Team account" : "Individual account"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTypeChosen(false)}
+                      style={{ border: "1px solid #D1D5DB", background: "#fff", color: "#374151", borderRadius: 8, padding: "8px 11px", fontSize: 12, fontWeight: 800, cursor: "pointer" }}
+                    >
+                      Change type
+                    </button>
+                  </div>
 
-              <button
-                type="submit"
-                disabled={saving}
-                style={{
-                  marginTop: 22,
-                  width: "100%",
-                  border: "none",
-                  borderRadius: 8,
-                  background: saving ? "#8fc1ff" : "#0d6ffd",
-                  color: "#fff",
-                  padding: "13px 18px",
-                  fontSize: 15,
-                  fontWeight: 800,
-                  cursor: saving ? "not-allowed" : "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                }}
-              >
-                {saving ? "Saving..." : "Complete setup"}
-                {!saving && <ArrowRight size={16} />}
-              </button>
-            </form>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 16,
+                    }}
+                  >
+                    <Field label="Phone number">
+                      <input
+                        required
+                        value={form.phone}
+                        onChange={(event) => update("phone", event.target.value)}
+                        style={inputStyle}
+                        placeholder="+234 800 000 0000"
+                      />
+                    </Field>
+                    <Field label={isTeam ? "Your role in the team" : "Job title"}>
+                      <input
+                        required
+                        value={form.jobTitle}
+                        onChange={(event) => update("jobTitle", event.target.value)}
+                        style={inputStyle}
+                        placeholder={isTeam ? "Founder, Admin, HR lead..." : "Founder, Sales Lead, Designer..."}
+                      />
+                    </Field>
+                    {isTeam ? (
+                      <Field label="Team / business name">
+                        <input
+                          required
+                          value={form.businessName}
+                          onChange={(event) => update("businessName", event.target.value)}
+                          style={inputStyle}
+                          placeholder="Your company or team name"
+                        />
+                      </Field>
+                    ) : (
+                      <Field label="Brand / business name" required={false}>
+                        <input
+                          value={form.businessName}
+                          onChange={(event) => update("businessName", event.target.value)}
+                          style={inputStyle}
+                          placeholder="Optional personal brand"
+                        />
+                      </Field>
+                    )}
+                    <Field label={isTeam ? "Team type" : "Profession type"}>
+                      <select
+                        required
+                        value={form.businessType}
+                        onChange={(event) => update("businessType", event.target.value)}
+                        style={inputStyle}
+                      >
+                        {visibleBusinessTypes.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Country">
+                      <input
+                        required
+                        value={form.country}
+                        onChange={(event) => update("country", event.target.value)}
+                        style={inputStyle}
+                        placeholder="Nigeria"
+                      />
+                    </Field>
+                    <Field label="City">
+                      <input
+                        required
+                        value={form.city}
+                        onChange={(event) => update("city", event.target.value)}
+                        style={inputStyle}
+                        placeholder="Lagos"
+                      />
+                    </Field>
+                    <Field label="Website or portfolio" required={false}>
+                      <input
+                        value={form.website}
+                        onChange={(event) => update("website", event.target.value)}
+                        style={inputStyle}
+                        placeholder="https://example.com"
+                      />
+                    </Field>
+                    <Field label="Primary goal">
+                      <select
+                        required
+                        value={form.primaryGoal}
+                        onChange={(event) => update("primaryGoal", event.target.value)}
+                        style={inputStyle}
+                      >
+                        {visibleGoals.map((goal) => (
+                          <option key={goal} value={goal}>
+                            {goal}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    style={{
+                      marginTop: 22,
+                      width: "100%",
+                      border: "none",
+                      borderRadius: 8,
+                      background: saving ? "#8fc1ff" : "#0d6ffd",
+                      color: "#fff",
+                      padding: "13px 18px",
+                      fontSize: 15,
+                      fontWeight: 800,
+                      cursor: saving ? "not-allowed" : "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                    }}
+                  >
+                    {saving ? "Saving..." : "Complete setup"}
+                    {!saving && <ArrowRight size={16} />}
+                  </button>
+                </form>
+              )}
+            </>
           )}
         </section>
       </main>

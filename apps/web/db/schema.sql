@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   first_name text NOT NULL,
   last_name text NOT NULL,
   company text,
+  phone text,
   email text NOT NULL,
   password_hash text NOT NULL,
   role text NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
@@ -17,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at timestamptz;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone text;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_prefs jsonb NOT NULL DEFAULT '{}'::jsonb;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at timestamptz;
 ALTER TABLE users DROP COLUMN IF EXISTS two_factor_enabled;

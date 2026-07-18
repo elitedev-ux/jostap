@@ -48,8 +48,10 @@ export default function AnalyticsPage() {
   const [loadError, setLoadError] = useState("");
   const [loadingAnalytics, setLoadingAnalytics] = useState(true);
   const [advancedLocked, setAdvancedLocked] = useState(true);
+  const [accountType, setAccountType] = useState("individual");
   const totals = analytics?.totals || {};
   const cardOptions = analytics?.cardOptions || [];
+  const isTeamAccount = accountType === "company";
   const chartData = analytics?.trend || [];
   const barData = chartData.map((item) => ({
     day: item.date,
@@ -71,8 +73,11 @@ export default function AnalyticsPage() {
         setAdvancedLocked(features.hasPremiumFeatures === undefined
           ? !hasPremiumFeatures(data.billing?.subscription?.plan)
           : !features.hasPremiumFeatures);
+        setAccountType(data.account?.kyc?.accountType === "company" ? "company" : "individual");
         setAnalytics(data.analytics || null);
-        if (data.analytics?.selectedCardId && data.analytics.selectedCardId !== selectedCardId) {
+        if (data.account?.kyc?.accountType !== "company" && selectedCardId !== "all") {
+          setSelectedCardId("all");
+        } else if (data.analytics?.selectedCardId && data.analytics.selectedCardId !== selectedCardId) {
           setSelectedCardId(data.analytics.selectedCardId);
         }
         setLoadError("");
@@ -120,51 +125,55 @@ export default function AnalyticsPage() {
             Analytics
           </h1>
           <p style={{ fontSize: 14, color: "#6B7280" }}>
-            Track performance across all team cards or one card profile.
+            {isTeamAccount
+              ? "Track performance across all team cards or one card profile."
+              : "Track performance across your card profile activity."}
           </p>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <label
-            htmlFor="analytics-card-filter"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              background: "#fff",
-              border: "1px solid #E5E7EB",
-              borderRadius: 8,
-              padding: "0 10px",
-              fontSize: 13,
-              color: "#374151",
-            }}
-          >
-            <span style={{ color: "#6B7280", fontWeight: 700 }}>Profile</span>
-            <select
-              id="analytics-card-filter"
-              value={selectedCardId}
-              onChange={(event) => setSelectedCardId(event.target.value)}
-              disabled={loadingAnalytics}
+          {isTeamAccount && (
+            <label
+              htmlFor="analytics-card-filter"
               style={{
-                minWidth: 180,
-                maxWidth: 260,
-                border: "none",
-                outline: "none",
-                background: "transparent",
-                color: "#111827",
-                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                background: "#fff",
+                border: "1px solid #E5E7EB",
+                borderRadius: 8,
+                padding: "0 10px",
                 fontSize: 13,
-                fontWeight: 700,
-                padding: "8px 0",
+                color: "#374151",
               }}
             >
-              <option value="all">All team profiles</option>
-              {cardOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {[option.name, option.title].filter(Boolean).join(" - ") || option.slug || "Untitled profile"}
-                </option>
-              ))}
-            </select>
-          </label>
+              <span style={{ color: "#6B7280", fontWeight: 700 }}>Profile</span>
+              <select
+                id="analytics-card-filter"
+                value={selectedCardId}
+                onChange={(event) => setSelectedCardId(event.target.value)}
+                disabled={loadingAnalytics}
+                style={{
+                  minWidth: 180,
+                  maxWidth: 260,
+                  border: "none",
+                  outline: "none",
+                  background: "transparent",
+                  color: "#111827",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  padding: "8px 0",
+                }}
+              >
+                <option value="all">All team profiles</option>
+                {cardOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {[option.name, option.title].filter(Boolean).join(" - ") || option.slug || "Untitled profile"}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <div
             style={{
               display: "inline-flex",

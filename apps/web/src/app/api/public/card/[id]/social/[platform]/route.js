@@ -6,6 +6,8 @@ import { getSupabaseAdmin, hasSupabase } from "../../../../../utils/supabase.js"
 
 const PREMIUM_FEATURE_PLANS = new Set(["trial", "jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
 const SOCIAL_FIELDS = new Set([
+  "website",
+  "portfolio",
   "twitter",
   "instagram",
   "threads",
@@ -100,6 +102,8 @@ function platformUrl(field, value) {
   const handle = cleanHandle(raw);
   const urls = {
     linkedin: normalizedUrl(raw.includes("linkedin.com") ? raw : `linkedin.com/in/${handle}`),
+    website: normalizedUrl(raw),
+    portfolio: normalizedUrl(raw),
     twitter: normalizedUrl(`x.com/${handle}`),
     instagram: normalizedUrl(`instagram.com/${handle}`),
     threads: normalizedUrl(`threads.net/@${handle}`),
