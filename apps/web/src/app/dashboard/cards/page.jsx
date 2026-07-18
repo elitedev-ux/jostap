@@ -57,6 +57,7 @@ function CardPreview({ card }) {
       }}
     >
       <div
+        className="cards-list-card-preview__orb"
         style={{
           position: "absolute",
           top: -34,
@@ -68,6 +69,7 @@ function CardPreview({ card }) {
         }}
       />
       <div
+        className="cards-list-card-preview__sheen"
         style={{
           position: "absolute",
           top: 0,
@@ -79,6 +81,7 @@ function CardPreview({ card }) {
       />
 
       <div
+        className="cards-list-card-preview__content"
         style={{
           position: "relative",
           zIndex: 1,
@@ -90,6 +93,7 @@ function CardPreview({ card }) {
         }}
       >
         <div
+          className="cards-list-card-preview__top"
           style={{
             display: "flex",
             alignItems: "flex-start",
@@ -98,6 +102,7 @@ function CardPreview({ card }) {
           }}
         >
           <div
+            className="cards-list-card-preview__avatar"
             style={{
               width: 34,
               height: 34,
@@ -117,6 +122,7 @@ function CardPreview({ card }) {
             {initials}
           </div>
           <div
+            className="cards-list-card-preview__nfc"
             style={{
               width: 23,
               height: 23,
@@ -133,7 +139,7 @@ function CardPreview({ card }) {
           </div>
         </div>
 
-        <div style={{ minWidth: 0 }}>
+        <div className="cards-list-card-preview__footer" style={{ minWidth: 0 }}>
           <p
             className="cards-list-card-preview__name"
             style={{
@@ -433,7 +439,7 @@ function CardRow({ card, qrLocked }) {
         >
           <Pencil size={12} /> Edit
         </a>
-        <div style={{ position: "relative" }}>
+        <div className="cards-list-menu" style={{ position: "relative" }}>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             style={{
@@ -823,21 +829,59 @@ export default function CardsPage() {
             min-width: 0 !important;
           }
           .cards-list-card-preview {
-            aspect-ratio: 1.9 / 1 !important;
-            min-height: 132px;
-            max-height: 168px;
+            aspect-ratio: auto !important;
+            height: clamp(118px, 38vw, 148px) !important;
+            min-height: 0 !important;
+            max-height: none !important;
             padding: 12px !important;
             border-radius: 11px !important;
             box-shadow: 0 12px 26px rgba(15,23,42,0.12) !important;
           }
+          .cards-list-card-preview__orb {
+            width: 86px !important;
+            height: 86px !important;
+            top: -28px !important;
+            right: -14px !important;
+          }
+          .cards-list-card-preview__sheen {
+            height: 38% !important;
+          }
+          .cards-list-card-preview__content {
+            justify-content: space-between !important;
+            gap: 10px !important;
+          }
+          .cards-list-card-preview__top {
+            align-items: flex-start !important;
+          }
+          .cards-list-card-preview__avatar {
+            width: 31px !important;
+            height: 31px !important;
+            font-size: 11px !important;
+          }
+          .cards-list-card-preview__nfc {
+            width: 25px !important;
+            height: 25px !important;
+            border-radius: 8px !important;
+          }
+          .cards-list-card-preview__footer {
+            padding-right: 4px;
+          }
           .cards-list-card-preview__name {
-            font-size: 13px !important;
-            line-height: 1.15 !important;
-            margin-bottom: 4px !important;
+            font-size: 12.5px !important;
+            line-height: 1.12 !important;
+            margin: 0 0 3px !important;
+            display: block !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
           }
           .cards-list-card-preview__meta {
-            font-size: 11px !important;
-            line-height: 1.2 !important;
+            font-size: 10.5px !important;
+            line-height: 1.15 !important;
+            display: block !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
           }
           .cards-list-details {
             width: 100%;
@@ -919,6 +963,53 @@ export default function CardsPage() {
           }
           .cards-list-actions > a {
             flex: 1 1 110px;
+            justify-content: center;
+            min-height: 34px;
+          }
+        }
+        @media (max-width: 430px) {
+          .cards-list-row {
+            padding: 10px !important;
+            gap: 12px !important;
+          }
+          .cards-list-card-preview {
+            height: 116px !important;
+            padding: 10px !important;
+            border-radius: 10px !important;
+          }
+          .cards-list-card-preview__orb {
+            width: 74px !important;
+            height: 74px !important;
+            top: -24px !important;
+            right: -12px !important;
+          }
+          .cards-list-card-preview__avatar {
+            width: 29px !important;
+            height: 29px !important;
+            font-size: 10px !important;
+          }
+          .cards-list-card-preview__nfc {
+            width: 23px !important;
+            height: 23px !important;
+          }
+          .cards-list-card-preview__name {
+            font-size: 11.5px !important;
+          }
+          .cards-list-card-preview__meta {
+            font-size: 9.75px !important;
+          }
+          .cards-list-stats {
+            grid-template-columns: 1fr !important;
+          }
+          .cards-list-stat {
+            align-items: center !important;
+          }
+          .cards-list-actions > a,
+          .cards-list-menu {
+            flex: 1 1 100%;
+          }
+          .cards-list-menu > button {
+            width: 100%;
             justify-content: center;
             min-height: 34px;
           }
