@@ -20,6 +20,7 @@ import {
 import {
   COMPANY_CARD_PURCHASE_PLANS,
   isCompanyAccount,
+  teamCardInstallmentSummaryForUser,
 } from "../../../utils/cards.js";
 
 const PLANS = new Set(["jostap_nfc", "custom_nfc", "basic_renewal", "premium_renewal"]);
@@ -105,6 +106,17 @@ function addPeriod(cycle) {
   return date.toISOString();
 }
 
+function addDays(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString();
+}
+
+function normalizePaymentMode(value) {
+  const mode = String(value || "full").trim().toLowerCase();
+  return ["full", "installment_deposit", "installment_balance"].includes(mode) ? mode : "full";
+}
+
 export async function POST(request) {
   try {
     const user = await getSessionUser(request);
@@ -161,9 +173,14 @@ export async function POST(request) {
     const isCompany = isCompanyAccount(profile);
     const isCardPurchasePlan = COMPANY_CARD_PURCHASE_PLANS.includes(plan) && billingCycle === "one_time";
     const isTeamCardPurchase = isCompany && isCardPurchasePlan;
+    const paymentMode = normalizePaymentMode(body?.paymentMode || body?.installmentMode);
 
     if (isTeamCardPurchase && plan !== "custom_nfc") {
       return badRequest("Team accounts should purchase Custom Card slots.");
+    }
+
+    if (paymentMode !== "full" && !isTeamCardPurchase) {
+      return badRequest("Installment payment is only available for team Custom Card orders.");
     }
 
     const quantity = isTeamCardPurchase ? cleanQuantity(body?.quantity) : 1;
@@ -189,7 +206,22 @@ export async function POST(request) {
       (selectedProduct
         ? Math.max(0, Math.round(Number(selectedProduct.priceCents || 0)))
         : 0);
-    const amountKobo = unitAmountKobo * quantity;
+    const totalAmountKobo = unitAmountKobo * quantity;
+    const installmentSummary = isTeamCardPurchase
+      ? await teamCardInstallmentSummaryForUser(supabase, user.id)
+      : null;
+    const pendingInstallment = installmentSummary?.pendingInstallments?.[0] || null;
+    const isInstallmentBalance = paymentMode === "installment_balance";
+    const installmentDepositKobo = Math.ceil(totalAmountKobo / 2);
+    const amountKobo = isInstallmentBalance
+      ? Number(pendingInstallment?.balanceAmountCents || 0)
+      : paymentMode === "installment_deposit"
+        ? installmentDepositKobo
+        : totalAmountKobo;
+
+    if (isInstallmentBalance && !pendingInstallment) {
+      return badRequest("There is no pending team installment balance to pay.");
+    }
 
     if (!amountKobo) {
       return badRequest("This card does not have a configured Paystack amount.");
@@ -242,14 +274,53 @@ export async function POST(request) {
     const reference = makePaystackReference(user.id);
     const orderId = makePaystackOrderId();
     const productName = selectedProduct?.name || paystackPlanName(plan);
-    const displayProductName = quantity > 1 ? `${productName} x ${quantity}` : productName;
+    const resolvedQuantity = isInstallmentBalance ? pendingInstallment.quantity : quantity;
+    const displayProductName = resolvedQuantity > 1 ? `${productName} x ${resolvedQuantity}` : productName;
     const userName = [user.first_name, user.last_name].filter(Boolean).join(" ").trim();
+    const installmentDueAt = paymentMode === "installment_deposit" ? addDays(30) : pendingInstallment?.dueAt || "";
     const orderAccount = {
       name: cleanText(account.name || userName || user.email),
       email: cleanText(account.email || user.email),
       company: cleanText(account.company || user.company),
-      quantity,
-      unit_amount_cents: unitAmountKobo,
+      quantity: resolvedQuantity,
+      unit_amount_cents: isInstallmentBalance ? pendingInstallment.unitAmountCents : unitAmountKobo,
+      total_amount_cents: isInstallmentBalance ? pendingInstallment.totalAmountCents : totalAmountKobo,
+      payment_mode: paymentMode,
+      ...(paymentMode === "installment_deposit"
+        ? {
+            installment_group_id: orderId,
+            installment_due_at: installmentDueAt,
+            installment: {
+              enabled: true,
+              groupId: orderId,
+              paymentMode,
+              quantity: resolvedQuantity,
+              unitAmountCents: unitAmountKobo,
+              totalAmountCents: totalAmountKobo,
+              paidTodayCents: amountKobo,
+              balanceAmountCents: Math.max(0, totalAmountKobo - amountKobo),
+              dueAt: installmentDueAt,
+            },
+          }
+        : {}),
+      ...(isInstallmentBalance
+        ? {
+            installment_group_id: pendingInstallment.groupId,
+            parent_order_id: pendingInstallment.orderId,
+            installment_due_at: pendingInstallment.dueAt,
+            installment: {
+              enabled: true,
+              groupId: pendingInstallment.groupId,
+              paymentMode,
+              quantity: pendingInstallment.quantity,
+              unitAmountCents: pendingInstallment.unitAmountCents,
+              totalAmountCents: pendingInstallment.totalAmountCents,
+              previouslyPaidCents: pendingInstallment.paidAmountCents,
+              balanceAmountCents: amountKobo,
+              dueAt: pendingInstallment.dueAt,
+            },
+          }
+        : {}),
     };
     const { data: payment, error: paymentError } = await supabase
       .from("payments")
@@ -290,8 +361,12 @@ export async function POST(request) {
         product_slug: selectedProduct?.slug || "",
         plan,
         billing_cycle: billingCycle,
-        quantity,
-        unit_amount_cents: unitAmountKobo,
+        quantity: resolvedQuantity,
+        unit_amount_cents: orderAccount.unit_amount_cents,
+        total_amount_cents: orderAccount.total_amount_cents,
+        payment_mode: paymentMode,
+        installment_group_id: orderAccount.installment_group_id || "",
+        installment_due_at: orderAccount.installment_due_at || "",
       },
     });
 

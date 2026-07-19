@@ -162,6 +162,7 @@ function subscriptionFromRow(row, user, cardLimitInfo = null) {
       cardLimit,
       cardLimitReason,
       purchasedCardSlots: cardLimitInfo?.purchasedSlots ?? null,
+      teamInstallments: cardLimitInfo?.teamInstallments || [],
       trial,
       features,
     };
@@ -180,6 +181,7 @@ function subscriptionFromRow(row, user, cardLimitInfo = null) {
     cardLimit,
     cardLimitReason,
     purchasedCardSlots: cardLimitInfo?.purchasedSlots ?? null,
+    teamInstallments: cardLimitInfo?.teamInstallments || [],
     trial,
     features,
   };

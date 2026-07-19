@@ -104,6 +104,7 @@ const INDIVIDUAL_CARD_PLANS = ["jostap_nfc", "custom_nfc"];
 const TEAM_CARD_PLANS = ["custom_nfc"];
 const TEAM_CUSTOM_CARD_PRICE = 20000;
 const TEAM_CUSTOM_CARD_PRICE_KOBO = TEAM_CUSTOM_CARD_PRICE * 100;
+const TEAM_INSTALLMENT_DAYS = 30;
 
 function money(cents, currency = "NGN") {
   return new Intl.NumberFormat("en-NG", {
@@ -143,13 +144,14 @@ const getCheckoutFromUrl = () => {
   const plan = PLAN_ALIASES[rawPlan] || rawPlan;
   const billing = BILLING_ALIASES[rawBilling] || rawBilling;
 
-  return {
-    plan: PLANS[plan] ? plan : "jostap_nfc",
-    billing: ["one_time", "yearly", "free"].includes(billing) ? billing : "one_time",
-    productSlug: String(params.get("product") || params.get("productSlug") || "").trim(),
-    quantity: cleanQuantity(params.get("quantity") || 1),
+    return {
+      plan: PLANS[plan] ? plan : "jostap_nfc",
+      billing: ["one_time", "yearly", "free"].includes(billing) ? billing : "one_time",
+      productSlug: String(params.get("product") || params.get("productSlug") || "").trim(),
+      quantity: cleanQuantity(params.get("quantity") || 1),
+      paymentMode: params.get("installment") === "balance" ? "installment_balance" : "full",
+    };
   };
-};
 
 const inputStyle = {
   width: "100%",
@@ -200,6 +202,8 @@ export default function CheckoutPage() {
   const [billing, setBilling] = useState("one_time");
   const [productSlug, setProductSlug] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [paymentMode, setPaymentMode] = useState("full");
+  const [pendingInstallment, setPendingInstallment] = useState(null);
   const [accountType, setAccountType] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [loadingProduct, setLoadingProduct] = useState(false);
@@ -218,6 +222,7 @@ export default function CheckoutPage() {
     setBilling(checkout.billing);
     setProductSlug(checkout.productSlug);
     setQuantity(checkout.quantity);
+    setPaymentMode(checkout.paymentMode);
 
     const params = new URLSearchParams(window.location.search);
     const payment = params.get("payment");
@@ -268,6 +273,33 @@ export default function CheckoutPage() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (authStatus !== "authenticated" || accountType !== "company") {
+      setPendingInstallment(null);
+      return;
+    }
+
+    let active = true;
+
+    async function loadTeamInstallments() {
+      try {
+        const response = await fetch("/api/billing", { credentials: "same-origin" });
+        const data = await response.json().catch(() => ({}));
+        if (!active || !response.ok) return;
+        const pending = data.subscription?.teamInstallments?.[0] || null;
+        setPendingInstallment(pending);
+      } catch {
+        if (active) setPendingInstallment(null);
+      }
+    }
+
+    loadTeamInstallments();
+
+    return () => {
+      active = false;
+    };
+  }, [authStatus, accountType]);
 
   useEffect(() => {
     if (!productSlug) {
@@ -343,16 +375,47 @@ export default function CheckoutPage() {
     : isTeamCheckout && planKey === "custom_nfc"
       ? TEAM_CUSTOM_CARD_PRICE_KOBO
       : Number(plan.price || 0) * 100;
-  const totalAmountKobo = unitAmountKobo * normalizedQuantity;
+  const canPayInstallment = isBulkCardPurchase && !selectedProduct;
+  const canPayInstallmentBalance = canPayInstallment && paymentMode === "installment_balance" && pendingInstallment;
+  const activePaymentMode =
+    canPayInstallment && paymentMode === "installment_deposit"
+      ? "installment_deposit"
+      : canPayInstallmentBalance
+        ? "installment_balance"
+        : "full";
+  const displayQuantity = activePaymentMode === "installment_balance"
+    ? pendingInstallment.quantity
+    : normalizedQuantity;
+  const totalAmountKobo = activePaymentMode === "installment_balance"
+    ? Number(pendingInstallment.totalAmountCents || 0)
+    : unitAmountKobo * normalizedQuantity;
+  const installmentDepositKobo = Math.ceil(totalAmountKobo / 2);
+  const installmentBalanceKobo = Math.max(0, totalAmountKobo - installmentDepositKobo);
+  const balanceDueKobo = activePaymentMode === "installment_balance"
+    ? Number(pendingInstallment?.balanceAmountCents || 0)
+    : installmentBalanceKobo;
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + TEAM_INSTALLMENT_DAYS);
+  const installmentDueLabel = dueDate.toLocaleDateString("en-NG", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
   const selectedProductPrice = selectedProduct
     ? money(selectedProduct.priceCents, selectedProduct.currency)
     : "";
   const orderName = selectedProduct?.name || plan.name;
   const unitPrice = selectedProductPrice || plan.displayPrice || `\u20A6${plan.price}`;
-  const orderPrice = isCardPurchase && normalizedQuantity > 1
+  const orderPrice = isCardPurchase && displayQuantity > 1
     ? money(totalAmountKobo, selectedProduct?.currency || "NGN")
     : unitPrice;
-  const billedToday = isFreePlan ? "\u20A60" : orderPrice;
+  const billedToday = isFreePlan
+    ? "\u20A60"
+    : activePaymentMode === "installment_deposit"
+      ? money(installmentDepositKobo, selectedProduct?.currency || "NGN")
+      : activePaymentMode === "installment_balance"
+        ? money(balanceDueKobo, selectedProduct?.currency || "NGN")
+        : orderPrice;
   const nextChargeLabel =
     billing === "yearly" ? `${orderPrice}/year` : billing === "free" ? "\u20A60" : "No recurring charge";
 
@@ -398,11 +461,12 @@ export default function CheckoutPage() {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      body: JSON.stringify({
           plan: planKey,
           billingCycle: billing,
           productSlug,
           quantity: normalizedQuantity,
+          paymentMode: activePaymentMode,
           account,
         }),
       });
@@ -753,6 +817,81 @@ export default function CheckoutPage() {
                 </div>
               )}
 
+              {checkoutReady && canPayInstallment && (
+                <div
+                  style={{
+                    border: "1px solid #E5E7EB",
+                    borderRadius: 12,
+                    background: "#fff",
+                    padding: 16,
+                    marginBottom: 20,
+                  }}
+                >
+                  {activePaymentMode === "installment_balance" ? (
+                    <>
+                      <p style={{ color: "#111827", fontSize: 14, fontWeight: 800, marginBottom: 4 }}>
+                        Complete team installment
+                      </p>
+                      <p style={{ color: "#6B7280", fontSize: 13, lineHeight: 1.5 }}>
+                        Pay the remaining {money(balanceDueKobo, "NGN")} for {displayQuantity} team card slots.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p style={{ color: "#111827", fontSize: 14, fontWeight: 800, marginBottom: 4 }}>
+                        Payment option
+                      </p>
+                      <p style={{ color: "#6B7280", fontSize: 13, lineHeight: 1.5, marginBottom: 12 }}>
+                        Team orders can be paid in full or split into 50% now and the balance within {TEAM_INSTALLMENT_DAYS} days.
+                      </p>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 10,
+                        }}
+                      >
+                        {[
+                          ["full", "Pay full amount", orderPrice],
+                          ["installment_deposit", "Pay 50% now", money(installmentDepositKobo, "NGN")],
+                        ].map(([mode, label, amount]) => {
+                          const selected = activePaymentMode === mode;
+
+                          return (
+                            <button
+                              key={mode}
+                              type="button"
+                              onClick={() => setPaymentMode(mode)}
+                              style={{
+                                textAlign: "left",
+                                border: selected ? "2px solid #0d6ffd" : "1px solid #E5E7EB",
+                                borderRadius: 10,
+                                background: selected ? "#EFF6FF" : "#fff",
+                                color: "#111827",
+                                padding: "12px 13px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <strong style={{ display: "block", fontSize: 13, marginBottom: 4 }}>
+                                {label}
+                              </strong>
+                              <span style={{ display: "block", color: "#6B7280", fontSize: 12 }}>
+                                {amount}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                  {activePaymentMode === "installment_deposit" && (
+                    <p style={{ color: "#92400E", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "10px 12px", fontSize: 12, lineHeight: 1.5, marginTop: 12 }}>
+                      Balance of {money(installmentBalanceKobo, "NGN")} is due by {installmentDueLabel}. If it is not completed, only paid card slots remain active.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <p style={{ fontSize: 13, color: "#6B7280" }}>
                 {loadingProduct ? "Confirming selected card..." : plan.billingLabel}
               </p>
@@ -1006,9 +1145,14 @@ export default function CheckoutPage() {
                   <p style={{ color: "#6B7280", fontSize: 13, marginTop: 4 }}>
                     {selectedProduct?.subtitle || `${plan.billingLabel} - ${plan.cards}`}
                   </p>
-                  {isBulkCardPurchase && normalizedQuantity > 1 && (
+                  {isBulkCardPurchase && displayQuantity > 1 && (
                     <p style={{ color: "#6B7280", fontSize: 12, fontWeight: 700, marginTop: 8 }}>
-                      {unitPrice} x {normalizedQuantity} card slots
+                      {unitPrice} x {displayQuantity} card slots
+                    </p>
+                  )}
+                  {activePaymentMode === "installment_deposit" && (
+                    <p style={{ color: "#92400E", fontSize: 12, fontWeight: 800, marginTop: 8 }}>
+                      50% installment today. Balance due by {installmentDueLabel}.
                     </p>
                   )}
                 </>
@@ -1058,6 +1202,16 @@ export default function CheckoutPage() {
                   {checkoutReady ? billedToday : "..."}
                 </span>
               </div>
+              {checkoutReady && activePaymentMode === "installment_deposit" && (
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "#6B7280", fontSize: 13 }}>
+                    Balance due in {TEAM_INSTALLMENT_DAYS} days
+                  </span>
+                  <span style={{ color: "#111827", fontSize: 13, fontWeight: 700 }}>
+                    {money(installmentBalanceKobo, "NGN")}
+                  </span>
+                </div>
+              )}
               {checkoutReady && <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#6B7280", fontSize: 13 }}>
                   Next charge

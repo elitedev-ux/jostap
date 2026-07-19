@@ -102,6 +102,7 @@ export default function BillingPage() {
   const [orderConfirmation, setOrderConfirmation] = useState(null);
   const currentPlan = planLabel(billingData?.subscription?.plan);
   const subscription = billingData?.subscription;
+  const pendingInstallment = subscription?.teamInstallments?.[0] || null;
   const usage = billingData?.usage || {};
   const invoices = billingData?.invoices || INVOICES;
 
@@ -285,6 +286,69 @@ export default function BillingPage() {
           </div>
         )}
       </section>
+
+      {pendingInstallment && (
+        <section
+          style={{
+            background: pendingInstallment.overdue ? "#FEF2F2" : "#FFFBEB",
+            border: `1px solid ${pendingInstallment.overdue ? "#FECACA" : "#FDE68A"}`,
+            borderRadius: 12,
+            padding: "18px 20px",
+            marginBottom: 20,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 14,
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <p
+              style={{
+                fontSize: 14,
+                fontWeight: 900,
+                color: pendingInstallment.overdue ? "#991B1B" : "#92400E",
+                marginBottom: 5,
+              }}
+            >
+              Team installment balance {pendingInstallment.overdue ? "overdue" : "due"}
+            </p>
+            <p
+              style={{
+                fontSize: 13,
+                color: pendingInstallment.overdue ? "#B91C1C" : "#92400E",
+                lineHeight: 1.5,
+              }}
+            >
+              You paid for {pendingInstallment.paidSlots} of {pendingInstallment.quantity} card slots.
+              Balance: {formatMoney(pendingInstallment.balanceAmountCents, pendingInstallment.currency)}.
+              Due: {pendingInstallment.dueAt ? new Date(pendingInstallment.dueAt).toLocaleDateString() : "Not set"}.
+              {pendingInstallment.overdue
+                ? " Unpaid card profiles are locked until the balance is completed."
+                : " Complete the balance before the due date to keep all team cards active."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              window.location.href = "/checkout?plan=custom_nfc&billing=one_time&installment=balance";
+            }}
+            style={{
+              border: "none",
+              borderRadius: 9,
+              background: "#0d6ffd",
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 900,
+              padding: "10px 14px",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Pay balance
+          </button>
+        </section>
+      )}
 
       <section
         style={{

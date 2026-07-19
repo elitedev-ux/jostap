@@ -1,4 +1,4 @@
-import { activePlanForUser, cardFromRow } from "../../../utils/cards.js";
+import { activePlanForUser, cardFromRow, isCardWithinActiveTeamSlots } from "../../../utils/cards.js";
 import { engagementTypeFromSource, recordCardEngagement } from "../../../utils/engagement.js";
 import { json } from "../../../utils/http.js";
 import { rateLimit, rateLimitKey } from "../../../utils/rateLimit.js";
@@ -96,6 +96,11 @@ export async function GET(request, { params }) {
     return json({ error: "Card not found." }, { status: 404 });
   }
 
+  const hasTeamAccess = await isCardWithinActiveTeamSlots(supabase, row);
+  if (!hasTeamAccess) {
+    return json({ error: "Card not found." }, { status: 404 });
+  }
+
   const source = new URL(request.url).searchParams.get("source");
   await recordPublicEngagement(supabase, {
     card: row,
@@ -127,6 +132,11 @@ export async function POST(request, { params }) {
   if (error) throw error;
 
   if (!row) {
+    return json({ error: "Card not found." }, { status: 404 });
+  }
+
+  const hasTeamAccess = await isCardWithinActiveTeamSlots(supabase, row);
+  if (!hasTeamAccess) {
     return json({ error: "Card not found." }, { status: 404 });
   }
 

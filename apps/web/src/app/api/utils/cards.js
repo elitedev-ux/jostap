@@ -16,6 +16,7 @@ export function isEmail(value) {
 
 const FREE_CARD_LIMIT = 1;
 export const COMPANY_CARD_PURCHASE_PLANS = ["jostap_nfc", "custom_nfc"];
+export const TEAM_INSTALLMENT_DAYS = 30;
 const MULTI_VALUE_SOCIAL_FIELDS = new Set([
   "twitter",
   "instagram",
@@ -192,10 +193,94 @@ export function isCompanyAccount(profile) {
   return String(profile?.account_type || profile?.accountType || "").toLowerCase() === "company";
 }
 
-export async function purchasedCardSlotsForUser(supabase, userId) {
+function cleanPositiveInteger(value, fallback = 0) {
+  const number = Math.floor(Number(value || fallback));
+  return Number.isFinite(number) ? Math.max(0, number) : fallback;
+}
+
+function installmentGroupId(payment) {
+  const account = payment?.order_account || {};
+  return String(
+    account.installment_group_id ||
+      account.installment?.groupId ||
+      account.installment?.group_id ||
+      account.parent_order_id ||
+      payment?.order_id ||
+      payment?.id ||
+      "",
+  );
+}
+
+function paymentMode(payment) {
+  const account = payment?.order_account || {};
+  return String(account.payment_mode || account.installment?.paymentMode || "").toLowerCase();
+}
+
+function isInstallmentPayment(payment) {
+  const account = payment?.order_account || {};
+  return Boolean(
+    account.installment?.enabled ||
+      account.installment_group_id ||
+      account.parent_order_id ||
+      paymentMode(payment).startsWith("installment"),
+  );
+}
+
+function addPaidInstallment(groups, payment) {
+  const account = payment.order_account || {};
+  const groupId = installmentGroupId(payment);
+  if (!groupId) return;
+
+  const existing = groups.get(groupId) || {
+    groupId,
+    orderId: groupId,
+    quantity: 0,
+    unitAmountCents: 0,
+    totalAmountCents: 0,
+    paidAmountCents: 0,
+    currency: payment.currency || "ngn",
+    dueAt: "",
+    createdAt: payment.created_at || "",
+  };
+
+  const installment = account.installment || {};
+  existing.quantity = Math.max(
+    existing.quantity,
+    cleanPositiveInteger(account.quantity || installment.quantity, 1),
+  );
+  existing.unitAmountCents = Math.max(
+    existing.unitAmountCents,
+    cleanPositiveInteger(account.unit_amount_cents || installment.unitAmountCents, 0),
+  );
+  existing.totalAmountCents = Math.max(
+    existing.totalAmountCents,
+    cleanPositiveInteger(account.total_amount_cents || installment.totalAmountCents, 0),
+  );
+  existing.paidAmountCents += cleanPositiveInteger(payment.amount_cents, 0);
+  existing.currency = payment.currency || existing.currency;
+  existing.dueAt = existing.dueAt || account.installment_due_at || installment.dueAt || "";
+  existing.createdAt = existing.createdAt || payment.created_at || "";
+  groups.set(groupId, existing);
+}
+
+function activeSlotsForInstallment(group, nowMs = Date.now()) {
+  const quantity = cleanPositiveInteger(group.quantity, 0);
+  const unitAmountCents = cleanPositiveInteger(group.unitAmountCents, 0);
+  const totalAmountCents = cleanPositiveInteger(group.totalAmountCents, unitAmountCents * quantity);
+  const paidAmountCents = cleanPositiveInteger(group.paidAmountCents, 0);
+  const dueMs = group.dueAt ? new Date(group.dueAt).getTime() : 0;
+  const inGrace = dueMs && dueMs > nowMs;
+  const fullyPaid = totalAmountCents > 0 && paidAmountCents >= totalAmountCents;
+
+  if (fullyPaid || inGrace) return quantity;
+  if (!unitAmountCents) return 0;
+  return Math.min(quantity, Math.floor(paidAmountCents / unitAmountCents));
+}
+
+export async function teamCardInstallmentSummaryForUser(supabase, userId) {
   const { data, error } = await supabase
     .from("payments")
-    .select("order_account")
+    .select("id, amount_cents, currency, status, provider, order_id, order_plan, order_product_name, order_account, created_at")
     .eq("user_id", userId)
     .eq("provider", "paystack")
     .eq("status", "succeeded")
@@ -203,10 +288,58 @@ export async function purchasedCardSlotsForUser(supabase, userId) {
 
   if (error) throw error;
 
-  return (data || []).reduce((slots, payment) => {
-    const quantity = Math.floor(Number(payment.order_account?.quantity || 1));
-    return slots + (Number.isFinite(quantity) ? Math.max(1, quantity) : 1);
+  const groups = new Map();
+  const fullPayments = [];
+
+  for (const payment of data || []) {
+    if (isInstallmentPayment(payment)) {
+      addPaidInstallment(groups, payment);
+    } else {
+      fullPayments.push(payment);
+    }
+  }
+
+  const installmentOrders = Array.from(groups.values()).map((group) => {
+    const totalAmountCents = cleanPositiveInteger(
+      group.totalAmountCents,
+      cleanPositiveInteger(group.unitAmountCents, 0) * cleanPositiveInteger(group.quantity, 0),
+    );
+    const paidAmountCents = cleanPositiveInteger(group.paidAmountCents, 0);
+    const balanceAmountCents = Math.max(0, totalAmountCents - paidAmountCents);
+    const dueMs = group.dueAt ? new Date(group.dueAt).getTime() : 0;
+    const overdue = Boolean(balanceAmountCents && dueMs && dueMs <= Date.now());
+
+    return {
+      ...group,
+      totalAmountCents,
+      paidAmountCents,
+      balanceAmountCents,
+      paidSlots: group.unitAmountCents ? Math.floor(paidAmountCents / group.unitAmountCents) : 0,
+      activeSlots: activeSlotsForInstallment(group),
+      overdue,
+      fullyPaid: balanceAmountCents === 0,
+    };
+  });
+
+  const fullSlots = fullPayments.reduce((slots, payment) => {
+    const quantity = cleanPositiveInteger(payment.order_account?.quantity, 1);
+    return slots + Math.max(1, quantity || 1);
   }, 0);
+
+  const installmentSlots = installmentOrders.reduce((slots, order) => slots + order.activeSlots, 0);
+
+  return {
+    purchasedSlots: fullSlots + installmentSlots,
+    fullSlots,
+    installmentSlots,
+    installmentOrders,
+    pendingInstallments: installmentOrders.filter((order) => !order.fullyPaid),
+  };
+}
+
+export async function purchasedCardSlotsForUser(supabase, userId) {
+  const summary = await teamCardInstallmentSummaryForUser(supabase, userId);
+  return summary.purchasedSlots;
 }
 
 async function profileForUser(supabase, userId) {
@@ -243,11 +376,13 @@ export async function cardLimitForUserAccount(supabase, userId, plan, profile = 
   const kycProfile = profile || (await profileForUser(supabase, userId));
 
   if (isCompanyAccount(kycProfile)) {
-    const purchasedSlots = await purchasedCardSlotsForUser(supabase, userId);
+    const installmentSummary = await teamCardInstallmentSummaryForUser(supabase, userId);
+    const purchasedSlots = installmentSummary.purchasedSlots;
     return {
       limit: purchasedSlots,
       reason: "company_purchase_limit",
       purchasedSlots,
+      teamInstallments: installmentSummary.pendingInstallments,
     };
   }
 
@@ -257,6 +392,31 @@ export async function cardLimitForUserAccount(supabase, userId, plan, profile = 
     reason: limit === null ? "unlimited" : "plan_card_limit",
     purchasedSlots: null,
   };
+}
+
+export async function isCardWithinActiveTeamSlots(supabase, cardRow) {
+  if (!cardRow?.user_id) return true;
+  if (await isAdminUser(supabase, cardRow.user_id)) return true;
+
+  const profile = await profileForUser(supabase, cardRow.user_id);
+  if (!isCompanyAccount(profile)) return true;
+
+  const { limit } = await cardLimitForUserAccount(supabase, cardRow.user_id, "custom_nfc", profile);
+  if (limit === null) return true;
+  if (limit <= 0) return false;
+
+  const { data, error } = await supabase
+    .from("cards")
+    .select("id")
+    .eq("user_id", cardRow.user_id)
+    .eq("active", true)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (error) throw error;
+
+  const index = (data || []).findIndex((card) => card.id === cardRow.id);
+  return index >= 0 && index < limit;
 }
 
 export async function assertCanCreateCard(supabase, userId, plan) {
