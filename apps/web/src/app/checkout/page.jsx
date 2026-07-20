@@ -370,12 +370,12 @@ export default function CheckoutPage() {
   const isCardPurchase = visiblePlanKeys.includes(planKey) && billing === "one_time";
   const isBulkCardPurchase = isTeamCheckout && planKey === "custom_nfc" && billing === "one_time";
   const normalizedQuantity = isBulkCardPurchase ? cleanQuantity(quantity) : 1;
-  const unitAmountKobo = selectedProduct
-    ? Number(selectedProduct.priceCents || 0)
-    : isTeamCheckout && planKey === "custom_nfc"
-      ? TEAM_CUSTOM_CARD_PRICE_KOBO
+  const unitAmountKobo = isTeamCheckout && planKey === "custom_nfc"
+    ? TEAM_CUSTOM_CARD_PRICE_KOBO
+    : selectedProduct
+      ? Number(selectedProduct.priceCents || 0)
       : Number(plan.price || 0) * 100;
-  const canPayInstallment = isBulkCardPurchase && !selectedProduct;
+  const canPayInstallment = isBulkCardPurchase;
   const canPayInstallmentBalance = canPayInstallment && paymentMode === "installment_balance" && pendingInstallment;
   const activePaymentMode =
     canPayInstallment && paymentMode === "installment_deposit"
@@ -401,7 +401,7 @@ export default function CheckoutPage() {
     day: "numeric",
     year: "numeric",
   });
-  const selectedProductPrice = selectedProduct
+  const selectedProductPrice = selectedProduct && !(isTeamCheckout && planKey === "custom_nfc")
     ? money(selectedProduct.priceCents, selectedProduct.currency)
     : "";
   const orderName = selectedProduct?.name || plan.name;

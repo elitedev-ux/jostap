@@ -88,6 +88,7 @@ export default function DashboardPage() {
   const [cards, setCards] = useState([]);
   const [account, setAccount] = useState(null);
   const [analytics, setAnalytics] = useState(null);
+  const [billing, setBilling] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -100,11 +101,13 @@ export default function DashboardPage() {
         setCards(data.cards || []);
         setAccount(data.account || null);
         setAnalytics(data.analytics || null);
+        setBilling(data.billing || null);
       } catch {
         if (active) {
           setCards([]);
           setAccount(null);
           setAnalytics(null);
+          setBilling(null);
         }
       }
     }
@@ -176,6 +179,34 @@ export default function DashboardPage() {
   }));
 
   const visibleCards = cards.slice(0, 3);
+  const subscription = billing?.subscription || {};
+  const cardLimit = subscription.cardLimit ?? null;
+  const cardLimitReason = subscription.cardLimitReason || "";
+  const reachedCardLimit = cardLimit !== null && cards.length >= cardLimit;
+  const teamLimitReached =
+    reachedCardLimit && cardLimitReason === "company_purchase_limit";
+  const createCardHref = reachedCardLimit
+    ? teamLimitReached
+      ? "/checkout?plan=custom_nfc&billing=one_time&team=1"
+      : "/pricing"
+    : "/create-card";
+  const createCardLabel = reachedCardLimit
+    ? teamLimitReached
+      ? "Buy card slots"
+      : "Upgrade for more cards"
+    : "New Card";
+  const emptyCardLabel = reachedCardLimit
+    ? teamLimitReached
+      ? "Buy card slots"
+      : "Upgrade for more cards"
+    : "Create Card";
+  const cardLimitMessage = teamLimitReached
+    ? cardLimit === 0
+      ? "Your team needs to buy card slots before creating profiles."
+      : `Your team has used ${cards.length} of ${cardLimit} paid card slots. Buy more slots before creating another profile.`
+    : reachedCardLimit
+      ? "Your current plan has reached its card limit."
+      : "";
 
   return (
     <>
@@ -207,7 +238,7 @@ export default function DashboardPage() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <a
-            href="/create-card"
+            href={createCardHref}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -221,10 +252,26 @@ export default function DashboardPage() {
               background: "#0d6ffd",
             }}
           >
-            <Plus size={15} /> New Card
+            <Plus size={15} /> {createCardLabel}
           </a>
         </div>
       </div>
+      {cardLimitMessage && (
+        <div
+          style={{
+            border: "1px solid #BFDBFE",
+            background: "#EFF6FF",
+            color: "#1E3A8A",
+            borderRadius: 12,
+            padding: "12px 14px",
+            fontSize: 13,
+            fontWeight: 600,
+            marginBottom: 20,
+          }}
+        >
+          {cardLimitMessage}
+        </div>
+      )}
 
       <div
         style={{
@@ -491,7 +538,7 @@ export default function DashboardPage() {
               Your dashboard starts empty. Create a card and it will show here.
             </p>
             <a
-              href="/create-card"
+              href={createCardHref}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -506,7 +553,7 @@ export default function DashboardPage() {
                 background: "#0d6ffd",
               }}
             >
-              <Plus size={15} /> Create Card
+              <Plus size={15} /> {emptyCardLabel}
             </a>
           </div>
         ) : (

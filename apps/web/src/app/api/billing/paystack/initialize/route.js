@@ -364,6 +364,7 @@ export async function POST(request) {
         quantity: resolvedQuantity,
         unit_amount_cents: orderAccount.unit_amount_cents,
         total_amount_cents: orderAccount.total_amount_cents,
+        charged_amount_cents: amountKobo,
         payment_mode: paymentMode,
         installment_group_id: orderAccount.installment_group_id || "",
         installment_due_at: orderAccount.installment_due_at || "",
@@ -382,6 +383,9 @@ export async function POST(request) {
       accessCode: authorization.access_code || "",
       reference,
       orderId,
+      paymentMode,
+      amountKobo,
+      totalAmountKobo: orderAccount.total_amount_cents,
     });
   } catch (error) {
     console.error("Paystack checkout initialization failed:", error);
